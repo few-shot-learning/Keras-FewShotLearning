@@ -1,6 +1,5 @@
-import keras.backend as K
-from keras import Model
-from keras.layers import Input, Lambda
+from tensorflow.keras import Model, backend as K
+from tensorflow.keras.layers import Input, Lambda
 
 
 def TripletLoss(input_shape, margin=0.1, *args, **kwargs):

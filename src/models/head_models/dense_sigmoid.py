@@ -1,7 +1,6 @@
-
-from keras import backend as K
-from keras.layers import Dense, Input, Lambda
-from keras.models import Model
+from tensorflow.keras import backend as K
+from tensorflow.keras.layers import Dense, Input, Lambda
+from tensorflow.keras.models import Model
 
 
 def DenseSigmoid(input_shape):

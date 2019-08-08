@@ -1,5 +1,5 @@
-from keras import Model, backend as K
-from keras.layers import Input, Lambda
+from tensorflow.keras import Model, backend as K
+from tensorflow.keras.layers import Input, Lambda
 
 
 def L1(input_shape, *args, **kwargs):
