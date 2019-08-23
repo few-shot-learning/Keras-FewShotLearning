@@ -23,7 +23,14 @@ class AbstractSequence(Sequence, metaclass=ABCMeta):
         }
         self.load_img_kwargs = load_img_kwargs
         self.batch_size = batch_size
+        self._support_labels = None
         self.on_epoch_end()
 
     def __len__(self):
         return math.ceil(len(self.query_annotations) / self.batch_size)
+
+    @property
+    def support_labels(self):
+        if self._support_labels is None:
+            self._support_labels = self.support_annotations.label.value_counts()
+        return self._support_labels
