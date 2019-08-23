@@ -9,16 +9,6 @@ class RandomBalancedPairsSequence(AbstractPairsSequence):
     def __init__(self, annotations, batch_size, **load_img_kwargs):
         super().__init__(annotations, batch_size, **load_img_kwargs)
 
-    @property
-    def support_annotations_by_label(self):
-        """
-        Transform pandas.GroupBy object into dict for performance reasons
-        """
-        return {
-            group[0]: group[1]
-            for group in self.support_annotations.groupby('label')
-        }
-
     def on_epoch_end(self):
         self.query_samples = self.query_annotations.sample(frac=1).reset_index(drop=True)
         self.support_samples = pd.concat(

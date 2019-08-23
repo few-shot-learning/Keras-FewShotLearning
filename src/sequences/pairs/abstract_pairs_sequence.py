@@ -1,52 +1,43 @@
-import abc
 import math
 
 import pandas as pd
-from tensorflow.python.keras.utils import Sequence
-from tensorflow.python.keras.preprocessing.image import load_img, img_to_array
+from tensorflow.python.keras.preprocessing.image import img_to_array, load_img
+
+from src.sequences.abstract_sequence import AbstractSequence
 
 
-class AbstractPairsSequence(Sequence, metaclass=abc.ABCMeta):
+class AbstractPairsSequence(AbstractSequence):
     """
     Base class for pairs sequences. All initialization should
     """
 
-    def __init__(self, annotations, batch_size, **load_img_kwargs):
+    def __init__(self, *args, **kwargs):
         """
         Args:
             annotations (Union[pandas.DataFrame, list[pandas.DataFrame]]): query and support annotations. If a single
             dataframe is given, it will be used both for query and support set.
             batch_size (int): number of images per batch
         """
-        if not isinstance(annotations, list):
-            annotations = [annotations]
-        self.query_annotations = annotations[0]
         self.query_samples = pd.DataFrame()
-        self.support_annotations = annotations[-1]
         self.support_samples = pd.DataFrame()
-        self.load_img_kwargs = load_img_kwargs
-        self.batch_size = batch_size
-        self.on_epoch_end()
+        super().__init__(*args, **kwargs)
 
     def __getitem__(self, index):
         start_index = index * self.batch_size
         end_index = (index + 1) * self.batch_size
         return [
-            pd.np.stack(
-               self.query_samples
-               .iloc[start_index:end_index]
-               .apply(lambda row: img_to_array(load_img(row.image_name, **self.load_img_kwargs)), axis=1)
-            ),
-            pd.np.stack(
-               self.support_samples
-               .iloc[start_index:end_index]
-               .apply(lambda row: img_to_array(load_img(row.image_name, **self.load_img_kwargs)), axis=1)
-            ),
-        ], self.targets[start_index:end_index]
+                   pd.np.stack(
+                       self.query_samples
+                       .iloc[start_index:end_index]
+                       .apply(lambda row: img_to_array(load_img(row.image_name, **self.load_img_kwargs)), axis=1)
+                   ),
+                   pd.np.stack(
+                       self.support_samples
+                       .iloc[start_index:end_index]
+                       .apply(lambda row: img_to_array(load_img(row.image_name, **self.load_img_kwargs)), axis=1)
+                   ),
+               ], self.targets[start_index:end_index]
 
     @property
     def targets(self):
         return self.query_samples.label == self.support_samples.label
-
-    def __len__(self):
-        return math.ceil(len(self.query_annotations) / self.batch_size)

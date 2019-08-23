@@ -8,8 +8,8 @@ def TripletLoss(input_shape, margin=0.1, *args, **kwargs):
     Compute the triplet loss between the query tensor and the support set
     """
     query = Input(input_shape)
-    axis = list(range(1, len(query.shape)))
     support = [Input(input_shape), Input(input_shape)]
+    axis = list(range(1, len(query.shape)))
     loss = Lambda(lambda inputs: tf.maximum(
         (
             tf.reduce_sum(tf.square(inputs[0] - inputs[1]), axis=axis) -

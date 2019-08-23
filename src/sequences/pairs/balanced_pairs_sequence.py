@@ -23,13 +23,16 @@ class BalancedPairsSequence(AbstractPairsSequence):
         if pairs_per_query % 2 == 1:
             raise ValueError('pairs_per_query should be even')
         self.pairs_per_query = pairs_per_query
+        self._support_labels = None
         super().__init__(*args, **kwargs)
         if self.batch_size % 2 == 1:
             raise ValueError(f'batch_size should be even')
 
     @property
     def support_labels(self):
-        return self.support_annotations.label.value_counts()
+        if self._support_labels is None:
+            self._support_labels = self.support_annotations.label.value_counts()
+        return self._support_labels
 
     def on_epoch_end(self):
         self.query_samples = (
