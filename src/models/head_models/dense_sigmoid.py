@@ -1,6 +1,6 @@
-from tensorflow.keras import backend as K
-from tensorflow.keras.layers import Dense, Input, Lambda
-from tensorflow.keras.models import Model
+import tensorflow as tf
+from tensorflow.python.keras.layers import Dense, Input, Lambda
+from tensorflow.python.keras.models import Model
 
 
 def DenseSigmoid(input_shape):
@@ -9,6 +9,6 @@ def DenseSigmoid(input_shape):
     """
     query = Input(input_shape)
     support = Input(input_shape)
-    abs_difference = Lambda(lambda tensors: K.abs(tensors[0] - tensors[1]))([query, support])
+    abs_difference = Lambda(lambda tensors: tf.abs(tensors[0] - tensors[1]))([query, support])
     prediction = Dense(1, activation='sigmoid')(abs_difference)
     return Model(inputs=[query, support], outputs=prediction)

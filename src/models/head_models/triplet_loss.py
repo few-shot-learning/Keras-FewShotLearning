@@ -1,5 +1,6 @@
-from tensorflow.keras import Model, backend as K
-from tensorflow.keras.layers import Input, Lambda
+import tensorflow as tf
+from tensorflow.python.keras import Model
+from tensorflow.python.keras.layers import Input, Lambda
 
 
 def TripletLoss(input_shape, margin=0.1, *args, **kwargs):
@@ -9,10 +10,10 @@ def TripletLoss(input_shape, margin=0.1, *args, **kwargs):
     query = Input(input_shape)
     axis = list(range(1, len(query.shape)))
     support = [Input(input_shape), Input(input_shape)]
-    loss = Lambda(lambda inputs: K.maximum(
+    loss = Lambda(lambda inputs: tf.maximum(
         (
-            K.sum(K.square(inputs[0] - inputs[1]), axis=axis) -
-            K.sum(K.square(inputs[0] - inputs[2]), axis=axis) +
+            tf.reduce_sum(tf.square(inputs[0] - inputs[1]), axis=axis) -
+            tf.reduce_sum(tf.square(inputs[0] - inputs[2]), axis=axis) +
             margin
         ), 0))([query, *support])
     return Model([query, *support], loss, *args, **kwargs)

@@ -1,8 +1,9 @@
 import abc
+import math
 
 import pandas as pd
-from tensorflow.keras.utils import Sequence
-from tensorflow.keras.preprocessing.image import load_img, img_to_array
+from tensorflow.python.keras.utils import Sequence
+from tensorflow.python.keras.preprocessing.image import load_img, img_to_array
 
 
 class AbstractPairsSequence(Sequence, metaclass=abc.ABCMeta):
@@ -34,12 +35,12 @@ class AbstractPairsSequence(Sequence, metaclass=abc.ABCMeta):
             pd.np.stack(
                self.query_samples
                .iloc[start_index:end_index]
-               .apply(lambda row: img_to_array(load_img(row.image_name, **self.load_img_kwargs)))
+               .apply(lambda row: img_to_array(load_img(row.image_name, **self.load_img_kwargs)), axis=1)
             ),
             pd.np.stack(
                self.support_samples
                .iloc[start_index:end_index]
-               .apply(lambda row: img_to_array(load_img(row.image_name, **self.load_img_kwargs)))
+               .apply(lambda row: img_to_array(load_img(row.image_name, **self.load_img_kwargs)), axis=1)
             ),
         ], self.targets[start_index:end_index]
 
@@ -48,4 +49,4 @@ class AbstractPairsSequence(Sequence, metaclass=abc.ABCMeta):
         return self.query_samples.label == self.support_samples.label
 
     def __len__(self):
-        return len(self.query_annotations) / self.batch_size
+        return math.ceil(len(self.query_annotations) / self.batch_size)

@@ -1,1 +1,1 @@
-from tensorflow.keras.applications import *
+from tensorflow.python.keras.applications import *

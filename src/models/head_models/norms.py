@@ -1,51 +1,45 @@
-from tensorflow.keras import Model, backend as K
-from tensorflow.keras.layers import Input, Lambda
+import tensorflow as tf
 
 
-def L1(input_shape, *args, **kwargs):
+@tf.function
+def l1(inputs):
     """
-    Compute the l1 norm between two tensors
+    Compute the l1 norm between two tensors, batch wise
     """
-    query = Input(input_shape)
-    support = Input(input_shape)
-    loss = Lambda(lambda inputs: (
-        K.sum(K.abs(inputs[0] - inputs[1]), axis=list(range(1, len(query.shape))))
-    ))([query, support])
-    return Model([query, support], loss, *args, **kwargs)
+    return (
+        tf.expand_dims(tf.reduce_sum(tf.abs(inputs[0] - inputs[1]), axis=list(range(1, len(inputs[0].shape)))), 1)
+    )
 
 
-def L2(input_shape, *args, **kwargs):
+@tf.function
+def l2(inputs):
     """
-    Compute the squared l2 norm between two tensors
+    Compute the l2 norm between two tensors, batch wise
     """
-    query = Input(input_shape)
-    support = Input(input_shape)
-    loss = Lambda(lambda inputs: (
-        K.sum(K.square(inputs[0] - inputs[1]), axis=list(range(1, len(query.shape))))
-    ))([query, support])
-    return Model([query, support], loss, *args, **kwargs)
+    return (
+        tf.expand_dims(tf.reduce_sum(tf.square(inputs[0] - inputs[1]), axis=list(range(1, len(inputs[0].shape)))), 1)
+    )
 
 
-def LInf(input_shape, *args, **kwargs):
+@tf.function
+def linf(inputs):
     """
-    Compute the infinite norm between two tensors
+    Compute the linf norm between two tensors, batch wise
     """
-    query = Input(input_shape)
-    support = Input(input_shape)
-    loss = Lambda(lambda inputs: (
-        K.max(K.abs(inputs[0] - inputs[1]), axis=list(range(1, len(query.shape))))
-    ))([query, support])
-    return Model([query, support], loss, *args, **kwargs)
+    return (
+        tf.expand_dims(tf.reduce_max(tf.abs(inputs[0] - inputs[1]), axis=list(range(1, len(inputs[0].shape)))), 1)
+    )
 
 
-def CosineSimilarity(input_shape, *args, **kwargs):
+@tf.function
+def cosine_similarity(inputs):
     """
-    Compute the squared l2 norm between two tensors
+    Compute the cosine similarity between two tensors, batch wise
     """
-    query = Input(input_shape)
-    support = Input(input_shape)
-    axis = list(range(1, len(query.shape)))
-    loss = Lambda(lambda inputs: (
-        1 - K.sum(K.l2_normalize(inputs[0], axis=axis) * K.l2_normalize(inputs[1], axis=axis), axis=axis)
-    ))([query, support])
-    return Model([query, support], loss, *args, **kwargs)
+    axis = list(range(1, len(inputs[0].shape)))
+    return tf.expand_dims(
+        1 - tf.reduce_sum(
+            tf.nn.l2_normalize(inputs[0], axis=axis) * tf.nn.l2_normalize(inputs[1], axis=axis),
+            axis=axis,
+        ), 1
+    )

@@ -8,19 +8,27 @@ class RandomBalancedPairsSequence(AbstractPairsSequence):
 
     def __init__(self, annotations, batch_size, **load_img_kwargs):
         super().__init__(annotations, batch_size, **load_img_kwargs)
-        self.support_annotations_by_label = {
+
+    @property
+    def support_annotations_by_label(self):
+        """
+        Transform pandas.GroupBy object into dict for performance reasons
+        """
+        return {
             group[0]: group[1]
             for group in self.support_annotations.groupby('label')
         }
 
     def on_epoch_end(self):
-        self.query_samples = self.query_annotations.sample(frac=1)
-        self.support_samples = self.query_samples.apply(lambda row: (
-            self.support_annotations_by_label[self.select_support_label(row)].sample(1)
-        ))
+        self.query_samples = self.query_annotations.sample(frac=1).reset_index(drop=True)
+        self.support_samples = pd.concat(
+            self.query_samples
+            .apply(lambda row: self.support_annotations_by_label[self.select_support_label(row)].sample(1), axis=1)
+            .to_list()
+        ).reset_index(drop=True)
 
     def select_support_label(self, row):
-        if row.index % 2:
+        if row.name % 2:  # name is index in original dataframe
             return row.label
-        labels = set(self.support_annotations_by_label.keys()) - set(row.label)
+        labels = set(self.support_annotations_by_label.keys()) - {row.name}
         return pd.np.random.choice(list(labels))

@@ -1,3 +1,5 @@
+import math
+
 import pandas as pd
 
 from .abstract_pairs_sequence import AbstractPairsSequence
@@ -20,11 +22,14 @@ class BalancedPairsSequence(AbstractPairsSequence):
         """
         if pairs_per_query % 2 == 1:
             raise ValueError('pairs_per_query should be even')
+        self.pairs_per_query = pairs_per_query
         super().__init__(*args, **kwargs)
         if self.batch_size % 2 == 1:
             raise ValueError(f'batch_size should be even')
-        self.support_labels = self.support_annotations.label.value_counts()
-        self.pairs_per_query = pairs_per_query
+
+    @property
+    def support_labels(self):
+        return self.support_annotations.label.value_counts()
 
     def on_epoch_end(self):
         self.query_samples = (
@@ -60,4 +65,4 @@ class BalancedPairsSequence(AbstractPairsSequence):
         return pd.concat([positive_samples, negative_samples])
 
     def __len__(self):
-        return len(self.query_annotations) * self.pairs_per_query / self.batch_size
+        return math.ceil(len(self.query_annotations) * self.pairs_per_query / self.batch_size)
