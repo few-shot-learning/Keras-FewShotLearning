@@ -3,6 +3,7 @@ appnope==0.1.0
 astor==0.8.0
 attrs==19.1.0
 bleach==1.5.0
+cycler==0.10.0
 decorator==4.4.0
 defusedxml==0.6.0
 entrypoints==0.3
@@ -23,8 +24,10 @@ jupyter-console==6.0.0
 jupyter-core==4.5.0
 Keras-Applications==1.0.8
 Keras-Preprocessing==1.1.0
+kiwisolver==1.1.0
 Markdown==3.1.1
 MarkupSafe==1.1.1
+matplotlib==3.1.1
 mistune==0.8.4
 nbconvert==5.5.0
 nbformat==4.4.0
@@ -40,6 +43,7 @@ prompt-toolkit==1.0.16
 protobuf==3.9.0
 ptyprocess==0.6.0
 Pygments==2.4.2
+pyparsing==2.4.2
 pyrsistent==0.15.4
 python-dateutil==2.8.0
 pytz==2019.1
