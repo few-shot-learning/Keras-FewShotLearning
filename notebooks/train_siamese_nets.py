@@ -7,7 +7,7 @@ from tensorflow.python.keras.layers import Conv2D, GlobalAveragePooling2D
 from tensorflow.python.keras.preprocessing.image import array_to_img
 
 from src.models import SiameseNets
-from src.sequences import BalancedPairsSequence, RandomBalancedPairsSequence, RandomPairsSequence
+from src.sequences import BalancedPairsSequence, RandomBalancedPairsSequence, RandomPairsSequence, ProtoNetsSequence
 
 # %% Generate fake data
 image_dir = Path('data') / 'images'
@@ -20,10 +20,12 @@ for i in range(10):
         ignore_index=True,
     )
 
-# %% Create light model
+# %% Create light branch model (encoder)
 branch_model = Sequential()
 branch_model.add(Conv2D(10, (3, 3), input_shape=(224, 224, 3)))
 branch_model.add(GlobalAveragePooling2D())
+
+# %% ## Train Siamese net
 model = SiameseNets(branch_model)
 model.get_layer('branch_model').summary()
 model.get_layer('head_model').summary()
@@ -43,3 +45,17 @@ model.fit_generator(train_sequence)
 train_sequence = BalancedPairsSequence(train_set, batch_size=16)
 model.compile(optimizer='Adam', loss='binary_crossentropy')
 model.fit_generator(train_sequence)
+
+# %% ## Train ProtoNets
+proto_net_parameters = {'k_shot': 1, 'n_way': 3}
+model = SiameseNets(branch_model, head_model={
+    'name': 'ProtoNets',
+    'init': proto_net_parameters
+})
+model.get_layer('branch_model').summary()
+model.get_layer('head_model').summary()
+model.summary()
+
+train_sequence = ProtoNetsSequence(train_set, batch_size=16, **proto_net_parameters)
+model.compile('sgd', 'categorical_crossentropy')
+model.fit(train_sequence)
