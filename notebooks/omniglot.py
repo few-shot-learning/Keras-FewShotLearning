@@ -28,6 +28,13 @@ embeddings = encoder.predict_generator(test_sequence, verbose=1)
 
 k_shot = 1
 n_way = 5
+support = (
+    test_set
+    .loc[lambda df: df.label.isin(test_set.label.drop_duplicates().sample(n_way))]
+    .groupby('label')
+    .apply(lambda group: group.sample(k_shot).drop('label', axis=1))
+    .reset_index('label')
+)
 query = (
     test_set
     .loc[lambda df: df.label.isin(support.label.unique())]
@@ -36,13 +43,8 @@ query = (
     .reset_index()
 )
 support = (
-    pd.concat([(
-        test_set
-        .loc[lambda df: df.label.isin(test_set.label.drop_duplicates().sample(n_way))]
-        .groupby('label')
-        .apply(lambda group: group.sample(k_shot).drop('label', axis=1))
-        .reset_index('label')
-    )] * (len(query) // k_shot // n_way))
+    support
+    .loc[lambda df: pd.np.tile(df.index, len(query) // (k_shot * n_way))]
     .reset_index()
 )
 predictions = (
@@ -51,11 +53,21 @@ predictions = (
         pd.DataFrame(head_model.predict([embeddings[query['index']], embeddings[support['index']]]), columns=['score']),
         support.add_suffix('_support'),
     ], axis=1)
-    .pivot_table(
-        values='score',
-        index=query.columns.to_list(),
-        columns=support.add_suffix('_support').columns.to_list(),
-    )
-    .assign(label_predicted=lambda df: df.idxmin(axis=1))
+)
+confusion_matrix = (
+    predictions
+    .groupby(query.columns.to_list())
+    .apply(lambda group: group.nlargest(1, columns='score').label_support)
     .reset_index()
+    .pivot_table(
+        values='image_name',
+        index='label_support',
+        columns='label',
+        aggfunc='count',
+        margins=True,
+        fill_value=0,
+    )
+    .assign(precision=lambda df: pd.np.diag(df)[:-1] / df.All[:-1])
+    .T.assign(recall=lambda df: pd.np.diag(df)[:-1] / df.All[:-2]).T
+    .assign(f1=lambda df: 2 * df.precision * df.loc['recall'] / (df.precision + df.loc['recall']))
 )
