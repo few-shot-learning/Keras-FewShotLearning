@@ -1,5 +1,3 @@
-import math
-
 import pandas as pd
 from tensorflow.python.keras.preprocessing.image import img_to_array, load_img
 
