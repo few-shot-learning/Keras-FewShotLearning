@@ -12,7 +12,10 @@ train_set = train_set.assign(label=lambda df: df.alphabet + '_' + df.label)
 test_set = test_set.assign(label=lambda df: df.alphabet + '_' + df.label)
 
 # %% Training
-model = SiameseNets({'name': 'SingleConv2D', 'init': {'input_shape': (105, 105, 3)}})
+model = SiameseNets(
+    branch_model={'name': 'SingleConv2D', 'init': {'input_shape': (105, 105, 3)}},
+    head_model='DenseSigmoid',
+)
 train_sequence = RandomPairsSequence(train_set, batch_size=16)
 model.compile(optimizer='Adam', loss='binary_crossentropy')
 model.fit_generator(train_sequence)
