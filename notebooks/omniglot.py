@@ -1,8 +1,8 @@
 import pandas as pd
 
-from datasets import omniglot
-from src.models import SiameseNets
-from src.sequences import DeterministicSequence, RandomPairsSequence
+from keras_fsl.datasets import omniglot
+from keras_fsl.models import SiameseNets
+from keras_fsl.sequences import DeterministicSequence, RandomPairsSequence
 
 # %% Get data
 train_set, test_set = omniglot.load_data()

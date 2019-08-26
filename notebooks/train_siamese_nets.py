@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 from tensorflow.python.keras.preprocessing.image import array_to_img
 
-from src.models import SiameseNets
-from src.sequences import BalancedPairsSequence, RandomBalancedPairsSequence, RandomPairsSequence, ProtoNetsSequence
+from keras_fsl.models import SiameseNets
+from keras_fsl.sequences import BalancedPairsSequence, RandomBalancedPairsSequence, RandomPairsSequence, ProtoNetsSequence
 
 # %% Generate fake data
 image_dir = Path('data') / 'images'

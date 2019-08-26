@@ -1,7 +1,7 @@
 from tensorflow.python.keras import Model
 from tensorflow.python.keras.layers import Input
 
-from src.models import branch_models, head_models
+from keras_fsl.models import branch_models, head_models
 
 
 def SiameseNets(

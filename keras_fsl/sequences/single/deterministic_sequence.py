@@ -1,7 +1,7 @@
 import pandas as pd
 from tensorflow.python.keras.preprocessing.image import img_to_array, load_img
 
-from src.sequences.abstract_sequence import AbstractSequence
+from keras_fsl.sequences.abstract_sequence import AbstractSequence
 
 
 class DeterministicSequence(AbstractSequence):
