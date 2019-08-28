@@ -5,7 +5,8 @@ from tensorflow.python.keras.models import Model
 
 def DenseSigmoid(input_shape):
     """
-    Add a Dense layer on top of the coordinate-wise abs difference between the embeddings
+    Add a Dense layer on top of the coordinate-wise abs difference between the embeddings.
+    Similar to original [SiameseNets paper](https://www.cs.cmu.edu/~rsalakhu/papers/oneshot1.pdf)
     """
     query = Input(input_shape)
     support = Input(input_shape)

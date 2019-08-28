@@ -5,8 +5,8 @@ from keras_fsl.models import branch_models, head_models
 
 
 def SiameseNets(
-    branch_model='ResNet50',
-    head_model='Norm',
+    branch_model='KochNet',
+    head_model='DenseSigmoid',
     *args,
     weights=None,
     **kwargs,
