@@ -1,5 +1,16 @@
 from tensorflow.python.keras import Sequential, Input
 from tensorflow.python.keras.layers import Conv2D, MaxPooling2D, Dense, Flatten
+from tensorflow.python.keras.initializers import RandomNormal
+from tensorflow.python.keras.regularizers import l2
+
+
+def conv_2d(*args, **kwargs):
+    return Conv2D(
+        *args, **kwargs,
+        kernel_initializer=RandomNormal(0.0, 0.01),
+        bias_initializer=RandomNormal(0.5, 0.01),
+        kernel_regularizer=l2()
+    )
 
 
 def KochNet(input_shape=(105, 105, 3)):
@@ -10,14 +21,19 @@ def KochNet(input_shape=(105, 105, 3)):
 
     model = Sequential(name='koch_net')
     model.add(Input(input_shape))
-    model.add(Conv2D(64, (10, 10)))
+    model.add(conv_2d(64, (10, 10)))
     model.add(MaxPooling2D())
-    model.add(Conv2D(128, (7, 7), activation='relu'))
+    model.add(conv_2d(128, (7, 7), activation='relu'))
     model.add(MaxPooling2D())
-    model.add(Conv2D(128, (4, 4), activation='relu'))
+    model.add(conv_2d(128, (4, 4), activation='relu'))
     model.add(MaxPooling2D())
-    model.add(Conv2D(256, (4, 4), activation='relu'))
+    model.add(conv_2d(256, (4, 4), activation='relu'))
     model.add(Flatten())
-    model.add(Dense(4096, activation='sigmoid'))
+    model.add(Dense(
+        4096,
+        activation='sigmoid',
+        kernel_initializer=RandomNormal(0.0, 0.2),
+        bias_initializer=RandomNormal(0.5, 0.01),
+    ))
 
     return model

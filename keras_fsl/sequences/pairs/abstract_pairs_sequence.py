@@ -1,5 +1,4 @@
 import pandas as pd
-from tensorflow.python.keras.preprocessing.image import img_to_array, load_img
 
 from keras_fsl.sequences.abstract_sequence import AbstractSequence
 
@@ -24,18 +23,10 @@ class AbstractPairsSequence(AbstractSequence):
         start_index = index * self.batch_size
         end_index = (index + 1) * self.batch_size
         return [
-                   pd.np.stack(
-                       self.query_samples
-                       .iloc[start_index:end_index]
-                       .apply(lambda row: img_to_array(load_img(row.image_name, **self.load_img_kwargs)), axis=1)
-                   ),
-                   pd.np.stack(
-                       self.support_samples
-                       .iloc[start_index:end_index]
-                       .apply(lambda row: img_to_array(load_img(row.image_name, **self.load_img_kwargs)), axis=1)
-                   ),
+                   self.load_img(self.query_samples.iloc[start_index:end_index]),
+                   self.load_img(self.support_samples.iloc[start_index:end_index]),
                ], self.targets[start_index:end_index]
 
     @property
     def targets(self):
-        return self.query_samples.label == self.support_samples.label
+        return self.query_samples.label.equals(self.support_samples.label)

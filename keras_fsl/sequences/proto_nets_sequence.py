@@ -1,5 +1,4 @@
 import numpy as np
-from tensorflow.python.keras.preprocessing.image import img_to_array, load_img
 
 from keras_fsl.sequences.abstract_sequence import AbstractSequence
 
@@ -26,9 +25,6 @@ class ProtoNetsSequence(AbstractSequence):
         ]
         targets = np.stack(query.label.map(lambda label: label == selected_labels)).astype(int)
         return [
-            np.stack(
-                item
-                .apply(lambda row: img_to_array(load_img(row.image_name, **self.load_img_kwargs)), axis=1)
-            )
-            for item in [query, *support]
+            self.load_img(dataframe)
+            for dataframe in [query, *support]
         ], targets
