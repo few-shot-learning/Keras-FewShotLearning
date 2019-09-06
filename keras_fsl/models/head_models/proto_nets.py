@@ -5,10 +5,11 @@ from tensorflow.python.keras.layers import Lambda, Flatten, Activation, Concaten
 
 def ProtoNets(input_shape, k_shot=5, n_way=5, **kwargs):
     """
+    Head model defining a [Protypical networks](https://arxiv.org/pdf/1703.05175.pdf)
 
     Args:
         input_shape (Union[list, tuple]): input_shape to be passed to Input layer
-        k_shot (int): number of images per classe in the support set
+        k_shot (int): number of images per class in the support set
         n_way: (int): number of classes in the support set
         **kwargs: all other kwargs are passed to tf.norm. Should be used to specify another norm with ord='l1'
             for instance

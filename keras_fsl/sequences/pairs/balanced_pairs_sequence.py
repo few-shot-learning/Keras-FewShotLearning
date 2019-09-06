@@ -43,7 +43,7 @@ class BalancedPairsSequence(AbstractPairsSequence):
         )
         self.query_samples = (
             self.query_samples
-            .iloc[pd.np.repeat(self.query_annotations.index, self.pairs_per_query)]
+            .loc[lambda df: df.index.repeat(self.pairs_per_query)]
             .reset_index(drop=True)
         )
 
