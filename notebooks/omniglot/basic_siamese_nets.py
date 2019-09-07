@@ -1,4 +1,5 @@
 #%%
+from pathlib import Path
 from unittest.mock import patch
 
 import imgaug.augmenters as iaa
@@ -11,9 +12,6 @@ from keras_fsl.models import SiameseNets
 from keras_fsl.sequences import (
     DeterministicSequence,
     RandomBalancedPairsSequence,
-    BalancedPairsSequence,
-    RandomPairsSequence,
-    ProtoNetsSequence,
 )
 from keras_fsl.utils import patch_len, default_workers
 # prevent issue with multiprocessing and long sequences, see https://github.com/keras-team/keras/issues/13226
@@ -34,7 +32,8 @@ test_set = test_set.assign(label=lambda df: df.alphabet + '_' + df.label)
 siamese_nets = SiameseNets()
 val_set = train_set.sample(frac=0.3, replace=False)
 train_set = train_set.loc[lambda df: ~df.index.isin(val_set.index)]
-callbacks = [TensorBoard(), ModelCheckpoint('logs/siamese_nets/best_weights.h5')]
+callbacks = [TensorBoard(), ModelCheckpoint('logs/proto_nets/best_weights.h5')]
+(Path('logs') / 'proto_nets').mkdir(parents=True, exist_ok=True)
 preprocessing = iaa.Sequential([
     iaa.Affine(
         translate_percent={'x': (-0.2, 0.2), 'y': (-0.2, 0.2)},
@@ -51,9 +50,10 @@ Model.fit_generator(  # to use patched fit_generator, see first cell
     train_sequence,
     validation_data=val_sequence,
     callbacks=callbacks,
-    epochs=1,
-    steps_per_epoch=10,
-    validation_steps=2,
+    epochs=100,
+    steps_per_epoch=1000,
+    validation_steps=200,
+    use_multiprocessing=True,
 )
 
 #%% Prediction

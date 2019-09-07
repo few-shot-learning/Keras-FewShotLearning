@@ -30,7 +30,15 @@ train_set = train_set.assign(label=lambda df: df.alphabet + '_' + df.label)
 test_set = test_set.assign(label=lambda df: df.alphabet + '_' + df.label)
 
 #%% Training ProtoNets
-proto_nets = SiameseNets('VinyalsNet', 'ProtoNets')
+k_shot = 5
+n_way = 60
+proto_nets = SiameseNets(
+    branch_model='VinyalsNet',
+    head_model={
+        'name': 'ProtoNets',
+        'init': {'k_shot': k_shot, 'n_way': n_way}
+    },
+)
 val_set = train_set.sample(frac=0.3, replace=False)
 train_set = train_set.loc[lambda df: ~df.index.isin(val_set.index)]
 callbacks = [TensorBoard(), ModelCheckpoint('logs/proto_nets/best_weights.h5')]
@@ -44,7 +52,7 @@ preprocessing = iaa.Sequential([
 ])
 train_sequence = ProtoNetsSequence(
     train_set,
-    n_way=60,
+    n_way=n_way,
     preprocessing=preprocessing,
     batch_size=16,
     target_size=(28, 28, 3),
@@ -57,9 +65,10 @@ Model.fit_generator(  # to use patched fit_generator, see first cell
     train_sequence,
     validation_data=val_sequence,
     callbacks=callbacks,
-    epochs=1,
+    epochs=100,
     steps_per_epoch=1000,
     validation_steps=200,
+    use_multiprocessing=True,
 )
 
 #%% Prediction
