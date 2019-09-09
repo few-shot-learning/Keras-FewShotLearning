@@ -1,4 +1,5 @@
 #%%
+import logging
 from pathlib import Path
 from unittest.mock import patch
 
@@ -7,6 +8,7 @@ import numpy as np
 import pandas as pd
 from tensorflow.python.keras.callbacks import ModelCheckpoint, TensorBoard
 from tensorflow.python.keras import Model
+from tensorflow.python.keras.saving import load_model
 
 from keras_fsl.datasets import omniglot
 from keras_fsl.models import SiameseNets
@@ -21,6 +23,7 @@ patch_fit_generator = patch(
     side_effect=default_workers(patch_len(Model.fit_generator)),
 )
 patch_fit_generator.start()
+logging.getLogger('tensorflow').setLevel(logging.ERROR)
 
 #%% Get data
 train_set, test_set = omniglot.load_data()
@@ -31,7 +34,7 @@ test_set = test_set.assign(label=lambda df: df.alphabet + '_' + df.label)
 
 #%% Training ProtoNets
 k_shot = 5
-n_way = 60
+n_way = 5
 proto_nets = SiameseNets(
     branch_model='VinyalsNet',
     head_model={
@@ -72,6 +75,7 @@ Model.fit_generator(  # to use patched fit_generator, see first cell
 )
 
 #%% Prediction
+proto_nets = load_model('logs/proto_nets/best_weights.h5')
 encoder = proto_nets.get_layer('branch_model')
 head_model = proto_nets.get_layer('head_model')
 test_sequence = DeterministicSequence(test_set, batch_size=16, target_size=(28, 28, 3))
