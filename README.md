@@ -1,14 +1,14 @@
 # Welcome to Keras-FewShotLearning!
 
-As years come and go, Few Shot Learning (FSL) is becoming a hot topic not only in academic papers but also in production
+As years go by, Few Shot Learning (FSL) is becoming a hot topic not only in academic papers but also in production
 applications.
 
 While a lot of researcher nowadays tend to publish their code on github, there is still no easy framework to get
 started with FSL. Especially when it comes to benchmarking existing models on personal datasets it is not always easy
 to find its path into each single repo. Not mentioning the Tensorflow/PyTorch issue.
 
-This repo aims to fill this gap by providing a single entry-point for Few Shot Learning. It is deeply inspired by Keras
-because it shares the same philosophy:
+This repo aims at filling this gap by providing a single entry-point for Few Shot Learning. It is deeply inspired by
+Keras because it shares the same philosophy:
 
 > It was developed with a focus on enabling fast experimentation.
 > Being able to go from idea to result with the least possible delay is key to doing good research.
@@ -19,7 +19,7 @@ applications when you always need to tinker with your data.
 
 ## Few-Shot Learning
 
-Few-shot learning is a task consisting in classifying unseen samples into n classes (so called n way task) where each
+Few-shot learning is a task consisting in classifying unseen samples into _n_ classes (so called n way task) where each
 classes is only described with few (from 1 to 5 in usual benchmarks) examples.
 
 Most of the state-of-the-art algorithms
@@ -28,7 +28,7 @@ base images into a feature space onto which a _distance_ or _similarity_ is lear
 
 Amongst other, the Siamese Nets is usually known as the network from [Koch et al.](https://www.cs.cmu.edu/~rsalakhu/papers/oneshot1.pdf)
 This algorithm learns a pair-wise similarity between images. More precisely it uses a densely connected layers on top
-of the difference between the two encodings to predict 0 (different) or 1 (same).
+of the difference between the two embeddings to predict 0 (different) or 1 (same).
 
 In this repo we have called Siamese nets all the algorithms built within the same framework, i.e. choosing a backbone
 and a _head model_ to evaluate the embeddings. In this context the well known [Protypical networks](https://arxiv.org/pdf/1703.05175.pdf)
@@ -43,14 +43,14 @@ This repos provides several tools for few-shot learning:
  - Keras callbacks to monitor the trainings
  
 All these tools can be used all together or separately. One may want to stick with the keras model trained on regular
-numpy arrays, with or without callbacks. When designing more advanced keras.Sequence for training, it is advised (and
+numpy arrays, with or without callbacks. When designing more advanced `keras.Sequence` for training, it is advised (and
 some examples are provided) to use Pandas though it is not necessary at all.
 
 We think that fast experimentation requires the good level of modularity. Modularity means that the flow of operations
 should be described as a sequence of operations with well defined interfaces. Furthermore you should be able to change
 or update any of these single operations without changing anything else. For these reasons we think that stacked Layers
-as well as stacked (chained) Pandas operations are the right way of building ML pipelines. Feel free to experiment and
-share your thought on this repo by contributing to it! 
+as well as stacked (chained) Pandas operations are the right way of building ML pipelines. In this context we also rely
+on ImgAug for preprocessing the data. Feel free to experiment and share your thought on this repo by contributing to it! 
 
 ## Getting started
 
