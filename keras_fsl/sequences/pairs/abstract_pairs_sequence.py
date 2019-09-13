@@ -29,4 +29,4 @@ class AbstractPairsSequence(AbstractSequence):
 
     @property
     def targets(self):
-        return self.query_samples.label == self.support_samples.label
+        return (self.query_samples.label == self.support_samples.label).astype(int)
