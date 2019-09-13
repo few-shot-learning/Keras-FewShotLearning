@@ -1,6 +1,15 @@
 import tensorflow as tf
-from tensorflow.python.keras.layers import Input, Concatenate, Lambda, Reshape, Flatten, Conv2D, Dense
-from tensorflow.python.keras.models import Model
+from tensorflow.python.keras.layers import (
+    Concatenate,
+    Conv2D,
+    Dense,
+    Flatten,
+    GlobalAveragePooling2D,
+    Input,
+    Lambda,
+    Reshape,
+)
+from tensorflow.python.keras.models import Model, Sequential
 
 
 def MixedNorms(input_shape, norms=None):
@@ -23,12 +32,16 @@ def MixedNorms(input_shape, norms=None):
 
     query = Input(input_shape)
     support = Input(input_shape)
-    prediction = Concatenate()([Lambda(norm)([query, support]) for norm in norms])
-    prediction = Reshape((len(norms), input_shape[0], 1), name='reshape1')(prediction)
+    inputs = [
+        GlobalAveragePooling2D()(query),
+        GlobalAveragePooling2D()(support),
+    ]
+    prediction = Concatenate()([Lambda(norm)(inputs) for norm in norms])
+    prediction = Reshape((len(norms), inputs[0].shape[1], 1), name='reshape1')(prediction)
 
     # Per feature NN with shared weight is implemented using CONV2D with appropriate stride.
     prediction = Conv2D(32, (len(norms), 1), activation='relu', padding='valid')(prediction)
-    prediction = Reshape((input_shape[0], 32, 1))(prediction)
+    prediction = Reshape((inputs[0].shape[1], 32, 1))(prediction)
     prediction = Conv2D(1, (1, 32), activation='linear', padding='valid')(prediction)
     prediction = Flatten(name='flatten')(prediction)
 

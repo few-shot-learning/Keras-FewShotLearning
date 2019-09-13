@@ -6,6 +6,7 @@ import imgaug.augmenters as iaa
 import pandas as pd
 from tensorflow.python.keras.callbacks import ModelCheckpoint, TensorBoard
 from tensorflow.python.keras import Model
+from tensorflow.python.keras.saving import load_model
 
 from keras_fsl.datasets import omniglot
 from keras_fsl.models import SiameseNets
@@ -29,11 +30,18 @@ train_set = train_set.assign(label=lambda df: df.alphabet + '_' + df.label)
 test_set = test_set.assign(label=lambda df: df.alphabet + '_' + df.label)
 
 #%% Training basic SiameseNets
+output_path = Path('logs') / 'koch_nets'
+output_path.mkdir(parents=True, exist_ok=True)
 siamese_nets = SiameseNets()
 val_set = train_set.sample(frac=0.3, replace=False)
 train_set = train_set.loc[lambda df: ~df.index.isin(val_set.index)]
-callbacks = [TensorBoard(), ModelCheckpoint('logs/proto_nets/best_weights.h5')]
-(Path('logs') / 'proto_nets').mkdir(parents=True, exist_ok=True)
+callbacks = [
+    TensorBoard(output_path),
+    ModelCheckpoint(
+        str(output_path / 'best_model.h5'),
+        save_best_only=True,
+    ),
+]
 preprocessing = iaa.Sequential([
     iaa.Affine(
         translate_percent={'x': (-0.2, 0.2), 'y': (-0.2, 0.2)},
@@ -57,6 +65,7 @@ Model.fit_generator(  # to use patched fit_generator, see first cell
 )
 
 #%% Prediction
+siamese_nets = load_model(output_path / 'best_model.h5')
 encoder = siamese_nets.get_layer('branch_model')
 head_model = siamese_nets.get_layer('head_model')
 test_sequence = DeterministicSequence(test_set, batch_size=16)

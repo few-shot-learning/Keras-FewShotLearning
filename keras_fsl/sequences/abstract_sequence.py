@@ -41,10 +41,12 @@ class AbstractSequence(Sequence, metaclass=ABCMeta):
         return self._support_labels
 
     def load_img(self, input_dataframe):
-        return self.preprocessing.augment_images(pd.np.stack(
+        return pd.np.stack(
             input_dataframe
             .apply(
-                lambda row: img_to_array(load_img(row.image_name, **self.load_img_kwargs)),
+                lambda row: (
+                    self.preprocessing.augment_image(img_to_array(load_img(row.image_name, **self.load_img_kwargs)))
+                ),
                 axis=1,
             )
-        ))
+        )
