@@ -1,11 +1,11 @@
 #%%
+import os
 from pathlib import Path
-from unittest.mock import patch
 
 import imgaug.augmenters as iaa
 import pandas as pd
-from tensorflow.python.keras.callbacks import ModelCheckpoint, TensorBoard
-from tensorflow.python.keras import Model
+from tensorflow.python.keras.callbacks import ModelCheckpoint, TensorBoard, ReduceLROnPlateau, EarlyStopping
+from tensorflow.python.keras.optimizer_v2.adam import Adam
 from tensorflow.python.keras.saving import load_model
 
 from keras_fsl.datasets import omniglot
@@ -14,13 +14,6 @@ from keras_fsl.sequences import (
     DeterministicSequence,
     RandomBalancedPairsSequence,
 )
-from keras_fsl.utils import patch_len, default_workers
-# prevent issue with multiprocessing and long sequences, see https://github.com/keras-team/keras/issues/13226
-patch_fit_generator = patch(
-    'tensorflow.keras.Model.fit_generator',
-    side_effect=default_workers(patch_len(Model.fit_generator)),
-)
-patch_fit_generator.start()
 
 #%% Get data
 train_set, test_set = omniglot.load_data()
@@ -41,6 +34,8 @@ callbacks = [
         str(output_path / 'best_model.h5'),
         save_best_only=True,
     ),
+    ReduceLROnPlateau(verbose=1),
+    EarlyStopping(patience=10),
 ]
 preprocessing = iaa.Sequential([
     iaa.Affine(
@@ -49,19 +44,18 @@ preprocessing = iaa.Sequential([
         shear=(-0.8, 1.2),
     )
 ])
-train_sequence = RandomBalancedPairsSequence(train_set, preprocessing=preprocessing, batch_size=16)
-val_sequence = RandomBalancedPairsSequence(val_set, batch_size=16)
+train_sequence = RandomBalancedPairsSequence(train_set, preprocessing=preprocessing, batch_size=128)
+val_sequence = RandomBalancedPairsSequence(val_set, preprocessing=preprocessing, batch_size=128)
 
-siamese_nets.compile(optimizer='Adam', loss='binary_crossentropy')
-Model.fit_generator(  # to use patched fit_generator, see first cell
-    siamese_nets,
+optimizer = Adam(1e-4)
+siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
+siamese_nets.fit_generator(
     train_sequence,
     validation_data=val_sequence,
     callbacks=callbacks,
-    epochs=100,
-    steps_per_epoch=1000,
-    validation_steps=200,
+    epochs=150,
     use_multiprocessing=True,
+    workers=os.cpu_count(),
 )
 
 #%% Prediction
@@ -116,4 +110,3 @@ confusion_matrix = (
     .T.assign(recall=lambda df: pd.np.diag(df)[:-1] / df.All[:-2]).T
     .assign(f1=lambda df: 2 * df.precision * df.loc['recall'] / (df.precision + df.loc['recall']))
 )
-
