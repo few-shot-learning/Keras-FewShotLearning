@@ -6,9 +6,8 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import yaml
-import tensorflow.keras.backend as K
 from tensorflow.python.keras.applications.imagenet_utils import preprocess_input
-from tensorflow.python.keras.callbacks import ModelCheckpoint, TensorBoard, ReduceLROnPlateau, LearningRateScheduler
+from tensorflow.python.keras.callbacks import ModelCheckpoint, TensorBoard, ReduceLROnPlateau
 from tensorflow.python.keras.optimizer_v2.adam import Adam
 
 from keras_fsl.models import SiameseNets
@@ -65,11 +64,11 @@ callbacks = [
         save_best_only=True,
     ),
     ReduceLROnPlateau(),
-    LearningRateScheduler(lambda epoch, lr: 1e-5 if epoch > 10 else 1e-4),
 ]
 
-optimizer = Adam(lr=1e-4)
 siamese_nets.get_layer('branch_model').trainable = False
+
+optimizer = Adam(lr=1e-4)
 siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
 siamese_nets.fit_generator(
     train_sequence,
@@ -85,7 +84,7 @@ branch_depth = len(siamese_nets.get_layer('branch_model').layers)
 for layer in siamese_nets.get_layer('branch_model').layers[:int(branch_depth * 0.8)]:
     layer.trainable = False
 
-K.set_value(optimizer.lr, 1e-5)
+optimizer = Adam(1e-5)
 siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
 siamese_nets.fit_generator(
     train_sequence,
@@ -100,7 +99,7 @@ siamese_nets.fit_generator(
 for layer in siamese_nets.get_layer('branch_model').layers[int(branch_depth * 0.5):]:
     layer.trainable = False
 
-K.set_value(optimizer.lr, 1e-5)
+optimizer = Adam(1e-5)
 siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
 siamese_nets.fit_generator(
     train_sequence,
@@ -114,7 +113,7 @@ siamese_nets.fit_generator(
 
 # %% Eval on test set
 k_shot = 3
-n_way = 5
+n_way = 10
 n_episode = 100
 test_sequence = DeterministicSequence(test_set, preprocessing=preprocessing, batch_size=16)
 embeddings = siamese_nets.get_layer('branch_model').predict_generator(test_sequence)

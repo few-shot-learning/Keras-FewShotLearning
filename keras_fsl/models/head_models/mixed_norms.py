@@ -9,7 +9,7 @@ from tensorflow.python.keras.layers import (
     Lambda,
     Reshape,
 )
-from tensorflow.python.keras.models import Model, Sequential
+from tensorflow.python.keras.models import Model
 
 
 def MixedNorms(input_shape, norms=None):
