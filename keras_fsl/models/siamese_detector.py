@@ -7,7 +7,7 @@ from keras_fsl.models import branch_models, head_models
 
 
 def SiameseDetector(
-    branch_model='MobileNet',
+    branch_model='Darknet7',
     head_model='DenseSigmoid',
     *args,
     weights=None,
@@ -37,12 +37,15 @@ def SiameseDetector(
 
     query = Input(shape=branch_model.input_shape[1:], name='query')
     supports = [Input(shape=catalog_input_shape, name=f'support_{i}') for i in range(1, len(head_model.inputs))]
+
     query_embedding = Lambda(lambda x: tf.reshape(x, (-1, embedding_dimension)))(branch_model(query))
     supports_embeddings = [
         Lambda(lambda x: tf.tile(x, (output_grid_size.prod(), 1)))(Flatten()(branch_model(input_)))
         for input_ in supports
     ]
-    output = head_model([query_embedding, *supports_embeddings])
+    scores = head_model([query_embedding, *supports_embeddings])
+
+    output = Lambda(lambda x: tf.reshape(x, (-1, *output_grid_size, embedding_dimension)))(scores)
 
     model = Model([query, *supports], output, *args, **kwargs)
     if weights is not None:

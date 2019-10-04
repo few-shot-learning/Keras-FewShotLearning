@@ -35,7 +35,7 @@ def residual_block(input_shape, num_filters, num_blocks):
     return Model(x, y)
 
 
-def Darknet53(input_shape, *args, **kwargs):
+def Darknet53(input_shape=(224, 224, 3), *args, **kwargs):
     x = Input(input_shape)
     y = conv_block(32, (3, 3))(x)  # 1
     y = residual_block(y.shape[1:], 64, 1)(y)  # 4
@@ -46,7 +46,7 @@ def Darknet53(input_shape, *args, **kwargs):
     return Model(x, y, *args, **kwargs)
 
 
-def Darknet7(input_shape, *args, **kwargs):
+def Darknet7(input_shape=(224, 224, 3), *args, **kwargs):
     """
     Backbone of tiny YOLO
     """
