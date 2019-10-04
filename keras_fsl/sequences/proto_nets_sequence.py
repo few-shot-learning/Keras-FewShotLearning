@@ -25,6 +25,6 @@ class ProtoNetsSequence(AbstractSequence):
         ]
         targets = np.stack(query.label.map(lambda label: label == selected_labels)).astype(int)
         return [
-            self.load_img(dataframe)
+            self.load_query_img(dataframe)
             for dataframe in [query, *support]
         ], targets

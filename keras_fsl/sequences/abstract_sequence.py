@@ -28,7 +28,10 @@ class AbstractSequence(Sequence, metaclass=ABCMeta):
         self.load_img_kwargs = load_img_kwargs
         self.batch_size = batch_size
         self._support_labels = None
-        self.preprocessing = preprocessing if preprocessing is not None else iaa.Sequential()
+        if not isinstance(preprocessing, list):
+            preprocessing = [preprocessing]
+        self.query_preprocessing = preprocessing[0] if preprocessing[0] is not None else iaa.Sequential()
+        self.support_preprocessing = preprocessing[-1] if preprocessing[-1] is not None else iaa.Sequential()
         self.on_epoch_end()
 
     def __len__(self):
@@ -40,13 +43,18 @@ class AbstractSequence(Sequence, metaclass=ABCMeta):
             self._support_labels = self.support_annotations.label.value_counts()
         return self._support_labels
 
-    def load_img(self, input_dataframe):
+    def load_query_img(self, input_dataframe):
         return pd.np.stack(
             input_dataframe
-            .apply(
-                lambda row: (
-                    self.preprocessing.augment_image(img_to_array(load_img(row.image_name, **self.load_img_kwargs)))
-                ),
-                axis=1,
-            )
+            .apply(lambda row: (
+                self.query_preprocessing.augment_image(img_to_array(load_img(row.image_name, **self.load_img_kwargs)))
+            ), axis=1)
+        )
+
+    def load_support_img(self, input_dataframe):
+        return pd.np.stack(
+            input_dataframe
+            .apply(lambda row: (
+                self.support_preprocessing.augment_image(img_to_array(load_img(row.image_name, **self.load_img_kwargs)))
+            ), axis=1)
         )

@@ -23,8 +23,8 @@ class AbstractPairsSequence(AbstractSequence):
         start_index = index * self.batch_size
         end_index = (index + 1) * self.batch_size
         return [
-                   self.load_img(self.query_samples.iloc[start_index:end_index]),
-                   self.load_img(self.support_samples.iloc[start_index:end_index]),
+                   self.load_query_img(self.query_samples.iloc[start_index:end_index]),
+                   self.load_support_img(self.support_samples.iloc[start_index:end_index]),
                ], self.targets[start_index:end_index]
 
     @property
