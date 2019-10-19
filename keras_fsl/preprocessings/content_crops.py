@@ -1,6 +1,6 @@
 import imgaug.augmenters as iaa
 
-from .augmenters import imagenet
+from keras_fsl.preprocessings.augmenters.imagenet import imagenet
 
 
 def content_crops():
