@@ -22,11 +22,19 @@ class AbstractPairsSequence(AbstractSequence):
     def __getitem__(self, index):
         start_index = index * self.batch_size
         end_index = (index + 1) * self.batch_size
-        return [
-                   self.load_query_img(self.query_samples.iloc[start_index:end_index]),
-                   self.load_support_img(self.support_samples.iloc[start_index:end_index]),
-               ], self.targets[start_index:end_index]
+        query_images, query_keypoints = self.query_preprocessing(
+            images=self.load_img(self.query_samples.iloc[start_index:end_index]),
+            keypoints=self.query_samples.iloc[start_index:end_index].center.tolist()[:, pd.np.newaxis, :],
+        )
+        support_images = self.support_preprocessing(
+            images=self.load_img(self.support_samples.iloc[start_index:end_index])
+        )
+        targets = pd.np.stack([
+            kp.to_keypoint_image().clip(max=1).squeeze() * self.targets[start_index:end_index][i].astype(int)
+            for i, kp in enumerate(query_keypoints)
+        ])
+        return [query_images, support_images], targets
 
     @property
     def targets(self):
-        return (self.query_samples.label == self.support_samples.label).astype(int)
+        return self.query_samples.label == self.support_samples.label

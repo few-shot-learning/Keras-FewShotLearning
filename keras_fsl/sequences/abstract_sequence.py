@@ -5,6 +5,7 @@ import pandas as pd
 import imgaug.augmenters as iaa
 from tensorflow.python.keras.preprocessing.image import img_to_array, load_img
 from tensorflow.python.keras.utils import Sequence
+from keras_fsl.annotations.flows import CoordinatesToImgAug
 
 
 class AbstractSequence(Sequence, metaclass=ABCMeta):
@@ -19,8 +20,8 @@ class AbstractSequence(Sequence, metaclass=ABCMeta):
         """
         if not isinstance(annotations, list):
             annotations = [annotations]
-        self.query_annotations = annotations[0]
-        self.support_annotations = annotations[-1]
+        self.query_annotations = CoordinatesToImgAug(annotations[0])
+        self.support_annotations = CoordinatesToImgAug(annotations[-1])
         self.support_annotations_by_label = {
             group[0]: group[1]
             for group in self.support_annotations.groupby('label')
@@ -43,18 +44,9 @@ class AbstractSequence(Sequence, metaclass=ABCMeta):
             self._support_labels = self.support_annotations.label.value_counts()
         return self._support_labels
 
-    def load_query_img(self, input_dataframe):
-        return pd.np.stack(
+    def load_img(self, input_dataframe):
+        return (
             input_dataframe
-            .apply(lambda row: (
-                self.query_preprocessing.augment_image(img_to_array(load_img(row.image_name, **self.load_img_kwargs)))
-            ), axis=1)
-        )
-
-    def load_support_img(self, input_dataframe):
-        return pd.np.stack(
-            input_dataframe
-            .apply(lambda row: (
-                self.support_preprocessing.augment_image(img_to_array(load_img(row.image_name, **self.load_img_kwargs)))
-            ), axis=1)
+            .image_name
+            .map(lambda image_name: img_to_array(load_img(image_name, **self.load_img_kwargs)))
         )
