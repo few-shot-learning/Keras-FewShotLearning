@@ -6,16 +6,21 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import yaml
-from tensorflow.python.keras.applications.imagenet_utils import preprocess_input
+from tensorflow.python.keras import Sequential
+from tensorflow.python.keras.applications.mobilenet import preprocess_input
 from tensorflow.python.keras.callbacks import ModelCheckpoint, TensorBoard, ReduceLROnPlateau
+from tensorflow.python.keras.layers import GlobalAveragePooling2D, Dense
 from tensorflow.python.keras.optimizer_v2.adam import Adam
 
 from keras_fsl.models import SiameseNets
 from keras_fsl.sequences.training.pairs import RandomBalancedPairsSequence, BalancedPairsSequence
+from keras_fsl.sequences.training.single import DeterministicSequence
 from keras_fsl.sequences.prediction.pairs import ProductSequence
-from keras_fsl.sequences.prediction.single import DeterministicSequence
 
 #%% Init data
+output_path = Path('logs') / 'content_crops' / 'siamese_mixed_norms'
+output_path.mkdir(parents=True, exist_ok=True)
+
 all_annotations = (
     pd.read_csv('data/annotations/cropped_images.csv')
     .assign(
@@ -27,6 +32,8 @@ train_val_test_split = yaml.safe_load(open('data/annotations/cropped_images_spli
 train_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['train_set_dates'])]
 val_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['val_set_dates'])]
 test_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['test_set_dates'])].reset_index(drop=True)
+
+# %% Init model
 preprocessing = iaa.Sequential([
     iaa.Fliplr(0.5),
     iaa.Flipud(0.5),
@@ -37,11 +44,6 @@ preprocessing = iaa.Sequential([
     iaa.Lambda(lambda images_list, *_: preprocess_input(np.stack(images_list), data_format='channels_last')),
 ])
 
-# %% Init model
-train_sequence = RandomBalancedPairsSequence(train_set, preprocessings=preprocessing, batch_size=16)
-val_sequence = RandomBalancedPairsSequence(val_set, preprocessings=preprocessing, batch_size=16)
-output_path = Path('logs') / 'content_crops' / 'siamese_mixed_norms'
-output_path.mkdir(parents=True, exist_ok=True)
 siamese_nets = SiameseNets(
     branch_model={
         'name': 'MobileNet',
@@ -59,6 +61,45 @@ siamese_nets = SiameseNets(
         }
     }
 )
+
+# %% Pre-train branch_model as usual classifier on big classes
+callbacks = [
+    TensorBoard(output_path / 'branch_model'),
+    ModelCheckpoint(
+        str(output_path / 'branch_model' / 'best_model.h5'),
+        save_best_only=True,
+    ),
+    ReduceLROnPlateau(),
+]
+branch_model_train_set = (
+    train_set
+    .groupby('label')
+    .filter(lambda group: len(group) > 100)
+)
+branch_model_val_set = (
+    val_set
+    .loc[lambda df: df.label.isin(branch_model_train_set.label.unique())]
+)
+train_sequence = DeterministicSequence(branch_model_train_set, preprocessings=preprocessing, batch_size=16)
+val_sequence = DeterministicSequence(branch_model_val_set, preprocessings=preprocessing, batch_size=16)
+
+branch_classifier = Sequential([
+    siamese_nets.get_layer('branch_model'),
+    GlobalAveragePooling2D(),
+    Dense(len(branch_model_train_set.label.unique())),
+])
+optimizer = Adam(lr=1e-5)
+branch_classifier.compile(optimizer=optimizer, loss='categorical_crossentropy')
+branch_classifier.fit_generator(
+    train_sequence,
+    validation_data=val_sequence,
+    callbacks=callbacks,
+    epochs=10,
+    use_multiprocessing=True,
+    workers=5,
+)
+
+# %% Train model
 callbacks = [
     TensorBoard(output_path),
     ModelCheckpoint(
@@ -67,21 +108,17 @@ callbacks = [
     ),
     ReduceLROnPlateau(),
 ]
+train_sequence = RandomBalancedPairsSequence(train_set, preprocessings=preprocessing, batch_size=16)
+val_sequence = RandomBalancedPairsSequence(val_set, preprocessings=preprocessing, batch_size=16)
 
-# %% Pre-train branch_model as usual classifier on big classes
-
-siamese_nets.get_layer('branch_model')
-
-# %% Train model
 siamese_nets.get_layer('branch_model').trainable = False
-
-optimizer = Adam(lr=5e-5)
+optimizer = Adam(lr=1e-5)
 siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
 siamese_nets.fit_generator(
     train_sequence,
     validation_data=val_sequence,
     callbacks=callbacks,
-    epochs=10,
+    epochs=5,
     use_multiprocessing=True,
     workers=5,
 )
@@ -97,10 +134,10 @@ siamese_nets.fit_generator(
     train_sequence,
     validation_data=val_sequence,
     callbacks=callbacks,
-    initial_epoch=10,
-    epochs=30,
+    initial_epoch=5,
+    epochs=15,
     use_multiprocessing=True,
-    workers=10,
+    workers=5,
 )
 
 for layer in siamese_nets.get_layer('branch_model').layers[int(branch_depth * 0.5):]:
