@@ -11,7 +11,9 @@ from tensorflow.python.keras.callbacks import ModelCheckpoint, TensorBoard, Redu
 from tensorflow.python.keras.optimizer_v2.adam import Adam
 
 from keras_fsl.models import SiameseNets
-from keras_fsl.sequences import RandomBalancedPairsSequence, BalancedPairsSequence, DeterministicSequence, ProductSequence
+from keras_fsl.sequences.training.pairs import RandomBalancedPairsSequence, BalancedPairsSequence
+from keras_fsl.sequences.prediction.pairs import ProductSequence
+from keras_fsl.sequences.prediction.single import DeterministicSequence
 
 #%% Init data
 all_annotations = (
@@ -73,7 +75,7 @@ siamese_nets.get_layer('branch_model')
 # %% Train model
 siamese_nets.get_layer('branch_model').trainable = False
 
-optimizer = Adam(lr=1e-4)
+optimizer = Adam(lr=5e-5)
 siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
 siamese_nets.fit_generator(
     train_sequence,
