@@ -15,25 +15,29 @@ class AbstractPairsSequence(AbstractSequence):
             dataframe is given, it will be used both for query and support set.
             batch_size (int): number of images per batch
         """
+        super().__init__(*args, **kwargs)
+        self.query_preprocessing = self.preprocessings[0]
+        self.support_preprocessing = self.preprocessings[-1]
+        self.query_annotations = self.annotations[0]
+        self.support_annotations = self.annotations[-1]
+        self.support_annotations_by_label = {
+            group[0]: group[1]
+            for group in self.support_annotations.groupby('label')
+        }
+
         self.query_samples = pd.DataFrame()
         self.support_samples = pd.DataFrame()
-        super().__init__(*args, **kwargs)
 
     def __getitem__(self, index):
         start_index = index * self.batch_size
         end_index = (index + 1) * self.batch_size
-        query_images, query_keypoints = self.query_preprocessing(
+        query_images = self.query_preprocessing(
             images=self.load_img(self.query_samples.iloc[start_index:end_index]),
-            keypoints=self.query_samples.iloc[start_index:end_index].center.tolist()[:, pd.np.newaxis, :],
         )
         support_images = self.support_preprocessing(
             images=self.load_img(self.support_samples.iloc[start_index:end_index])
         )
-        targets = pd.np.stack([
-            kp.to_keypoint_image().clip(max=1).squeeze() * self.targets[start_index:end_index][i].astype(int)
-            for i, kp in enumerate(query_keypoints)
-        ])
-        return [query_images, support_images], targets
+        return [query_images, support_images], self.targets[start_index:end_index].astype(int)
 
     @property
     def targets(self):

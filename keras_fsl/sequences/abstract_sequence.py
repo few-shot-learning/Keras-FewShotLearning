@@ -1,52 +1,47 @@
 import math
-from abc import ABCMeta
 
-import pandas as pd
 import imgaug.augmenters as iaa
+import numpy as np
+from abc import ABCMeta
 from tensorflow.python.keras.preprocessing.image import img_to_array, load_img
 from tensorflow.python.keras.utils import Sequence
-from keras_fsl.annotations.flows import CoordinatesToImgAug
 
 
 class AbstractSequence(Sequence, metaclass=ABCMeta):
 
-    def __init__(self, annotations, batch_size, preprocessing=None, **load_img_kwargs):
+    def __init__(self, annotations, batch_size, preprocessings=None, **load_img_kwargs):
         """
         Args:
             annotations (Union[pandas.DataFrame, list[pandas.DataFrame]]): query and support annotations. If a single
             dataframe is given, it will be used both for query and support set.
             batch_size (int): number of images per batch
-            preprocessing (imgaug.augmenters.meta.Augmenter): augmenter for data augmentation
+            preprocessings (Union[imgaug.augmenters.meta.Augmenter, List[imgaug.augmenters.meta.Augmenter]]):
+                augmenters for data augmentation. There should by either one single augmenter or one augmenter per
+                annotation
         """
         if not isinstance(annotations, list):
             annotations = [annotations]
-        self.query_annotations = CoordinatesToImgAug(annotations[0])
-        self.support_annotations = CoordinatesToImgAug(annotations[-1])
-        self.support_annotations_by_label = {
-            group[0]: group[1]
-            for group in self.support_annotations.groupby('label')
-        }
+        self.annotations = [
+            annotations_.assign(crop_coordinates=lambda df: df.get('crop_coordinates'))
+            for annotations_ in annotations
+        ]
+
         self.load_img_kwargs = load_img_kwargs
         self.batch_size = batch_size
         self._support_labels = None
-        if not isinstance(preprocessing, list):
-            preprocessing = [preprocessing]
-        self.query_preprocessing = preprocessing[0] if preprocessing[0] is not None else iaa.Sequential()
-        self.support_preprocessing = preprocessing[-1] if preprocessing[-1] is not None else iaa.Sequential()
-        self.on_epoch_end()
+
+        if type(preprocessings) is not list:
+            preprocessings = [preprocessings]
+        self.preprocessings = [
+            preprocessing if preprocessing is not None else iaa.Sequential()
+            for preprocessing in preprocessings
+        ]
 
     def __len__(self):
-        return math.ceil(len(self.query_annotations) / self.batch_size)
-
-    @property
-    def support_labels(self):
-        if self._support_labels is None:
-            self._support_labels = self.support_annotations.label.value_counts()
-        return self._support_labels
+        return math.ceil(len(self.annotations[0]) / self.batch_size)
 
     def load_img(self, input_dataframe):
-        return (
-            input_dataframe
-            .image_name
-            .map(lambda image_name: img_to_array(load_img(image_name, **self.load_img_kwargs)))
-        )
+        return [
+            img_to_array(load_img(image_name, **self.load_img_kwargs).crop(crop_coordinates)).astype(np.uint8)
+            for image_name, crop_coordinates in zip(input_dataframe.image_name, input_dataframe.crop_coordinates)
+        ]

@@ -23,22 +23,19 @@ class BalancedPairsSequence(AbstractPairsSequence):
         if pairs_per_query % 2 == 1:
             raise ValueError('pairs_per_query should be even')
         self.pairs_per_query = pairs_per_query
-        self._support_labels = None
-        super().__init__(*args, **kwargs)
-        if self.batch_size % 2 == 1:
+        if kwargs['batch_size'] % 2 == 1:
             raise ValueError(f'batch_size should be even')
 
+        super().__init__(*args, **kwargs)
+        self.support_labels = self.support_annotations.label.value_counts()
+        self.on_epoch_end()
+
     def on_epoch_end(self):
-        self.query_samples = (
-            self.query_annotations
-            .sample(frac=1)
-        )
+        indexes = self.query_annotations.index.values
+        pd.np.random.shuffle(indexes)
+        self.query_samples = self.query_annotations.loc[indexes]
         self.support_samples = (
-            pd.concat(
-                self.query_samples
-                .apply(lambda row: (self.get_batch_for_sample(row.label)), axis=1)
-                .values,
-            )
+            pd.concat(self.query_samples.label.map(self.get_batch_for_sample).tolist())
             .reset_index(drop=True)
         )
         self.query_samples = (
