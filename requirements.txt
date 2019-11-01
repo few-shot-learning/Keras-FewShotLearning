@@ -49,7 +49,7 @@ pandas==0.24.2
 pandocfilters==1.4.2
 pexpect==4.7.0
 pickleshare==0.7.5
-Pillow==6.1.0
+Pillow==6.2.0
 pluggy==0.13.0
 prometheus-client==0.7.1
 prompt-toolkit==1.0.16
