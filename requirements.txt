@@ -28,7 +28,6 @@ jupyter-client==5.3.1
 jupyter-console==6.0.0
 jupyter-core==4.5.0
 Keras-Applications==1.0.8
-keras-fsl==0.0.1
 Keras-Preprocessing==1.1.0
 kerascv==0.0.36
 kiwisolver==1.1.0
@@ -75,7 +74,7 @@ simplegeneric==0.8.1
 six==1.12.0
 tb-nightly==1.14.0a20190603
 tensorboard==1.14.0
-tensorflow==2.0.0b1
+tensorflow-gpu==2.0.0b1
 tensorflow-estimator==1.14.0
 termcolor==1.1.0
 terminado==0.8.2

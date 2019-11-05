@@ -1,0 +1,27 @@
+---
+version: 1
+
+kind: experiment
+
+environment:
+  resources:
+    gpu:
+      requests: 1
+      limits: 1
+
+build:
+  image: sicara/leto-stack:tf2-0-0-gpu-pipeline0-12-0-chani0-0-11-ibad0-3-1
+  build_steps:
+    - pip install --no-cache-dir -r requirements.txt
+  env_vars:
+    - ['LC_ALL', 'C.UTF-8']
+    - ['PYTHONPATH', '$PYTHONPATH:/code']
+
+run:
+  cmd:
+    # Allow to access the mounted data_folder as if it was in ./{PROJECT_DATA}
+    - ln -s /data/clementw/Keras-FewShotLearning/data ./data
+    # Allow to access the mounted output_folder as if it was in ./{PRJECT_OUTPUT}
+    - ln -s $POLYAXON_RUN_OUTPUTS_PATH ./logs
+    # Run your python script
+    - python notebooks/content_crops.py
