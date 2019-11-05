@@ -7,7 +7,7 @@ import pandas as pd
 import tensorflow as tf
 import yaml
 from tensorflow.python.keras import Sequential
-from tensorflow.python.keras.applications.mobilenet import preprocess_input
+from tensorflow.python.keras.applications.resnet50 import preprocess_input
 from tensorflow.python.keras.callbacks import ModelCheckpoint, TensorBoard, ReduceLROnPlateau
 from tensorflow.python.keras.layers import GlobalAveragePooling2D, Dense
 from tensorflow.python.keras.optimizer_v2.adam import Adam
@@ -46,7 +46,7 @@ preprocessing = iaa.Sequential([
 
 siamese_nets = SiameseNets(
     branch_model={
-        'name': 'MobileNet',
+        'name': 'ResNet50',
         'init': {'include_top': False, 'input_shape': (224, 224, 3)}
     },
     head_model={
@@ -61,6 +61,7 @@ siamese_nets = SiameseNets(
         }
     }
 )
+branch_depth = len(siamese_nets.get_layer('branch_model').layers)
 
 # %% Pre-train branch_model as usual classifier on big classes
 callbacks = [
@@ -80,21 +81,47 @@ branch_model_val_set = (
     val_set
     .loc[lambda df: df.label.isin(branch_model_train_set.label.unique())]
 )
-train_sequence = DeterministicSequence(branch_model_train_set, preprocessings=preprocessing, batch_size=16)
-val_sequence = DeterministicSequence(branch_model_val_set, preprocessings=preprocessing, batch_size=16)
+train_sequence = DeterministicSequence(
+    branch_model_train_set,
+    preprocessings=preprocessing,
+    batch_size=32,
+)
+val_sequence = DeterministicSequence(
+    branch_model_val_set,
+    preprocessings=preprocessing,
+    batch_size=32,
+    classes=train_sequence.targets.columns,
+)
 
 branch_classifier = Sequential([
     siamese_nets.get_layer('branch_model'),
     GlobalAveragePooling2D(),
-    Dense(len(branch_model_train_set.label.unique())),
+    Dense(len(branch_model_train_set.label.unique()), activation='softmax'),
 ])
+siamese_nets.get_layer('branch_model').trainable = False
+optimizer = Adam(lr=1e-3)
+branch_classifier.compile(optimizer=optimizer, loss='categorical_crossentropy')
+branch_classifier.fit_generator(
+    train_sequence,
+    validation_data=val_sequence,
+    callbacks=callbacks,
+    initial_epoch=0,
+    epochs=10,
+    use_multiprocessing=True,
+    workers=5,
+)
+
+siamese_nets.get_layer('branch_model').trainable = True
+for layer in siamese_nets.get_layer('branch_model').layers[:int(branch_depth * 0.8)]:
+    layer.trainable = False
 optimizer = Adam(lr=1e-5)
 branch_classifier.compile(optimizer=optimizer, loss='categorical_crossentropy')
 branch_classifier.fit_generator(
     train_sequence,
     validation_data=val_sequence,
     callbacks=callbacks,
-    epochs=10,
+    initial_epoch=10,
+    epochs=20,
     use_multiprocessing=True,
     workers=5,
 )
@@ -112,51 +139,49 @@ train_sequence = RandomBalancedPairsSequence(train_set, preprocessings=preproces
 val_sequence = RandomBalancedPairsSequence(val_set, preprocessings=preprocessing, batch_size=16)
 
 siamese_nets.get_layer('branch_model').trainable = False
-optimizer = Adam(lr=1e-5)
+optimizer = Adam(lr=1e-4)
 siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
 siamese_nets.fit_generator(
     train_sequence,
     validation_data=val_sequence,
     callbacks=callbacks,
-    epochs=5,
+    initial_epoch=0,
+    epochs=3,
     use_multiprocessing=True,
     workers=5,
 )
 
 siamese_nets.get_layer('branch_model').trainable = True
-branch_depth = len(siamese_nets.get_layer('branch_model').layers)
 for layer in siamese_nets.get_layer('branch_model').layers[:int(branch_depth * 0.8)]:
     layer.trainable = False
-
 optimizer = Adam(1e-5)
 siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
 siamese_nets.fit_generator(
     train_sequence,
     validation_data=val_sequence,
     callbacks=callbacks,
-    initial_epoch=5,
+    initial_epoch=3,
     epochs=15,
     use_multiprocessing=True,
     workers=5,
 )
 
 for layer in siamese_nets.get_layer('branch_model').layers[int(branch_depth * 0.5):]:
-    layer.trainable = False
-
+    layer.trainable = True
 optimizer = Adam(1e-5)
 siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
 siamese_nets.fit_generator(
     train_sequence,
     validation_data=val_sequence,
     callbacks=callbacks,
-    initial_epoch=30,
+    initial_epoch=15,
     epochs=50,
     use_multiprocessing=True,
-    workers=10,
+    workers=5,
 )
 
-train_sequence = BalancedPairsSequence(train_set, pairs_per_query=5, preprocessings=preprocessing, batch_size=16)
-val_sequence = BalancedPairsSequence(val_set, pairs_per_query=5, preprocessings=preprocessing, batch_size=16)
+train_sequence = BalancedPairsSequence(train_set, pairs_per_query=6, preprocessings=preprocessing, batch_size=16)
+val_sequence = BalancedPairsSequence(val_set, pairs_per_query=6, preprocessings=preprocessing, batch_size=16)
 siamese_nets.fit_generator(
     train_sequence,
     validation_data=val_sequence,
