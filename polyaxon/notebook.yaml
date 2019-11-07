@@ -1,0 +1,19 @@
+---
+version: 1
+
+kind: notebook
+
+environment:
+  resources:
+    gpu:
+      requests: 1
+      limits: 1
+
+build:
+  image: sicara/leto-stack:tf2-0-0-gpu-pipeline0-12-0-chani0-0-11-ibad0-3-1
+  build_steps:
+    - pip install --no-cache-dir -r requirements.txt
+    - pip install jupyter
+  env_vars:
+    - ['LC_ALL', 'C.UTF-8']
+    - ['PYTHONPATH', '$PYTHONPATH:/code']
