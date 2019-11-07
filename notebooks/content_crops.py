@@ -1,4 +1,5 @@
 #%%
+from datetime import datetime
 from pathlib import Path
 
 import imgaug.augmenters as iaa
@@ -7,18 +8,19 @@ import pandas as pd
 import tensorflow as tf
 import yaml
 from tensorflow.python.keras import Sequential
-from tensorflow.python.keras.applications.resnet50 import preprocess_input
-from tensorflow.python.keras.callbacks import ModelCheckpoint, TensorBoard, ReduceLROnPlateau
-from tensorflow.python.keras.layers import GlobalAveragePooling2D, Dense
+from tensorflow.python.keras.models import load_model
+from tensorflow.python.keras import applications as keras_applications
+from tensorflow.python.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, TensorBoard
+from tensorflow.python.keras.layers import Dense, GlobalAveragePooling2D
 from tensorflow.python.keras.optimizer_v2.adam import Adam
 
 from keras_fsl.models import SiameseNets
-from keras_fsl.sequences.training.pairs import RandomBalancedPairsSequence, BalancedPairsSequence
-from keras_fsl.sequences.training.single import DeterministicSequence
 from keras_fsl.sequences.prediction.pairs import ProductSequence
+from keras_fsl.sequences.training.pairs import BalancedPairsSequence, RandomBalancedPairsSequence
+from keras_fsl.sequences.training.single import DeterministicSequence
 
 #%% Init data
-output_path = Path('logs') / 'content_crops' / 'siamese_mixed_norms'
+output_path = Path('logs') / 'content_crops' / 'siamese_mixed_norms' / datetime.today().strftime('%Y%m%d-%H%M%S')
 output_path.mkdir(parents=True, exist_ok=True)
 
 all_annotations = (
@@ -33,7 +35,9 @@ train_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['tra
 val_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['val_set_dates'])]
 test_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['test_set_dates'])].reset_index(drop=True)
 
-# %% Init model
+#%% Init model
+branch_model_name = 'ResNet50'
+
 preprocessing = iaa.Sequential([
     iaa.Fliplr(0.5),
     iaa.Flipud(0.5),
@@ -41,12 +45,15 @@ preprocessing = iaa.Sequential([
     iaa.CropToFixedSize(224, 224, position='center'),
     iaa.PadToFixedSize(224, 224, position='center'),
     iaa.AssertShape((None, 224, 224, 3)),
-    iaa.Lambda(lambda images_list, *_: preprocess_input(np.stack(images_list), data_format='channels_last')),
+    iaa.Lambda(lambda images_list, *_: (
+        getattr(keras_applications, branch_model_name.lower())
+        .preprocess_input(np.stack(images_list), data_format='channels_last')
+    )),
 ])
 
 siamese_nets = SiameseNets(
     branch_model={
-        'name': 'ResNet50',
+        'name': branch_model_name,
         'init': {'include_top': False, 'input_shape': (224, 224, 3)}
     },
     head_model={
@@ -63,7 +70,7 @@ siamese_nets = SiameseNets(
 )
 branch_depth = len(siamese_nets.get_layer('branch_model').layers)
 
-# %% Pre-train branch_model as usual classifier on big classes
+#%% Pre-train branch_model as usual classifier on big classes
 callbacks = [
     TensorBoard(output_path / 'branch_model'),
     ModelCheckpoint(
@@ -86,11 +93,12 @@ train_sequence = DeterministicSequence(
     preprocessings=preprocessing,
     batch_size=32,
 )
+classes = train_sequence.targets.columns
 val_sequence = DeterministicSequence(
     branch_model_val_set,
     preprocessings=preprocessing,
     batch_size=32,
-    classes=train_sequence.targets.columns,
+    classes=classes,
 )
 
 branch_classifier = Sequential([
@@ -99,22 +107,21 @@ branch_classifier = Sequential([
     Dense(len(branch_model_train_set.label.unique()), activation='softmax'),
 ])
 siamese_nets.get_layer('branch_model').trainable = False
-optimizer = Adam(lr=1e-3)
+optimizer = Adam(lr=1e-4)
 branch_classifier.compile(optimizer=optimizer, loss='categorical_crossentropy')
 branch_classifier.fit_generator(
     train_sequence,
     validation_data=val_sequence,
     callbacks=callbacks,
-    initial_epoch=0,
     epochs=10,
     use_multiprocessing=True,
     workers=5,
 )
 
 siamese_nets.get_layer('branch_model').trainable = True
-for layer in siamese_nets.get_layer('branch_model').layers[:int(branch_depth * 0.8)]:
+for layer in siamese_nets.get_layer('branch_model').layers[:int(branch_depth * 0.5)]:
     layer.trainable = False
-optimizer = Adam(lr=1e-5)
+optimizer = Adam(lr=5e-6)
 branch_classifier.compile(optimizer=optimizer, loss='categorical_crossentropy')
 branch_classifier.fit_generator(
     train_sequence,
@@ -126,7 +133,31 @@ branch_classifier.fit_generator(
     workers=5,
 )
 
-# %% Train model
+# %% Check learnt classes
+y = branch_classifier.predict_generator(
+    DeterministicSequence(
+        test_set.loc[lambda df: df.label.isin(branch_model_train_set.label.unique())],
+        batch_size=32,
+        classes=train_sequence.targets.columns,
+        preprocessings=preprocessing,
+    ),
+    verbose=1,
+)
+
+confusion_matrix = (
+    test_set.loc[lambda df: df.label.isin(classes)]
+    .assign(label_predicted=classes[np.argmax(y, axis=1)])
+    .pivot_table(
+        index='label_predicted',
+        columns='label',
+        values='image_name',
+        aggfunc='count',
+        margins=True,
+        fill_value=0,
+    )
+)
+
+#%% Train model
 callbacks = [
     TensorBoard(output_path),
     ModelCheckpoint(
@@ -161,10 +192,11 @@ siamese_nets.fit_generator(
     validation_data=val_sequence,
     callbacks=callbacks,
     initial_epoch=3,
-    epochs=15,
+    epochs=10,
     use_multiprocessing=True,
     workers=5,
 )
+siamese_nets = load_model(output_path / 'best_model.h5')
 
 for layer in siamese_nets.get_layer('branch_model').layers[int(branch_depth * 0.5):]:
     layer.trainable = True
@@ -174,25 +206,48 @@ siamese_nets.fit_generator(
     train_sequence,
     validation_data=val_sequence,
     callbacks=callbacks,
+    initial_epoch=10,
+    epochs=15,
+    use_multiprocessing=True,
+    workers=5,
+)
+siamese_nets = load_model(output_path / 'best_model.h5')
+
+optimizer = Adam(1e-6)
+siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
+siamese_nets.fit_generator(
+    train_sequence,
+    validation_data=val_sequence,
+    callbacks=callbacks,
     initial_epoch=15,
-    epochs=50,
+    epochs=20,
+    use_multiprocessing=True,
+    workers=5,
+)
+
+train_sequence = BalancedPairsSequence(train_set, pairs_per_query=4, preprocessings=preprocessing, batch_size=16)
+siamese_nets.fit_generator(
+    train_sequence,
+    validation_data=val_sequence,
+    callbacks=callbacks,
+    initial_epoch=20,
+    epochs=30,
     use_multiprocessing=True,
     workers=5,
 )
 
 train_sequence = BalancedPairsSequence(train_set, pairs_per_query=6, preprocessings=preprocessing, batch_size=16)
-val_sequence = BalancedPairsSequence(val_set, pairs_per_query=6, preprocessings=preprocessing, batch_size=16)
 siamese_nets.fit_generator(
     train_sequence,
     validation_data=val_sequence,
     callbacks=callbacks,
     initial_epoch=30,
-    epochs=50,
+    epochs=40,
     use_multiprocessing=True,
-    workers=10,
+    workers=5,
 )
 
-# %% Eval on test set
+#%% Eval on test set
 k_shot = 3
 n_way = 10
 n_episode = 100
