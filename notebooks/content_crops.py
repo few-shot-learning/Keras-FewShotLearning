@@ -121,7 +121,7 @@ branch_classifier.fit_generator(
 siamese_nets.get_layer('branch_model').trainable = True
 for layer in siamese_nets.get_layer('branch_model').layers[:int(branch_depth * 0.5)]:
     layer.trainable = False
-optimizer = Adam(lr=5e-6)
+optimizer = Adam(lr=2e-6)
 branch_classifier.compile(optimizer=optimizer, loss='categorical_crossentropy')
 branch_classifier.fit_generator(
     train_sequence,
@@ -166,18 +166,33 @@ callbacks = [
     ),
     ReduceLROnPlateau(),
 ]
-train_sequence = RandomBalancedPairsSequence(train_set, preprocessings=preprocessing, batch_size=16)
-val_sequence = RandomBalancedPairsSequence(val_set, preprocessings=preprocessing, batch_size=16)
+random_balanced_train_sequence = RandomBalancedPairsSequence(train_set, preprocessings=preprocessing, batch_size=16)
+random_balanced_val_sequence = RandomBalancedPairsSequence(val_set, preprocessings=preprocessing, batch_size=16)
 
 siamese_nets.get_layer('branch_model').trainable = False
 optimizer = Adam(lr=1e-4)
 siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
 siamese_nets.fit_generator(
-    train_sequence,
-    validation_data=val_sequence,
+    random_balanced_train_sequence,
+    steps_per_epoch=len(random_balanced_train_sequence) // 2,
+    validation_data=random_balanced_val_sequence,
     callbacks=callbacks,
     initial_epoch=0,
     epochs=3,
+    use_multiprocessing=True,
+    workers=5,
+)
+
+balanced_train_sequence = BalancedPairsSequence(
+    train_set, pairs_per_query=2, preprocessings=preprocessing, batch_size=32,
+)
+siamese_nets.fit_generator(
+    random_balanced_train_sequence,
+    steps_per_epoch=len(random_balanced_train_sequence) // 2,
+    validation_data=random_balanced_val_sequence,
+    callbacks=callbacks,
+    initial_epoch=3,
+    epochs=10,
     use_multiprocessing=True,
     workers=5,
 )
@@ -188,11 +203,23 @@ for layer in siamese_nets.get_layer('branch_model').layers[:int(branch_depth * 0
 optimizer = Adam(1e-5)
 siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
 siamese_nets.fit_generator(
-    train_sequence,
-    validation_data=val_sequence,
+    random_balanced_train_sequence,
+    steps_per_epoch=len(random_balanced_train_sequence) // 2,
+    validation_data=random_balanced_val_sequence,
     callbacks=callbacks,
-    initial_epoch=3,
-    epochs=10,
+    initial_epoch=10,
+    epochs=13,
+    use_multiprocessing=True,
+    workers=5,
+)
+siamese_nets = load_model(output_path / 'best_model.h5')
+
+siamese_nets.fit_generator(
+    balanced_train_sequence,
+    validation_data=random_balanced_val_sequence,
+    callbacks=callbacks,
+    initial_epoch=13,
+    epochs=20,
     use_multiprocessing=True,
     workers=5,
 )
@@ -203,11 +230,22 @@ for layer in siamese_nets.get_layer('branch_model').layers[int(branch_depth * 0.
 optimizer = Adam(1e-5)
 siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
 siamese_nets.fit_generator(
-    train_sequence,
-    validation_data=val_sequence,
+    random_balanced_train_sequence,
+    steps_per_epoch=len(random_balanced_train_sequence) // 2,
+    validation_data=random_balanced_val_sequence,
     callbacks=callbacks,
-    initial_epoch=10,
-    epochs=15,
+    initial_epoch=20,
+    epochs=25,
+    use_multiprocessing=True,
+    workers=5,
+)
+siamese_nets = load_model(output_path / 'best_model.h5')
+siamese_nets.fit_generator(
+    balanced_train_sequence,
+    validation_data=random_balanced_val_sequence,
+    callbacks=callbacks,
+    initial_epoch=25,
+    epochs=30,
     use_multiprocessing=True,
     workers=5,
 )
@@ -216,32 +254,21 @@ siamese_nets = load_model(output_path / 'best_model.h5')
 optimizer = Adam(1e-6)
 siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
 siamese_nets.fit_generator(
-    train_sequence,
-    validation_data=val_sequence,
-    callbacks=callbacks,
-    initial_epoch=15,
-    epochs=20,
-    use_multiprocessing=True,
-    workers=5,
-)
-
-train_sequence = BalancedPairsSequence(train_set, pairs_per_query=4, preprocessings=preprocessing, batch_size=16)
-siamese_nets.fit_generator(
-    train_sequence,
-    validation_data=val_sequence,
-    callbacks=callbacks,
-    initial_epoch=20,
-    epochs=30,
-    use_multiprocessing=True,
-    workers=5,
-)
-
-train_sequence = BalancedPairsSequence(train_set, pairs_per_query=6, preprocessings=preprocessing, batch_size=16)
-siamese_nets.fit_generator(
-    train_sequence,
-    validation_data=val_sequence,
+    random_balanced_train_sequence,
+    steps_per_epoch=len(random_balanced_train_sequence) // 2,
+    validation_data=random_balanced_val_sequence,
     callbacks=callbacks,
     initial_epoch=30,
+    epochs=35,
+    use_multiprocessing=True,
+    workers=5,
+)
+siamese_nets = load_model(output_path / 'best_model.h5')
+siamese_nets.fit_generator(
+    balanced_train_sequence,
+    validation_data=random_balanced_val_sequence,
+    callbacks=callbacks,
+    initial_epoch=35,
     epochs=40,
     use_multiprocessing=True,
     workers=5,

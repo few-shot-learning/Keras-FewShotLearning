@@ -23,5 +23,6 @@ run:
     - ln -s /data/clementw/Keras-FewShotLearning/data ./data
     # Allow to access the mounted output_folder as if it was in ./{PRJECT_OUTPUT}
     - ln -s $POLYAXON_RUN_OUTPUTS_PATH ./logs
+    - ln -s /output/sicara/content_crops/experiments ./polyaxon_otputs
     # Run your python script
     - python notebooks/content_crops.py
