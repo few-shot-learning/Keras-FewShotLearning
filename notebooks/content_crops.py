@@ -205,8 +205,8 @@ siamese_nets.fit_generator(
     balanced_train_sequence,
     steps_per_epoch=(
         len(random_balanced_train_sequence) *
-        random_balanced_train_sequence.batch_size / balanced_train_sequence.batch_size)
-    ,
+        random_balanced_train_sequence.batch_size / balanced_train_sequence.batch_size
+    ),
     validation_data=random_balanced_val_sequence,
     callbacks=callbacks,
     initial_epoch=10,
@@ -223,8 +223,8 @@ siamese_nets.fit_generator(
     balanced_train_sequence,
     steps_per_epoch=(
         len(random_balanced_train_sequence) *
-        random_balanced_train_sequence.batch_size / balanced_train_sequence.batch_size)
-    ,
+        random_balanced_train_sequence.batch_size / balanced_train_sequence.batch_size
+    ),
     validation_data=random_balanced_val_sequence,
     callbacks=callbacks,
     initial_epoch=15,
@@ -249,12 +249,33 @@ siamese_nets.fit_generator(
 )
 siamese_nets = load_model(output_path / 'best_model.h5')
 
+balanced_train_sequence.batch_size /= 2
+balanced_train_sequence.pairs_per_query /= 2
+balanced_train_sequence.on_epoch_end()
 siamese_nets.fit_generator(
     balanced_train_sequence,
     steps_per_epoch=(
         len(random_balanced_train_sequence) *
-        random_balanced_train_sequence.batch_size / balanced_train_sequence.batch_size)
-    ,
+        random_balanced_train_sequence.batch_size / balanced_train_sequence.batch_size
+    ),
+    validation_data=random_balanced_val_sequence,
+    callbacks=callbacks,
+    initial_epoch=25,
+    epochs=30,
+    use_multiprocessing=True,
+    workers=5,
+)
+siamese_nets = load_model(output_path / 'best_model.h5')
+
+balanced_train_sequence.batch_size *= 2
+balanced_train_sequence.pairs_per_query *= 2
+balanced_train_sequence.on_epoch_end()
+siamese_nets.fit_generator(
+    balanced_train_sequence,
+    steps_per_epoch=(
+        len(random_balanced_train_sequence) *
+        random_balanced_train_sequence.batch_size / balanced_train_sequence.batch_size
+    ),
     validation_data=random_balanced_val_sequence,
     callbacks=callbacks,
     initial_epoch=25,
