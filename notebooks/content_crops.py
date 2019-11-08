@@ -14,6 +14,7 @@ from tensorflow.python.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
 from tensorflow.python.keras.layers import Dense, GlobalAveragePooling2D
 from tensorflow.python.keras.optimizer_v2.adam import Adam
 
+from keras_fsl.datasets.training.single import DeterministicDataLoader
 from keras_fsl.models import SiameseNets
 from keras_fsl.sequences.prediction.pairs import ProductSequence
 from keras_fsl.sequences.training.pairs import BalancedPairsSequence, RandomBalancedPairsSequence
@@ -36,7 +37,7 @@ val_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['val_s
 test_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['test_set_dates'])].reset_index(drop=True)
 
 #%% Init model
-branch_model_name = 'MobileNet'
+branch_model_name = 'ResNet50'
 
 preprocessing = iaa.Sequential([
     iaa.Fliplr(0.5),
@@ -70,9 +71,18 @@ siamese_nets = SiameseNets(
 )
 branch_depth = len(siamese_nets.get_layer('branch_model').layers)
 
+
+#%% Init experiment parameters
+BATCH_SIZE = 2
+STEPS_PER_EPOCH = 2
+VALIDATION_STEPS = 1
+
+FREEZE_BRANCH_EPOCH_NUMBER = 1
+DEFREEZE_BRANCH_EPOCH_NUMBER = 1 + FREEZE_BRANCH_EPOCH_NUMBER
+
 #%% Pre-train branch_model as usual classifier on big classes
 callbacks = [
-    TensorBoard(output_path / 'branch_model'),
+    TensorBoard(output_path / 'branch_model', profile_batch=3),
     ModelCheckpoint(
         str(output_path / 'branch_model' / 'best_model.h5'),
         save_best_only=True,
@@ -88,34 +98,35 @@ branch_model_val_set = (
     val_set
     .loc[lambda df: df.label.isin(branch_model_train_set.label.unique())]
 )
-train_sequence = DeterministicSequence(
+train_data_loader = DeterministicDataLoader(
     branch_model_train_set,
-    preprocessings=preprocessing,
-    batch_size=32,
+    batch_size=BATCH_SIZE,
 )
-classes = train_sequence.targets.columns
-val_sequence = DeterministicSequence(
-    branch_model_val_set,
-    preprocessings=preprocessing,
-    batch_size=32,
+train_dataset = train_data_loader.load(shuffle=True, cache=True, augment=True)
+classes = train_data_loader.targets.columns
+validation_dataset = DeterministicDataLoader(
+    branch_model_train_set,
+    batch_size=BATCH_SIZE,
     classes=classes,
-)
+).load(shuffle=False, cache=True, augment=False)
 
 branch_classifier = Sequential([
     siamese_nets.get_layer('branch_model'),
     GlobalAveragePooling2D(),
     Dense(len(branch_model_train_set.label.unique()), activation='softmax'),
 ])
+
+
 siamese_nets.get_layer('branch_model').trainable = False
 optimizer = Adam(lr=1e-4)
 branch_classifier.compile(optimizer=optimizer, loss='categorical_crossentropy')
 branch_classifier.fit_generator(
-    train_sequence,
-    validation_data=val_sequence,
+    train_dataset,
+    validation_data=validation_dataset,
+    validation_steps=VALIDATION_STEPS,
     callbacks=callbacks,
-    epochs=10,
-    use_multiprocessing=True,
-    workers=5,
+    epochs=FREEZE_BRANCH_EPOCH_NUMBER,
+    steps_per_epoch=STEPS_PER_EPOCH,
 )
 
 siamese_nets.get_layer('branch_model').trainable = True
@@ -124,38 +135,39 @@ for layer in siamese_nets.get_layer('branch_model').layers[:int(branch_depth * 0
 optimizer = Adam(lr=2e-6)
 branch_classifier.compile(optimizer=optimizer, loss='categorical_crossentropy')
 branch_classifier.fit_generator(
-    train_sequence,
-    validation_data=val_sequence,
+    train_dataset,
+    validation_data=validation_dataset,
+    validation_steps=VALIDATION_STEPS,
     callbacks=callbacks,
-    initial_epoch=10,
-    epochs=20,
-    use_multiprocessing=True,
-    workers=5,
+    initial_epoch=FREEZE_BRANCH_EPOCH_NUMBER,
+    epochs=DEFREEZE_BRANCH_EPOCH_NUMBER,
+    steps_per_epoch=STEPS_PER_EPOCH,
 )
 
 # %% Check learnt classes
-y = branch_classifier.predict_generator(
-    DeterministicSequence(
-        test_set.loc[lambda df: df.label.isin(branch_model_train_set.label.unique())],
-        batch_size=32,
-        classes=train_sequence.targets.columns,
-        preprocessings=preprocessing,
-    ),
-    verbose=1,
-)
-
-confusion_matrix = (
-    test_set.loc[lambda df: df.label.isin(classes)]
-    .assign(label_predicted=classes[np.argmax(y, axis=1)])
-    .pivot_table(
-        index='label_predicted',
-        columns='label',
-        values='image_name',
-        aggfunc='count',
-        margins=True,
-        fill_value=0,
-    )
-)
+# TODO: Enable this again
+# y = branch_classifier.predict_generator(
+#     DeterministicDataLoader(
+#         test_set.loc[lambda df: df.label.isin(branch_model_train_set.label.unique())],
+#         batch_size=BATCH_SIZE,
+#         classes=classes,
+#         repeat_number=1,
+#     ).load(shuffle=False, cache=False, augment=False),
+#     verbose=1,
+# )
+#
+# confusion_matrix = (
+#     test_set.loc[lambda df: df.label.isin(classes)]
+#     .assign(label_predicted=classes[np.argmax(y, axis=1)])
+#     .pivot_table(
+#         index='label_predicted',
+#         columns='label',
+#         values='image_name',
+#         aggfunc='count',
+#         margins=True,
+#         fill_value=0,
+#     )
+# )
 
 #%% Train model
 callbacks = [
@@ -334,3 +346,209 @@ for _ in range(n_episode):
 
 scores = pd.DataFrame(scores)[['score', 'average_precision', 'good_prediction']]
 scores.to_csv(output_path / 'scores.csv', index=False)
+
+# siamese_nets.get_layer('branch_model').trainable = True
+# for layer in siamese_nets.get_layer('branch_model').layers[:int(branch_depth * 0.5)]:
+#     layer.trainable = False
+# optimizer = Adam(lr=2e-6)
+# branch_classifier.compile(optimizer=optimizer, loss='categorical_crossentropy')
+# branch_classifier.fit_generator(
+#     train_data_loader,
+#     validation_data=val_sequence,
+#     callbacks=callbacks,
+#     initial_epoch=10,
+#     epochs=20,
+#     use_multiprocessing=True,
+#     workers=5,
+# )
+#
+# # %% Check learnt classes
+# y = branch_classifier.predict_generator(
+#     DeterministicSequence(
+#         test_set.loc[lambda df: df.label.isin(branch_model_train_set.label.unique())],
+#         batch_size=32,
+#         classes=train_sequence.targets.columns,
+#         preprocessings=preprocessing,
+#     ),
+#     verbose=1,
+# )
+#
+# confusion_matrix = (
+#     test_set.loc[lambda df: df.label.isin(classes)]
+#     .assign(label_predicted=classes[np.argmax(y, axis=1)])
+#     .pivot_table(
+#         index='label_predicted',
+#         columns='label',
+#         values='image_name',
+#         aggfunc='count',
+#         margins=True,
+#         fill_value=0,
+#     )
+# )
+#
+# #%% Train model
+# callbacks = [
+#     TensorBoard(output_path),
+#     ModelCheckpoint(
+#         str(output_path / 'best_model.h5'),
+#         save_best_only=True,
+#     ),
+#     ReduceLROnPlateau(),
+# ]
+# random_balanced_train_sequence = RandomBalancedPairsSequence(train_set, preprocessings=preprocessing, batch_size=16)
+# random_balanced_val_sequence = RandomBalancedPairsSequence(val_set, preprocessings=preprocessing, batch_size=16)
+#
+# siamese_nets.get_layer('branch_model').trainable = False
+# optimizer = Adam(lr=1e-4)
+# siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
+# siamese_nets.fit_generator(
+#     random_balanced_train_sequence,
+#     steps_per_epoch=len(random_balanced_train_sequence) // 2,
+#     validation_data=random_balanced_val_sequence,
+#     callbacks=callbacks,
+#     initial_epoch=0,
+#     epochs=3,
+#     use_multiprocessing=True,
+#     workers=5,
+# )
+#
+# balanced_train_sequence = BalancedPairsSequence(
+#     train_set, pairs_per_query=2, preprocessings=preprocessing, batch_size=32,
+# )
+# siamese_nets.fit_generator(
+#     random_balanced_train_sequence,
+#     steps_per_epoch=len(random_balanced_train_sequence) // 2,
+#     validation_data=random_balanced_val_sequence,
+#     callbacks=callbacks,
+#     initial_epoch=3,
+#     epochs=10,
+#     use_multiprocessing=True,
+#     workers=5,
+# )
+#
+# siamese_nets.get_layer('branch_model').trainable = True
+# for layer in siamese_nets.get_layer('branch_model').layers[:int(branch_depth * 0.8)]:
+#     layer.trainable = False
+# optimizer = Adam(1e-5)
+# siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
+# siamese_nets.fit_generator(
+#     random_balanced_train_sequence,
+#     steps_per_epoch=len(random_balanced_train_sequence) // 2,
+#     validation_data=random_balanced_val_sequence,
+#     callbacks=callbacks,
+#     initial_epoch=10,
+#     epochs=13,
+#     use_multiprocessing=True,
+#     workers=5,
+# )
+# siamese_nets = load_model(output_path / 'best_model.h5')
+#
+# siamese_nets.fit_generator(
+#     balanced_train_sequence,
+#     validation_data=random_balanced_val_sequence,
+#     callbacks=callbacks,
+#     initial_epoch=13,
+#     epochs=20,
+#     use_multiprocessing=True,
+#     workers=5,
+# )
+# siamese_nets = load_model(output_path / 'best_model.h5')
+#
+# for layer in siamese_nets.get_layer('branch_model').layers[int(branch_depth * 0.5):]:
+#     layer.trainable = True
+# optimizer = Adam(1e-5)
+# siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
+# siamese_nets.fit_generator(
+#     random_balanced_train_sequence,
+#     steps_per_epoch=len(random_balanced_train_sequence) // 2,
+#     validation_data=random_balanced_val_sequence,
+#     callbacks=callbacks,
+#     initial_epoch=20,
+#     epochs=25,
+#     use_multiprocessing=True,
+#     workers=5,
+# )
+# siamese_nets = load_model(output_path / 'best_model.h5')
+# siamese_nets.fit_generator(
+#     balanced_train_sequence,
+#     validation_data=random_balanced_val_sequence,
+#     callbacks=callbacks,
+#     initial_epoch=25,
+#     epochs=30,
+#     use_multiprocessing=True,
+#     workers=5,
+# )
+# siamese_nets = load_model(output_path / 'best_model.h5')
+#
+# optimizer = Adam(1e-6)
+# siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
+# siamese_nets.fit_generator(
+#     random_balanced_train_sequence,
+#     steps_per_epoch=len(random_balanced_train_sequence) // 2,
+#     validation_data=random_balanced_val_sequence,
+#     callbacks=callbacks,
+#     initial_epoch=30,
+#     epochs=35,
+#     use_multiprocessing=True,
+#     workers=5,
+# )
+# siamese_nets = load_model(output_path / 'best_model.h5')
+# siamese_nets.fit_generator(
+#     balanced_train_sequence,
+#     validation_data=random_balanced_val_sequence,
+#     callbacks=callbacks,
+#     initial_epoch=35,
+#     epochs=40,
+#     use_multiprocessing=True,
+#     workers=5,
+# )
+#
+# #%% Eval on test set
+# k_shot = 3
+# n_way = 10
+# n_episode = 100
+# test_sequence = DeterministicSequence(test_set, preprocessing=preprocessing, batch_size=16)
+# embeddings = siamese_nets.get_layer('branch_model').predict_generator(test_sequence)
+#
+# scores = []
+# for _ in range(n_episode):
+#     selected_labels = np.random.choice(test_set.label.unique(), size=n_way, replace=True)
+#     support_set = (
+#         test_set
+#         .loc[lambda df: df.label.isin(selected_labels)]
+#         .groupby('label')
+#         .apply(lambda group: group.sample(k_shot))
+#         .reset_index('label', drop=True)
+#     )
+#     query_set = (
+#         test_set
+#         .loc[lambda df: df.label.isin(selected_labels)]
+#         .loc[lambda df: ~df.index.isin(support_set.index)]
+#     )
+#     support_set_embeddings = embeddings[support_set.index]
+#     query_set_embeddings = embeddings[query_set.index]
+#     test_sequence = ProductSequence(
+#         support_images_array=support_set_embeddings,
+#         query_images_array=query_set_embeddings,
+#         support_labels=support_set.label.values,
+#         query_labels=query_set.label.values,
+#     )
+#     scores += [(
+#         test_sequence.pairs_indexes
+#         .assign(score=siamese_nets.get_layer('head_model').predict_generator(test_sequence, verbose=1))
+#         .groupby('query_index')
+#         .apply(lambda group: (
+#             group
+#             .sort_values('score', ascending=False)
+#             .assign(
+#                 average_precision=lambda df: df.target.expanding().mean(),
+#                 good_prediction=lambda df: df.target.iloc[0],
+#             )
+#             .loc[lambda df: df.target]
+#             .agg('mean')
+#         ))
+#         .agg('mean')
+#     )]
+#
+# scores = pd.DataFrame(scores)[['score', 'average_precision', 'good_prediction']]
+# scores.to_csv(output_path / 'scores.csv', index=False)
