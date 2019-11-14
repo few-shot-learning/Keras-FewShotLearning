@@ -7,17 +7,18 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import yaml
-from tensorflow.python.keras import Sequential
+from tensorflow.python.keras import Sequential, Model
 from tensorflow.python.keras.models import load_model
 from tensorflow.python.keras import applications as keras_applications
 from tensorflow.python.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, TensorBoard
-from tensorflow.python.keras.layers import Dense, GlobalAveragePooling2D
+from tensorflow.python.keras.layers import Dense, GlobalAveragePooling2D, Input
 from tensorflow.python.keras.optimizer_v2.adam import Adam
 
 from keras_fsl.models import SiameseNets
 from keras_fsl.sequences.prediction.pairs import ProductSequence
 from keras_fsl.sequences.training.pairs import BalancedPairsSequence, RandomBalancedPairsSequence
 from keras_fsl.sequences.training.single import DeterministicSequence
+from keras_fsl.losses.product_loss import ProductLoss
 
 #%% Init data
 output_path = Path('logs') / 'content_crops' / 'siamese_mixed_norms' / datetime.today().strftime('%Y%m%d-%H%M%S')
@@ -92,6 +93,7 @@ train_sequence = DeterministicSequence(
     branch_model_train_set,
     preprocessings=preprocessing,
     batch_size=32,
+    shuffle=True,
 )
 classes = train_sequence.targets.columns
 val_sequence = DeterministicSequence(
@@ -99,6 +101,7 @@ val_sequence = DeterministicSequence(
     preprocessings=preprocessing,
     batch_size=32,
     classes=classes,
+    shuffle=True,
 )
 
 branch_classifier = Sequential([
@@ -157,7 +160,56 @@ confusion_matrix = (
     )
 )
 
-#%% Train model
+#%% Train model with product loss
+batch_size = 16
+labels = Input((1, ), batch_size=batch_size)
+embeddings = siamese_nets.get_layer('branch_model').output
+loss = ProductLoss(
+    loss=tf.losses.binary_crossentropy,
+    loss_layer=siamese_nets.get_layer('head_model'),
+    target_function=lambda inputs: tf.dtypes.cast(tf.equal(inputs[0], inputs[1]), tf.int32),
+)([embeddings, labels])
+trainable_model = Model([siamese_nets.get_layer('branch_model').input, labels], loss)
+
+callbacks = [
+    TensorBoard(output_path),
+    ModelCheckpoint(
+        str(output_path / 'best_model.h5'),
+        save_best_only=True,
+    ),
+    ReduceLROnPlateau(),
+]
+train_sequence = DeterministicSequence(
+    train_set,
+    preprocessings=preprocessing,
+    batch_size=batch_size,
+    labels_in_input=True,
+    to_categorical=False,
+    shuffle=True,
+)
+val_sequence = DeterministicSequence(
+    val_set,
+    preprocessings=preprocessing,
+    batch_size=batch_size,
+    labels_in_input=True,
+    to_categorical=False,
+    shuffle=True,
+)
+
+siamese_nets.get_layer('branch_model').trainable = False
+optimizer = Adam(lr=1e-4)
+trainable_model.compile(optimizer=optimizer)
+trainable_model.fit_generator(
+    train_sequence,
+    validation_data=val_sequence,
+    callbacks=callbacks,
+    initial_epoch=0,
+    epochs=3,
+    use_multiprocessing=True,
+    workers=5,
+)
+
+#%% Train model with Sequences
 callbacks = [
     TensorBoard(output_path),
     ModelCheckpoint(
@@ -278,8 +330,8 @@ siamese_nets.fit_generator(
     ),
     validation_data=random_balanced_val_sequence,
     callbacks=callbacks,
-    initial_epoch=25,
-    epochs=30,
+    initial_epoch=30,
+    epochs=35,
     use_multiprocessing=True,
     workers=5,
 )
