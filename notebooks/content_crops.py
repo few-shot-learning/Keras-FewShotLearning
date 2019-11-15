@@ -55,7 +55,7 @@ preprocessing = iaa.Sequential([
 siamese_nets = SiameseNets(
     branch_model={
         'name': branch_model_name,
-        'init': {'include_top': False, 'input_shape': (224, 224, 3)}
+        'init': {'include_top': False, 'input_shape': (224, 224, 3), 'pooling': 'avg'}
     },
     head_model={
         'name': 'MixedNorms',
@@ -161,7 +161,7 @@ confusion_matrix = (
 )
 
 #%% Train model with product loss
-batch_size = 16
+batch_size = 128
 labels = Input((1, ), batch_size=batch_size)
 embeddings = siamese_nets.get_layer('branch_model').output
 loss = ProductLoss(

@@ -18,15 +18,25 @@ class DeterministicSequence(AbstractSequence):
         to_categorical=True,
         **kwargs,
     ):
+        """
+        Args:
+            annotations (List[pd.DataFrame]): list of annotations
+            batch_size (int): batch_size of the sequence.
+            shuffle (bool): shuffle the annotations on epoch end
+            classes (list): list of classes to insure codes are the sames with some references
+            labels_in_input (bool):
+            to_categorical:
+            **kwargs:
+        """
         super().__init__(annotations, batch_size, **kwargs)
         self.labels_in_input = labels_in_input
-        labels = pd.Categorical(self.annotations[0].label, categories=classes)
-        self.targets = labels.codes
+        self.annotations[0].label = pd.Categorical(self.annotations[0].label, categories=classes)
+        self.targets = self.annotations[0].label.cat.codes
         self.shuffle = shuffle
         if to_categorical:
             self.targets = (
                 pd.get_dummies(self.targets)
-                .reindex(list(range(len(labels.categories))), axis=1)
+                .reindex(list(range(len(self.annotations[0].label.categories))), axis=1)
             )
         self.on_epoch_end()
 
