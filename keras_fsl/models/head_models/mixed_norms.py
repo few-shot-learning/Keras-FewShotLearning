@@ -32,10 +32,10 @@ def MixedNorms(input_shape, norms=None):
 
     query = Input(input_shape)
     support = Input(input_shape)
-    inputs = [
-        GlobalAveragePooling2D()(query),
-        GlobalAveragePooling2D()(support),
-    ]
+    inputs = [query, support]
+    if len(input_shape) == 4:
+        inputs = [GlobalAveragePooling2D()(input_) for input_ in inputs]
+
     prediction = Concatenate()([Lambda(norm)(inputs) for norm in norms])
     prediction = Reshape((len(norms), inputs[0].shape[1], 1), name='reshape1')(prediction)
 
