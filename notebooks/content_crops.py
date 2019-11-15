@@ -21,8 +21,8 @@ from keras_fsl.sequences.training.single import DeterministicSequence
 from keras_fsl.losses.product_loss import ProductLoss
 
 #%% Init data
-output_path = Path('logs') / 'content_crops' / 'siamese_mixed_norms' / datetime.today().strftime('%Y%m%d-%H%M%S')
-output_path.mkdir(parents=True, exist_ok=True)
+output_folder = Path('logs') / 'content_crops' / 'siamese_mixed_norms' / datetime.today().strftime('%Y%m%d-%H%M%S')
+output_folder.mkdir(parents=True, exist_ok=True)
 
 all_annotations = (
     pd.read_csv('data/annotations/cropped_images.csv')
@@ -37,7 +37,7 @@ val_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['val_s
 test_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['test_set_dates'])].reset_index(drop=True)
 
 #%% Init model
-branch_model_name = 'MobileNet'
+branch_model_name = 'ResNet50'
 
 preprocessing = iaa.Sequential([
     iaa.Fliplr(0.5),
@@ -73,9 +73,9 @@ branch_depth = len(siamese_nets.get_layer('branch_model').layers)
 
 #%% Pre-train branch_model as usual classifier on big classes
 callbacks = [
-    TensorBoard(output_path / 'branch_model'),
+    TensorBoard(output_folder / 'branch_model'),
     ModelCheckpoint(
-        str(output_path / 'branch_model' / 'best_model.h5'),
+        str(output_folder / 'branch_model' / 'best_model.h5'),
         save_best_only=True,
     ),
     ReduceLROnPlateau(),
@@ -172,9 +172,9 @@ loss = ProductLoss(
 trainable_model = Model([siamese_nets.get_layer('branch_model').input, labels], loss)
 
 callbacks = [
-    TensorBoard(output_path),
+    TensorBoard(output_folder),
     ModelCheckpoint(
-        str(output_path / 'best_model.h5'),
+        str(output_folder / 'best_model.h5'),
         save_best_only=True,
     ),
     ReduceLROnPlateau(),
@@ -211,9 +211,9 @@ trainable_model.fit_generator(
 
 #%% Train model with Sequences
 callbacks = [
-    TensorBoard(output_path),
+    TensorBoard(output_folder),
     ModelCheckpoint(
-        str(output_path / 'best_model.h5'),
+        str(output_folder / 'best_model.h5'),
         save_best_only=True,
     ),
     ReduceLROnPlateau(),
@@ -251,7 +251,7 @@ siamese_nets.fit_generator(
     use_multiprocessing=True,
     workers=5,
 )
-siamese_nets = load_model(output_path / 'best_model.h5')
+siamese_nets = load_model(output_folder / 'best_model.h5')
 
 siamese_nets.fit_generator(
     balanced_train_sequence,
@@ -266,7 +266,7 @@ siamese_nets.fit_generator(
     use_multiprocessing=True,
     workers=5,
 )
-siamese_nets = load_model(output_path / 'best_model.h5')
+siamese_nets = load_model(output_folder / 'best_model.h5')
 
 balanced_train_sequence.batch_size *= 2
 balanced_train_sequence.pairs_per_query *= 2
@@ -284,7 +284,7 @@ siamese_nets.fit_generator(
     use_multiprocessing=True,
     workers=5,
 )
-siamese_nets = load_model(output_path / 'best_model.h5')
+siamese_nets = load_model(output_folder / 'best_model.h5')
 
 for layer in siamese_nets.get_layer('branch_model').layers[int(branch_depth * 0.5):]:
     layer.trainable = True
@@ -299,7 +299,7 @@ siamese_nets.fit_generator(
     use_multiprocessing=True,
     workers=5,
 )
-siamese_nets = load_model(output_path / 'best_model.h5')
+siamese_nets = load_model(output_folder / 'best_model.h5')
 
 balanced_train_sequence.batch_size /= 2
 balanced_train_sequence.pairs_per_query /= 2
@@ -317,7 +317,7 @@ siamese_nets.fit_generator(
     use_multiprocessing=True,
     workers=5,
 )
-siamese_nets = load_model(output_path / 'best_model.h5')
+siamese_nets = load_model(output_folder / 'best_model.h5')
 
 balanced_train_sequence.batch_size *= 2
 balanced_train_sequence.pairs_per_query *= 2
@@ -335,7 +335,7 @@ siamese_nets.fit_generator(
     use_multiprocessing=True,
     workers=5,
 )
-siamese_nets = load_model(output_path / 'best_model.h5')
+siamese_nets = load_model(output_folder / 'best_model.h5')
 
 #%% Eval on test set
 k_shot = 3
@@ -385,4 +385,4 @@ for _ in range(n_episode):
     )]
 
 scores = pd.DataFrame(scores)[['score', 'average_precision', 'good_prediction']]
-scores.to_csv(output_path / 'scores.csv', index=False)
+scores.to_csv(output_folder / 'scores.csv', index=False)
