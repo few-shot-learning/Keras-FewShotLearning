@@ -37,6 +37,7 @@ class DeterministicSequence(AbstractSequence):
             self.targets = (
                 pd.get_dummies(self.targets)
                 .reindex(list(range(len(self.annotations[0].label.cat.categories))), axis=1)
+                .fillna(0)
             )
         self.on_epoch_end()
 

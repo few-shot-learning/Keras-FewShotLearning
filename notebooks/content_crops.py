@@ -95,7 +95,7 @@ train_sequence = DeterministicSequence(
     batch_size=32,
     shuffle=True,
 )
-classes = train_sequence.targets.columns
+classes = train_sequence.annotations[0].label.cat.categories
 val_sequence = DeterministicSequence(
     branch_model_val_set,
     preprocessings=preprocessing,
