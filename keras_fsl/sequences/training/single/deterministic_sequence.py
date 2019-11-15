@@ -47,13 +47,13 @@ class DeterministicSequence(AbstractSequence):
             self.preprocessings[0].augment_images(self.load_img(self.annotations[0].iloc[start_index:end_index])),
             axis=0,
         )]
-        output = [self.targets[start_index:end_index]]
+        output = [self.targets.iloc[start_index:end_index]]
         if self.labels_in_input:
             inputs += [output.pop()]
         return inputs, output
 
     def on_epoch_end(self):
         if self.shuffle:
-            indexes = pd.np.random.permutation(len(self.annotations[0]))
-            self.annotations[0] = self.annotations[0].iloc[indexes]
-            self.targets = self.targets[indexes]
+            indexes = pd.np.random.permutation(self.annotations[0].index)
+            self.annotations[0] = self.annotations[0].loc[indexes]
+            self.targets = self.targets.loc[indexes]

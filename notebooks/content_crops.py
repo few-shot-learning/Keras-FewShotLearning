@@ -106,7 +106,6 @@ val_sequence = DeterministicSequence(
 
 branch_classifier = Sequential([
     siamese_nets.get_layer('branch_model'),
-    GlobalAveragePooling2D(),
     Dense(len(branch_model_train_set.label.unique()), activation='softmax'),
 ])
 siamese_nets.get_layer('branch_model').trainable = False
