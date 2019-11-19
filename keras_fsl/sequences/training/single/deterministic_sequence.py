@@ -36,10 +36,14 @@ class DeterministicSequence(AbstractSequence):
         if to_categorical:
             self.targets = (
                 pd.get_dummies(self.targets)
-                .reindex(list(range(len(self.annotations[0].label.cat.categories))), axis=1)
+                .reindex(list(range(len(self.classes))), axis=1)
                 .fillna(0)
             )
         self.on_epoch_end()
+
+    @property
+    def classes(self):
+        return self.annotations[0].label.cat.categories
 
     def __getitem__(self, index):
         start_index = index * self.batch_size

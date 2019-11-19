@@ -92,21 +92,20 @@ branch_model_val_set = (
 train_sequence = DeterministicSequence(
     branch_model_train_set,
     preprocessings=preprocessing,
-    batch_size=32,
+    batch_size=64,
     shuffle=True,
 )
-classes = train_sequence.annotations[0].label.cat.categories
 val_sequence = DeterministicSequence(
     branch_model_val_set,
     preprocessings=preprocessing,
-    batch_size=32,
-    classes=classes,
+    batch_size=64,
+    classes=train_sequence.classes,
     shuffle=True,
 )
 
 branch_classifier = Sequential([
     siamese_nets.get_layer('branch_model'),
-    Dense(len(branch_model_train_set.label.unique()), activation='softmax'),
+    Dense(len(train_sequence.classes), activation='softmax'),
 ])
 siamese_nets.get_layer('branch_model').trainable = False
 optimizer = Adam(lr=1e-4)
@@ -139,16 +138,16 @@ branch_classifier.fit_generator(
 y = branch_classifier.predict_generator(
     DeterministicSequence(
         test_set.loc[lambda df: df.label.isin(branch_model_train_set.label.unique())],
-        batch_size=32,
-        classes=train_sequence.targets.columns,
+        batch_size=64,
+        classes=train_sequence.classes,
         preprocessings=preprocessing,
     ),
     verbose=1,
 )
 
 confusion_matrix = (
-    test_set.loc[lambda df: df.label.isin(classes)]
-    .assign(label_predicted=classes[np.argmax(y, axis=1)])
+    test_set.loc[lambda df: df.label.isin(train_sequence.classes)]
+    .assign(label_predicted=train_sequence.classes[np.argmax(y, axis=1)])
     .pivot_table(
         index='label_predicted',
         columns='label',
@@ -213,7 +212,7 @@ trainable_model.fit_generator(
 trainable_model.load_weights(str(output_folder / 'product_loss_best_weights.h5'))
 
 siamese_nets.get_layer('branch_model').trainable = True
-for layer in siamese_nets.get_layer('branch_model').layers[:int(branch_depth * 0.75)]:
+for layer in siamese_nets.get_layer('branch_model').layers[:int(branch_depth * 0.8)]:
     layer.trainable = False
 optimizer = Adam(lr=1e-5)
 trainable_model.compile(optimizer=optimizer)
@@ -237,11 +236,11 @@ callbacks = [
     ),
     ReduceLROnPlateau(),
 ]
-random_balanced_train_sequence = RandomBalancedPairsSequence(train_set, preprocessings=preprocessing, batch_size=16)
+random_balanced_train_sequence = RandomBalancedPairsSequence(train_set, preprocessings=preprocessing, batch_size=32)
 balanced_train_sequence = BalancedPairsSequence(
     train_set, pairs_per_query=2, preprocessings=preprocessing, batch_size=32,
 )
-random_balanced_val_sequence = RandomBalancedPairsSequence(val_set, preprocessings=preprocessing, batch_size=16)
+random_balanced_val_sequence = RandomBalancedPairsSequence(val_set, preprocessings=preprocessing, batch_size=32)
 
 siamese_nets.get_layer('branch_model').trainable = False
 optimizer = Adam(lr=1e-4)
@@ -250,8 +249,8 @@ siamese_nets.fit_generator(
     random_balanced_train_sequence,
     validation_data=random_balanced_val_sequence,
     callbacks=callbacks,
-    initial_epoch=0,
-    epochs=3,
+    initial_epoch=70,
+    epochs=73,
     use_multiprocessing=True,
     workers=5,
 )
@@ -265,8 +264,8 @@ siamese_nets.fit_generator(
     random_balanced_train_sequence,
     validation_data=random_balanced_val_sequence,
     callbacks=callbacks,
-    initial_epoch=3,
-    epochs=10,
+    initial_epoch=73,
+    epochs=80,
     use_multiprocessing=True,
     workers=5,
 )
@@ -280,8 +279,8 @@ siamese_nets.fit_generator(
     ),
     validation_data=random_balanced_val_sequence,
     callbacks=callbacks,
-    initial_epoch=10,
-    epochs=15,
+    initial_epoch=80,
+    epochs=85,
     use_multiprocessing=True,
     workers=5,
 )
@@ -298,8 +297,8 @@ siamese_nets.fit_generator(
     ),
     validation_data=random_balanced_val_sequence,
     callbacks=callbacks,
-    initial_epoch=15,
-    epochs=20,
+    initial_epoch=85,
+    epochs=90,
     use_multiprocessing=True,
     workers=5,
 )
@@ -313,8 +312,8 @@ siamese_nets.fit_generator(
     random_balanced_train_sequence,
     validation_data=random_balanced_val_sequence,
     callbacks=callbacks,
-    initial_epoch=20,
-    epochs=25,
+    initial_epoch=90,
+    epochs=95,
     use_multiprocessing=True,
     workers=5,
 )
@@ -331,8 +330,8 @@ siamese_nets.fit_generator(
     ),
     validation_data=random_balanced_val_sequence,
     callbacks=callbacks,
-    initial_epoch=25,
-    epochs=30,
+    initial_epoch=95,
+    epochs=100,
     use_multiprocessing=True,
     workers=5,
 )
