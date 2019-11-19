@@ -10,14 +10,12 @@ import yaml
 from tensorflow.python.keras import Sequential
 from tensorflow.python.keras.models import load_model, Model
 from tensorflow.python.keras import applications as keras_applications
-from tensorflow.python.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, TensorBoard
+from tensorflow.python.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, TensorBoard, EarlyStopping
 from tensorflow.python.keras.layers import Dense, Input
 from tensorflow.python.keras.optimizer_v2.adam import Adam
 
 from keras_fsl.models import SiameseNets
-from keras_fsl.sequences.prediction.pairs import ProductSequence
-from keras_fsl.sequences.training.pairs import BalancedPairsSequence, RandomBalancedPairsSequence
-from keras_fsl.sequences.training.single import DeterministicSequence, KShotNWaySequence
+from keras_fsl.sequences import training, prediction
 from keras_fsl.losses.product_loss import ProductLoss
 
 #%% Init data
@@ -89,13 +87,13 @@ branch_model_val_set = (
     val_set
     .loc[lambda df: df.label.isin(branch_model_train_set.label.unique())]
 )
-train_sequence = DeterministicSequence(
+train_sequence = training.single.DeterministicSequence(
     branch_model_train_set,
     preprocessings=preprocessing,
     batch_size=64,
     shuffle=True,
 )
-val_sequence = DeterministicSequence(
+val_sequence = training.single.DeterministicSequence(
     branch_model_val_set,
     preprocessings=preprocessing,
     batch_size=64,
@@ -136,7 +134,7 @@ branch_classifier.fit_generator(
 
 #%% Check learnt classes
 y = branch_classifier.predict_generator(
-    DeterministicSequence(
+    prediction.single.DeterministicSequence(
         test_set.loc[lambda df: df.label.isin(branch_model_train_set.label.unique())],
         batch_size=64,
         classes=train_sequence.classes,
@@ -178,7 +176,7 @@ callbacks = [
     ),
     ReduceLROnPlateau(),
 ]
-train_sequence = KShotNWaySequence(
+train_sequence = training.single.KShotNWaySequence(
     train_set,
     preprocessings=preprocessing,
     batch_size=batch_size,
@@ -187,7 +185,7 @@ train_sequence = KShotNWaySequence(
     k_shot=batch_size // 4,
     n_way=4,
 )
-val_sequence = KShotNWaySequence(
+val_sequence = training.single.KShotNWaySequence(
     val_set,
     preprocessings=preprocessing,
     batch_size=batch_size,
@@ -236,11 +234,15 @@ callbacks = [
     ),
     ReduceLROnPlateau(),
 ]
-random_balanced_train_sequence = RandomBalancedPairsSequence(train_set, preprocessings=preprocessing, batch_size=32)
-balanced_train_sequence = BalancedPairsSequence(
+random_balanced_train_sequence = training.pairs.RandomBalancedPairsSequence(
+    train_set, preprocessings=preprocessing, batch_size=32,
+)
+balanced_train_sequence = training.pairs.BalancedPairsSequence(
     train_set, pairs_per_query=2, preprocessings=preprocessing, batch_size=32,
 )
-random_balanced_val_sequence = RandomBalancedPairsSequence(val_set, preprocessings=preprocessing, batch_size=32)
+random_balanced_val_sequence = training.pairs.RandomBalancedPairsSequence(
+    val_set, preprocessings=preprocessing, batch_size=32,
+)
 
 siamese_nets.get_layer('branch_model').trainable = False
 optimizer = Adam(lr=1e-4)
@@ -358,8 +360,8 @@ siamese_nets = load_model(output_folder / 'best_model.h5')
 #%% Eval on test set
 k_shot = 3
 n_way = 10
-n_episode = 100
-test_sequence = DeterministicSequence(test_set, preprocessings=preprocessing, batch_size=16)
+n_episode = 50
+test_sequence = training.single.DeterministicSequence(test_set, preprocessings=preprocessing, batch_size=16)
 embeddings = siamese_nets.get_layer('branch_model').predict_generator(test_sequence)
 
 scores = []
@@ -379,7 +381,7 @@ for _ in range(n_episode):
     )
     support_set_embeddings = embeddings[support_set.index]
     query_set_embeddings = embeddings[query_set.index]
-    test_sequence = ProductSequence(
+    test_sequence = prediction.pairs.ProductSequence(
         support_images_array=support_set_embeddings,
         query_images_array=query_set_embeddings,
         support_labels=support_set.label.values,

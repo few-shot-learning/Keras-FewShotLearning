@@ -29,7 +29,6 @@ class ProductLoss(Layer):
     def build(self, input_shape):
         batch_size = input_shape[0][0] or input_shape[1][0]
         self.indexes = tf.range(batch_size, dtype=tf.int32)
-        # self.indexes = tf.Variable(indexes, trainable=False, validate_shape=True)
         super().build(input_shape)
 
     def call(self, inputs, **kwargs):
