@@ -23,9 +23,6 @@ build:
 
 run:
   cmd:
-    # Allow to access the mounted data_folder as if it was in ./{PROJECT_DATA}
-    - ln -s /data ./data
-    # Allow to access the mounted output_folder as if it was in ./{PRJECT_OUTPUT}
+    - ln -s /data/clementw/Keras-FewShotLearning/data ./data
     - ln -s $POLYAXON_RUN_OUTPUTS_PATH ./logs
-    # Run your python script
     - python notebooks/content_crops.py

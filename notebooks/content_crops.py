@@ -7,17 +7,17 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import yaml
-from tensorflow.python.keras import Sequential, Model
-from tensorflow.python.keras.models import load_model
+from tensorflow.python.keras import Sequential
+from tensorflow.python.keras.models import load_model, Model
 from tensorflow.python.keras import applications as keras_applications
 from tensorflow.python.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, TensorBoard
-from tensorflow.python.keras.layers import Dense, GlobalAveragePooling2D, Input
+from tensorflow.python.keras.layers import Dense, Input
 from tensorflow.python.keras.optimizer_v2.adam import Adam
 
 from keras_fsl.models import SiameseNets
 from keras_fsl.sequences.prediction.pairs import ProductSequence
 from keras_fsl.sequences.training.pairs import BalancedPairsSequence, RandomBalancedPairsSequence
-from keras_fsl.sequences.training.single import DeterministicSequence
+from keras_fsl.sequences.training.single import DeterministicSequence, KShotNWaySequence
 from keras_fsl.losses.product_loss import ProductLoss
 
 #%% Init data
@@ -31,7 +31,7 @@ all_annotations = (
         image_name=lambda df: 'data/images/cropped_images/' + df.image_name,
     )
 )
-train_val_test_split = yaml.safe_load(open('data/annotations/cropped_images_split.yaml', 'r'))
+train_val_test_split = yaml.safe_load(open('data/annotations/cropped_images_split.yaml'))
 train_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['train_set_dates'])]
 val_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['val_set_dates'])]
 test_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['test_set_dates'])].reset_index(drop=True)
@@ -135,7 +135,7 @@ branch_classifier.fit_generator(
     workers=5,
 )
 
-# %% Check learnt classes
+#%% Check learnt classes
 y = branch_classifier.predict_generator(
     DeterministicSequence(
         test_set.loc[lambda df: df.label.isin(branch_model_train_set.label.unique())],
@@ -160,7 +160,7 @@ confusion_matrix = (
 )
 
 #%% Train model with product loss
-batch_size = 128
+batch_size = 64
 labels = Input((1, ), batch_size=batch_size)
 embeddings = siamese_nets.get_layer('branch_model').output
 loss = ProductLoss(
@@ -173,26 +173,29 @@ trainable_model = Model([siamese_nets.get_layer('branch_model').input, labels], 
 callbacks = [
     TensorBoard(output_folder),
     ModelCheckpoint(
-        str(output_folder / 'best_model.h5'),
+        str(output_folder / 'product_loss_best_weights.h5'),
         save_best_only=True,
+        save_weights_only=True,
     ),
     ReduceLROnPlateau(),
 ]
-train_sequence = DeterministicSequence(
+train_sequence = KShotNWaySequence(
     train_set,
     preprocessings=preprocessing,
     batch_size=batch_size,
     labels_in_input=True,
     to_categorical=False,
-    shuffle=True,
+    k_shot=batch_size // 4,
+    n_way=4,
 )
-val_sequence = DeterministicSequence(
+val_sequence = KShotNWaySequence(
     val_set,
     preprocessings=preprocessing,
     batch_size=batch_size,
     labels_in_input=True,
     to_categorical=False,
-    shuffle=True,
+    k_shot=batch_size // 4,
+    n_way=4,
 )
 
 siamese_nets.get_layer('branch_model').trainable = False
@@ -203,10 +206,27 @@ trainable_model.fit_generator(
     validation_data=val_sequence,
     callbacks=callbacks,
     initial_epoch=0,
-    epochs=3,
+    epochs=20,
     use_multiprocessing=True,
     workers=5,
 )
+trainable_model.load_weights(str(output_folder / 'product_loss_best_weights.h5'))
+
+siamese_nets.get_layer('branch_model').trainable = True
+for layer in siamese_nets.get_layer('branch_model').layers[:int(branch_depth * 0.75)]:
+    layer.trainable = False
+optimizer = Adam(lr=1e-5)
+trainable_model.compile(optimizer=optimizer)
+trainable_model.fit_generator(
+    train_sequence,
+    validation_data=val_sequence,
+    callbacks=callbacks,
+    initial_epoch=20,
+    epochs=70,
+    use_multiprocessing=True,
+    workers=5,
+)
+trainable_model.load_weights(str(output_folder / 'product_loss_best_weights.h5'))
 
 #%% Train model with Sequences
 callbacks = [
