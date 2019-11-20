@@ -54,7 +54,7 @@ class DeterministicSequence(AbstractSequence):
         )]
         output = [self.targets.iloc[start_index:end_index]]
         if self.labels_in_input:
-            inputs += [output.pop()]
+            inputs += output
         return inputs, output
 
     def on_epoch_end(self):
