@@ -11,20 +11,29 @@ class ProductLoss(Layer):
     the L2 distance between all pairs of tensors of a given batch.
     """
 
-    def __init__(self, loss, loss_layer, target_function, **kwargs):
+    def __init__(self, loss, metric_layer, target_function, **kwargs):
         """
 
         Args:
             loss (Union[str, tensorflow.keras.losses.Loss): the actual loss computed on the output of the loss layer
-            loss_layer (tensorflow.keras.layers.Layer): The multi-inputs model computing the loss
+            metric_layer (tensorflow.keras.layers.Layer): The multi-inputs model computing the loss
             target_function (function): a function to be applied to the corresponding labels to compute the target of
                 the loss
         """
         super().__init__(**kwargs)
         self.loss = loss
-        self.loss_layer = loss_layer
+        self.metric_layer = metric_layer
         self.target_function = target_function
         self.indexes = None
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({
+            'loss': self.loss,
+            'metric_layer': self.metric_layer,
+            'target_function': self.target_function,
+        })
+        return config
 
     def build(self, input_shape):
         batch_size = input_shape[0][0] or input_shape[1][0]
@@ -39,13 +48,13 @@ class ProductLoss(Layer):
         """
         embeddings, labels = inputs
         indexes = tf.meshgrid(*[
-            self.indexes for _ in range(len(self.loss_layer.inputs))
+            self.indexes for _ in range(len(self.metric_layer.inputs))
         ])
         loss = self.loss(
             tf.reshape(self.target_function([
                 tf.gather(labels, tf.reshape(indexes[i], [-1])) for i in range(len(indexes))
             ]), [-1]),
-            tf.reshape(self.loss_layer([
+            tf.reshape(self.metric_layer([
                 tf.gather(embeddings, tf.reshape(indexes[i], [-1])) for i in range(len(indexes))
             ]), [-1]),
         )

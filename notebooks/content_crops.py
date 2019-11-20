@@ -10,7 +10,11 @@ import yaml
 from tensorflow.python.keras import Sequential
 from tensorflow.python.keras.models import load_model, Model
 from tensorflow.python.keras import applications as keras_applications
-from tensorflow.python.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, TensorBoard, EarlyStopping
+from tensorflow.python.keras.callbacks import (
+    ModelCheckpoint,
+    ReduceLROnPlateau,
+    TensorBoard
+)
 from tensorflow.python.keras.layers import Dense, Input
 from tensorflow.python.keras.optimizer_v2.adam import Adam
 
@@ -35,7 +39,7 @@ val_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['val_s
 test_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['test_set_dates'])].reset_index(drop=True)
 
 #%% Init model
-branch_model_name = 'ResNet50'
+branch_model_name = 'MobileNet'
 
 preprocessing = iaa.Sequential([
     iaa.Fliplr(0.5),
@@ -137,7 +141,6 @@ y = branch_classifier.predict_generator(
     prediction.single.DeterministicSequence(
         test_set.loc[lambda df: df.label.isin(branch_model_train_set.label.unique())],
         batch_size=64,
-        classes=train_sequence.classes,
         preprocessings=preprocessing,
     ),
     verbose=1,
@@ -162,8 +165,8 @@ labels = Input((1, ), batch_size=batch_size)
 embeddings = siamese_nets.get_layer('branch_model').output
 loss = ProductLoss(
     loss=tf.losses.binary_crossentropy,
-    loss_layer=siamese_nets.get_layer('head_model'),
-    target_function=lambda inputs: tf.dtypes.cast(tf.equal(inputs[0], inputs[1]), tf.int32),
+    metric_layer=siamese_nets.get_layer('head_model'),
+    target_function=lambda inputs: tf.dtypes.cast(tf.equal(inputs[0], inputs[1]), tf.float32)
 )([embeddings, labels])
 trainable_model = Model([siamese_nets.get_layer('branch_model').input, labels], loss)
 
