@@ -40,6 +40,9 @@ class ProductLoss(Layer):
         self.indexes = tf.range(batch_size, dtype=tf.int32)
         super().build(input_shape)
 
+    def compute_output_shape(self, input_shape):
+        return input_shape[1]**2,
+
     def call(self, inputs, **kwargs):
         """
         Args:
