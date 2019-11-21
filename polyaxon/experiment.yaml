@@ -23,6 +23,6 @@ build:
 
 run:
   cmd:
-    - ln -s /data/clementw/Keras-FewShotLearning/data ./data
+    - ln -s /data ./data
     - ln -s $POLYAXON_RUN_OUTPUTS_PATH ./logs
     - python notebooks/content_crops.py
