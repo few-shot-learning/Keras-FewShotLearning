@@ -15,6 +15,7 @@ class DeterministicSequence(AbstractSequence):
         shuffle=False,
         classes=None,
         labels_in_input=False,
+        labels_in_output=True,
         to_categorical=True,
         **kwargs,
     ):
@@ -24,12 +25,14 @@ class DeterministicSequence(AbstractSequence):
             batch_size (int): batch_size of the sequence.
             shuffle (bool): shuffle the annotations on epoch end
             classes (list): list of classes to insure codes are the sames with some references
-            labels_in_input (bool):
+            labels_in_input (bool): add the target labels in the input
+            labels_in_output (bool): add the target labels in the output
             to_categorical:
             **kwargs:
         """
         super().__init__(annotations, batch_size, **kwargs)
         self.labels_in_input = labels_in_input
+        self.labels_in_output = labels_in_output
         self.annotations[0].label = pd.Categorical(self.annotations[0].label, categories=classes)
         self.targets = self.annotations[0].label.cat.codes
         self.shuffle = shuffle
@@ -55,6 +58,8 @@ class DeterministicSequence(AbstractSequence):
         output = [self.targets.iloc[start_index:end_index]]
         if self.labels_in_input:
             inputs += output
+        if not self.labels_in_output:
+            output.pop()
         return inputs, output
 
     def on_epoch_end(self):

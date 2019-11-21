@@ -11,5 +11,4 @@ var
 *.swp
 .DS_Store
 ./.polyaxon
-data
 logs

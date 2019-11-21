@@ -61,5 +61,5 @@ class ProductLoss(Layer):
                 tf.gather(embeddings, tf.reshape(indexes[i], [-1])) for i in range(len(indexes))
             ]), [-1]),
         )
-        self.add_loss(loss, inputs=True)
+        self.add_loss(tf.reduce_mean(loss), inputs=True)
         return loss

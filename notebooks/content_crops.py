@@ -1,4 +1,5 @@
 #%%
+import shutil
 from datetime import datetime
 from pathlib import Path
 
@@ -9,7 +10,7 @@ import tensorflow as tf
 import yaml
 from tensorflow.python.keras import Sequential
 from tensorflow.python.keras.models import load_model, Model
-from tensorflow.python.keras import applications as keras_applications
+from tensorflow.python.keras import applications as keras_applications, backend as K
 from tensorflow.python.keras.callbacks import (
     ModelCheckpoint,
     ReduceLROnPlateau,
@@ -20,11 +21,15 @@ from tensorflow.python.keras.optimizer_v2.adam import Adam
 
 from keras_fsl.models import SiameseNets
 from keras_fsl.sequences import training, prediction
-from keras_fsl.losses.product_loss import ProductLoss
+from keras_fsl.losses import ClassificationLoss, ProductLoss
 
 #%% Init data
 output_folder = Path('logs') / 'content_crops' / 'siamese_mixed_norms' / datetime.today().strftime('%Y%m%d-%H%M%S')
 output_folder.mkdir(parents=True, exist_ok=True)
+try:
+    shutil.copy(__file__, output_folder / 'training_pipeline.py')
+except NameError:
+    pass
 
 all_annotations = (
     pd.read_csv('data/annotations/cropped_images.csv')
@@ -163,12 +168,12 @@ confusion_matrix = (
 batch_size = 64
 labels = Input((1, ), batch_size=batch_size)
 embeddings = siamese_nets.get_layer('branch_model').output
-loss = ProductLoss(
-    loss=tf.losses.binary_crossentropy,
+product_loss = ProductLoss(
+    loss=K.binary_crossentropy,
     metric_layer=siamese_nets.get_layer('head_model'),
     target_function=lambda inputs: tf.dtypes.cast(tf.equal(inputs[0], inputs[1]), tf.float32)
 )([embeddings, labels])
-trainable_model = Model([siamese_nets.get_layer('branch_model').input, labels], loss)
+trainable_model = Model([siamese_nets.get_layer('branch_model').input, labels], product_loss)
 
 callbacks = [
     TensorBoard(output_folder),
@@ -184,6 +189,7 @@ train_sequence = training.single.KShotNWaySequence(
     preprocessings=preprocessing,
     batch_size=batch_size,
     labels_in_input=True,
+    labels_in_output=False,
     to_categorical=False,
     k_shot=batch_size // 4,
     n_way=4,
@@ -193,6 +199,7 @@ val_sequence = training.single.KShotNWaySequence(
     preprocessings=preprocessing,
     batch_size=batch_size,
     labels_in_input=True,
+    labels_in_output=False,
     to_categorical=False,
     k_shot=batch_size // 4,
     n_way=4,
@@ -353,8 +360,8 @@ siamese_nets.fit_generator(
     ),
     validation_data=random_balanced_val_sequence,
     callbacks=callbacks,
-    initial_epoch=30,
-    epochs=35,
+    initial_epoch=100,
+    epochs=105,
     use_multiprocessing=True,
     workers=5,
 )
