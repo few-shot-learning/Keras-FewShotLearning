@@ -8,20 +8,22 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import yaml
-from tensorflow.python.keras.models import load_model
-from tensorflow.python.keras import applications as keras_applications
+from tensorflow.python.keras.models import load_model, Model
+from tensorflow.python.keras import applications as keras_applications, backend as K
 from tensorflow.python.keras.callbacks import (
     ModelCheckpoint,
     ReduceLROnPlateau,
     TensorBoard
 )
+from tensorflow.python.keras.layers import Input
 from tensorflow.python.keras.optimizer_v2.adam import Adam
 
 from keras_fsl.models import SiameseNets
 from keras_fsl.sequences import training, prediction
+from keras_fsl.losses.product_loss import ProductLoss
 
 #%% Init data
-output_folder = Path('logs') / 'random_balanced_sequence' / datetime.today().strftime('%Y%m%d-%H%M%S')
+output_folder = Path('logs') / 'product_loss' / datetime.today().strftime('%Y%m%d-%H%M%S')
 output_folder.mkdir(parents=True, exist_ok=True)
 try:
     shutil.copy(__file__, output_folder / 'training_pipeline.py')
@@ -41,7 +43,7 @@ val_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['val_s
 test_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['test_set_dates'])].reset_index(drop=True)
 
 #%% Init model
-branch_model_name = 'ResNet50'
+branch_model_name = 'MobileNet'
 
 preprocessing = iaa.Sequential([
     iaa.Fliplr(0.5),
@@ -75,74 +77,91 @@ siamese_nets = SiameseNets(
 )
 branch_depth = len(siamese_nets.get_layer('branch_model').layers)
 
-#%% Train model with Sequences
+#%% Train model with product loss
+batch_size = 64
+labels = Input((1,), batch_size=batch_size)
+embeddings = siamese_nets.get_layer('branch_model').output
+product_loss = ProductLoss(
+    loss=K.binary_crossentropy,
+    metric_layer=siamese_nets.get_layer('head_model'),
+    target_function=lambda inputs: tf.dtypes.cast(tf.equal(inputs[0], inputs[1]), tf.float32)
+)([embeddings, labels])
+trainable_model = Model([siamese_nets.get_layer('branch_model').input, labels], product_loss)
+
 callbacks = [
     TensorBoard(output_folder),
     ModelCheckpoint(
-        str(output_folder / 'best_model.h5'),
+        str(output_folder / 'product_loss_best_weights.h5'),
         save_best_only=True,
+        save_weights_only=True,
     ),
     ReduceLROnPlateau(),
 ]
-train_sequence = training.pairs.RandomBalancedPairsSequence(train_set, preprocessings=preprocessing, batch_size=16)
-val_sequence = training.pairs.RandomBalancedPairsSequence(val_set, preprocessings=preprocessing, batch_size=16)
+train_sequence = training.single.KShotNWaySequence(
+    train_set,
+    preprocessings=preprocessing,
+    batch_size=batch_size,
+    labels_in_input=True,
+    labels_in_output=False,
+    to_categorical=False,
+    k_shot=batch_size // 8,
+    n_way=8,
+)
+val_sequence = training.single.KShotNWaySequence(
+    val_set,
+    preprocessings=preprocessing,
+    batch_size=batch_size,
+    labels_in_input=True,
+    labels_in_output=False,
+    to_categorical=False,
+    k_shot=batch_size // 8,
+    n_way=8,
+)
 
 siamese_nets.get_layer('branch_model').trainable = False
 optimizer = Adam(lr=1e-4)
-siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
-siamese_nets.fit_generator(
+trainable_model.compile(optimizer=optimizer)
+trainable_model.fit_generator(
     train_sequence,
     validation_data=val_sequence,
     callbacks=callbacks,
     initial_epoch=0,
-    epochs=3,
+    epochs=10,
     use_multiprocessing=True,
-    workers=2,
+    workers=3,
 )
+trainable_model.load_weights(str(output_folder / 'product_loss_best_weights.h5'))
 
 siamese_nets.get_layer('branch_model').trainable = True
 for layer in siamese_nets.get_layer('branch_model').layers[:int(branch_depth * 0.8)]:
     layer.trainable = False
-optimizer = Adam(1e-5)
-siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
-siamese_nets.fit_generator(
-    train_sequence,
-    validation_data=val_sequence,
-    callbacks=callbacks,
-    initial_epoch=3,
-    epochs=10,
-    use_multiprocessing=True,
-    workers=2,
-)
-siamese_nets = load_model(output_folder / 'best_model.h5')
-
-for layer in siamese_nets.get_layer('branch_model').layers[int(branch_depth * 0.5):]:
-    layer.trainable = True
-optimizer = Adam(1e-5)
-siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
-siamese_nets.fit_generator(
+optimizer = Adam(lr=1e-5)
+trainable_model.compile(optimizer=optimizer)
+trainable_model.fit_generator(
     train_sequence,
     validation_data=val_sequence,
     callbacks=callbacks,
     initial_epoch=10,
-    epochs=15,
+    epochs=20,
     use_multiprocessing=True,
-    workers=2,
+    workers=3,
 )
-siamese_nets = load_model(output_folder / 'best_model.h5')
+trainable_model.load_weights(str(output_folder / 'product_loss_best_weights.h5'))
 
-optimizer = Adam(1e-6)
-siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
-siamese_nets.fit_generator(
+for layer in siamese_nets.get_layer('branch_model').layers[int(branch_depth * 0.5):]:
+    layer.trainable = True
+optimizer = Adam(lr=1e-5)
+trainable_model.compile(optimizer=optimizer)
+trainable_model.fit_generator(
     train_sequence,
     validation_data=val_sequence,
     callbacks=callbacks,
-    initial_epoch=15,
-    epochs=20,
+    initial_epoch=20,
+    epochs=30,
     use_multiprocessing=True,
-    workers=2,
+    workers=3,
 )
-siamese_nets = load_model(output_folder / 'best_model.h5')
+trainable_model.load_weights(str(output_folder / 'product_loss_best_weights.h5'))
 
 #%% Eval on test set
 k_shot = 3
