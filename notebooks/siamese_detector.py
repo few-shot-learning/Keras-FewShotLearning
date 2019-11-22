@@ -8,7 +8,7 @@ from tensorflow.python.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
 from tensorflow.python.keras.optimizer_v2.adam import Adam
 from tensorflow.python.keras.preprocessing.image import load_img, img_to_array, save_img
 
-from keras_fsl.annotations.operators.random_assignment import RandomAssignment
+from keras_fsl.dataframe.operators.random_assignment import RandomAssignment
 from keras_fsl.models import SiameseDetector
 from keras_fsl.sequences import RandomBalancedPairsSequence
 

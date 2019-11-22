@@ -1,6 +1,6 @@
-from keras_fsl.annotations.operators.center_coordinates_to_keypoint import CenterCoordinatesToKeypoint
-from keras_fsl.annotations.operators.coordinates_to_bounding_box import CoordinatesToBoundingBox
-from keras_fsl.annotations.operators.corner_to_center_coordinates import CornerToCenterCoordinates
+from keras_fsl.dataframe.operators.center_coordinates_to_keypoint import CenterCoordinatesToKeypoint
+from keras_fsl.dataframe.operators.coordinates_to_bounding_box import CoordinatesToBoundingBox
+from keras_fsl.dataframe.operators.corner_to_center_coordinates import CornerToCenterCoordinates
 
 
 def CoordinatesToImgAug(input_dataframe):

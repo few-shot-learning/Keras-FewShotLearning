@@ -2,7 +2,10 @@ import imgaug.augmenters as iaa
 from imgaug import parameters as iap
 
 
-def yolo():
+def YOLO():
+    """
+    Data augmentation model for YOLOv3 training
+    """
     return iaa.Sequential([
         iaa.KeepSizeByResize(
             iaa.Affine(
