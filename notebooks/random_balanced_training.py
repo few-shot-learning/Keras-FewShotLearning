@@ -26,7 +26,7 @@ output_folder = Path('logs') / datetime.today().strftime('%Y%m%d-%H%M%S')
 output_folder.mkdir(parents=True, exist_ok=True)
 try:
     shutil.copy(__file__, output_folder / 'training_pipeline.py')
-except NameError:
+except (FileNotFoundError, NameError):
     pass
 
 all_annotations = (
