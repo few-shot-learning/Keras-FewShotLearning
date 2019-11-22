@@ -44,7 +44,7 @@ val_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['val_s
 test_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['test_set_dates'])].reset_index(drop=True)
 
 #%% Init model
-branch_model_name = 'MobileNet'
+branch_model_name = 'ResNet50'
 
 preprocessing = iaa.Sequential([
     iaa.Fliplr(0.5),
@@ -191,8 +191,8 @@ train_sequence = training.single.KShotNWaySequence(
     labels_in_input=True,
     labels_in_output=False,
     to_categorical=False,
-    k_shot=batch_size // 4,
-    n_way=4,
+    k_shot=batch_size // 8,
+    n_way=8,
 )
 val_sequence = training.single.KShotNWaySequence(
     val_set,
@@ -201,8 +201,8 @@ val_sequence = training.single.KShotNWaySequence(
     labels_in_input=True,
     labels_in_output=False,
     to_categorical=False,
-    k_shot=batch_size // 4,
-    n_way=4,
+    k_shot=batch_size // 8,
+    n_way=8,
 )
 
 siamese_nets.get_layer('branch_model').trainable = False
@@ -220,7 +220,7 @@ trainable_model.fit_generator(
 trainable_model.load_weights(str(output_folder / 'product_loss_best_weights.h5'))
 
 siamese_nets.get_layer('branch_model').trainable = True
-for layer in siamese_nets.get_layer('branch_model').layers[:int(branch_depth * 0.8)]:
+for layer in siamese_nets.get_layer('branch_model').layers[:int(branch_depth * 0.6)]:
     layer.trainable = False
 optimizer = Adam(lr=1e-5)
 trainable_model.compile(optimizer=optimizer)
