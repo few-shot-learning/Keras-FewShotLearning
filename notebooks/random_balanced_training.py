@@ -84,19 +84,15 @@ callbacks = [
     ),
     ReduceLROnPlateau(),
 ]
-random_balanced_train_sequence = training.pairs.RandomBalancedPairsSequence(
-    train_set, preprocessings=preprocessing, batch_size=16,
-)
-random_balanced_val_sequence = training.pairs.RandomBalancedPairsSequence(
-    val_set, preprocessings=preprocessing, batch_size=16,
-)
+train_sequence = training.pairs.RandomBalancedPairsSequence(train_set, preprocessings=preprocessing, batch_size=16)
+val_sequence = training.pairs.RandomBalancedPairsSequence(val_set, preprocessings=preprocessing, batch_size=16)
 
 siamese_nets.get_layer('branch_model').trainable = False
 optimizer = Adam(lr=1e-4)
 siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
 siamese_nets.fit_generator(
-    random_balanced_train_sequence,
-    validation_data=random_balanced_val_sequence,
+    train_sequence,
+    validation_data=val_sequence,
     callbacks=callbacks,
     initial_epoch=0,
     epochs=3,
@@ -110,11 +106,39 @@ for layer in siamese_nets.get_layer('branch_model').layers[:int(branch_depth * 0
 optimizer = Adam(1e-5)
 siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
 siamese_nets.fit_generator(
-    random_balanced_train_sequence,
-    validation_data=random_balanced_val_sequence,
+    train_sequence,
+    validation_data=val_sequence,
     callbacks=callbacks,
     initial_epoch=3,
+    epochs=10,
+    use_multiprocessing=True,
+    workers=2,
+)
+siamese_nets = load_model(output_folder / 'best_model.h5')
+
+for layer in siamese_nets.get_layer('branch_model').layers[int(branch_depth * 0.5):]:
+    layer.trainable = True
+optimizer = Adam(1e-5)
+siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
+siamese_nets.fit_generator(
+    train_sequence,
+    validation_data=val_sequence,
+    callbacks=callbacks,
+    initial_epoch=10,
     epochs=15,
+    use_multiprocessing=True,
+    workers=2,
+)
+siamese_nets = load_model(output_folder / 'best_model.h5')
+
+optimizer = Adam(1e-6)
+siamese_nets.compile(optimizer=optimizer, loss='binary_crossentropy')
+siamese_nets.fit_generator(
+    train_sequence,
+    validation_data=val_sequence,
+    callbacks=callbacks,
+    initial_epoch=15,
+    epochs=20,
     use_multiprocessing=True,
     workers=2,
 )
