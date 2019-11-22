@@ -21,7 +21,6 @@ from keras_fsl.models import SiameseNets
 from keras_fsl.sequences import training, prediction
 
 #%% Init data
-tf.compat.v1.disable_eager_execution()
 output_folder = Path('logs') / datetime.today().strftime('%Y%m%d-%H%M%S')
 output_folder.mkdir(parents=True, exist_ok=True)
 try:
@@ -102,7 +101,7 @@ siamese_nets.fit_generator(
     initial_epoch=0,
     epochs=3,
     use_multiprocessing=True,
-    workers=5,
+    workers=2,
 )
 
 siamese_nets.get_layer('branch_model').trainable = True
@@ -117,7 +116,7 @@ siamese_nets.fit_generator(
     initial_epoch=3,
     epochs=15,
     use_multiprocessing=True,
-    workers=5,
+    workers=2,
 )
 siamese_nets = load_model(output_folder / 'best_model.h5')
 
