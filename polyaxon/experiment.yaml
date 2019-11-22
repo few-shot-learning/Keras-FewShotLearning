@@ -20,6 +20,8 @@ build:
   env_vars:
     - ['LC_ALL', 'C.UTF-8']
     - ['PYTHONPATH', '$PYTHONPATH:/code']
+    - ['TF_FORCE_GPU_ALLOW_GROWTH', 'true']
+    - ['TF_XLA_FLAGS', "--tf_xla_auto_jit\\=2 --tf_xla_cpu_global_jit"]
 
 run:
   cmd:
