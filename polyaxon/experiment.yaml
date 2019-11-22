@@ -25,4 +25,4 @@ run:
   cmd:
     - ln -s /data ./data
     - ln -s $POLYAXON_RUN_OUTPUTS_PATH ./logs
-    - python notebooks/content_crops.py
+    - python notebooks/random_balanced_training.py

@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import yaml
-
 from tensorflow.python.keras.models import load_model
 from tensorflow.python.keras import applications as keras_applications
 from tensorflow.python.keras.callbacks import (
@@ -22,6 +21,7 @@ from keras_fsl.models import SiameseNets
 from keras_fsl.sequences import training, prediction
 
 #%% Init data
+tf.compat.v1.disable_eager_execution()
 output_folder = Path('logs') / datetime.today().strftime('%Y%m%d-%H%M%S')
 output_folder.mkdir(parents=True, exist_ok=True)
 try:
@@ -86,10 +86,10 @@ callbacks = [
     ReduceLROnPlateau(),
 ]
 random_balanced_train_sequence = training.pairs.RandomBalancedPairsSequence(
-    train_set, preprocessings=preprocessing, batch_size=32,
+    train_set, preprocessings=preprocessing, batch_size=16,
 )
 random_balanced_val_sequence = training.pairs.RandomBalancedPairsSequence(
-    val_set, preprocessings=preprocessing, batch_size=32,
+    val_set, preprocessings=preprocessing, batch_size=16,
 )
 
 siamese_nets.get_layer('branch_model').trainable = False
