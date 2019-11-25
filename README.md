@@ -60,7 +60,7 @@ example, just run:
 ```python
 from keras_fsl.models import SiameseNets
 from keras_fsl.datasets import omniglot
-from keras_fsl.sequences import RandomPairsSequence
+from keras_fsl.sequences.training.pairs import RandomPairsSequence
 
 # %% Get data
 train_set, test_set = omniglot.load_data()

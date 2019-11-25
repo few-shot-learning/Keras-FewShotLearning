@@ -75,3 +75,6 @@ class KShotNWaySequence(DeterministicSequence):
         indexes = indexes_with_k_shots.tolist() + other_indexes.tolist()
         self.annotations[0] = self.annotations[0].loc[indexes]
         self.targets = self.targets.loc[indexes]
+
+    def __len__(self):
+        return math.floor(len(self.annotations[0]) / self.batch_size)
