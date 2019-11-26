@@ -35,7 +35,6 @@ class ClassificationLoss(Layer):
     def compute_output_shape(self, input_shape):
         return len(self.indexes),
 
-    @tf.function
     def call(self, inputs, **kwargs):
         """
         Args:

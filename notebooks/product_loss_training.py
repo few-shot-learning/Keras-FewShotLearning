@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import yaml
-from tensorflow.python.keras.models import load_model, Model
+from tensorflow.python.keras.models import Model
 from tensorflow.python.keras import applications as keras_applications, backend as K
 from tensorflow.python.keras.callbacks import (
     ModelCheckpoint,

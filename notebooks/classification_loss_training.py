@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import yaml
-from tensorflow.python.keras.models import load_model, Model
+from tensorflow.python.keras.models import Model
 from tensorflow.python.keras import applications as keras_applications
 from tensorflow.python.keras.callbacks import (
     ModelCheckpoint,
@@ -23,7 +23,7 @@ from keras_fsl.sequences import training, prediction
 from keras_fsl.losses import ClassificationLoss
 
 #%% Init data
-output_folder = Path('logs') / 'content_crops' / 'siamese_mixed_norms' / datetime.today().strftime('%Y%m%d-%H%M%S')
+output_folder = Path('logs') / 'classification_loss' / datetime.today().strftime('%Y%m%d-%H%M%S')
 output_folder.mkdir(parents=True, exist_ok=True)
 try:
     shutil.copy(__file__, output_folder / 'training_pipeline.py')
@@ -78,13 +78,13 @@ siamese_nets = SiameseNets(
 branch_depth = len(siamese_nets.get_layer('branch_model').layers)
 
 #%% Train model with product loss
-tf.config.experimental_run_functions_eagerly(True)
+# tf.config.experimental_run_functions_eagerly(True)
 batch_size = 64
 labels = Input((1, ), batch_size=batch_size)
 embeddings = siamese_nets.get_layer('branch_model').output
 classification_loss = ClassificationLoss(
     loss=tf.keras.losses.categorical_crossentropy,
-    metric_layer=siamese_nets.get_layer('head_model'),
+    similarity_layer=siamese_nets.get_layer('head_model'),
 )([embeddings, labels])
 trainable_model = Model([siamese_nets.get_layer('branch_model').input, labels], classification_loss)
 
