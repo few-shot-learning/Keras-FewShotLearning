@@ -4,3 +4,4 @@ pandas==0.25.3
 PyYAML==5.1.2
 tensorboard==2.0.0
 tensorflow-gpu==2.0.0b1
+gast==0.2.2
