@@ -33,7 +33,7 @@ except (FileNotFoundError, NameError):
 
 all_annotations = (
     pd.read_csv('data/annotations/cropped_images.csv')
-        .assign(
+    .assign(
         day=lambda df: df.image_name.str.slice(3, 11),
         image_name=lambda df: 'data/images/cropped_images/' + df.image_name,
     )
