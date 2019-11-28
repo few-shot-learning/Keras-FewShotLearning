@@ -119,13 +119,13 @@ val_sequence = training.single.KShotNWaySequence(
 
 siamese_nets.get_layer('branch_model').trainable = False
 optimizer = Adam(lr=1e-4)
-model.compile(optimizer=optimizer, loss=pair_wise_loss())
+model.compile(optimizer=optimizer, loss=pair_wise_loss(), metrics=[pair_wise_loss(0.0)])
 model.fit_generator(
     train_sequence,
     validation_data=val_sequence,
     callbacks=callbacks,
     initial_epoch=0,
-    epochs=20,
+    epochs=10,
     use_multiprocessing=False,
     workers=0,
 )
@@ -135,17 +135,31 @@ siamese_nets.get_layer('branch_model').trainable = True
 for layer in siamese_nets.get_layer('branch_model').layers[:int(branch_depth * 0.6)]:
     layer.trainable = False
 optimizer = Adam(lr=1e-5)
-model.compile(optimizer=optimizer, loss=pair_wise_loss())
+model.compile(optimizer=optimizer, loss=pair_wise_loss(), metrics=[pair_wise_loss(0.0)])
 model.fit_generator(
     train_sequence,
     validation_data=val_sequence,
     callbacks=callbacks,
-    initial_epoch=20,
-    epochs=70,
+    initial_epoch=10,
+    epochs=15,
     use_multiprocessing=False,
     workers=0,
 )
 model.load_weights(str(output_folder / 'kernel_loss_best_weights.h5'))
+
+for layer in siamese_nets.get_layer('branch_model').layers:
+    layer.trainable = True
+optimizer = Adam(lr=1e-6)
+model.compile(optimizer=optimizer, loss=pair_wise_loss(), metrics=[pair_wise_loss(0.0)])
+model.fit_generator(
+    train_sequence,
+    validation_data=val_sequence,
+    callbacks=callbacks,
+    initial_epoch=15,
+    epochs=30,
+    use_multiprocessing=False,
+    workers=0,
+)
 
 #%% Eval on test set
 k_shot = 3
