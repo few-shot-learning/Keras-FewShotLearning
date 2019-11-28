@@ -6,9 +6,9 @@ from unittest.mock import patch
 import imgaug.augmenters as iaa
 import numpy as np
 import pandas as pd
-from tensorflow.python.keras.callbacks import ModelCheckpoint, TensorBoard
-from tensorflow.python.keras import Model
-from tensorflow.python.keras.saving import load_model
+from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard
+from tensorflow.keras import Model
+from tensorflow.keras.saving import load_model
 
 from keras_fsl.datasets import omniglot
 from keras_fsl.models import SiameseNets

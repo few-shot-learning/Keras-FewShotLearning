@@ -1,5 +1,5 @@
-from tensorflow.python.keras import Sequential
-from tensorflow.python.keras.layers import Lambda, Flatten
+from tensorflow.keras import Sequential
+from tensorflow.keras.layers import Lambda, Flatten
 
 
 def CenterSlicing2D():

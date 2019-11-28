@@ -1,5 +1,5 @@
-from tensorflow.python.keras import Input, Model
-from tensorflow.python.keras.layers import Lambda
+from tensorflow.keras import Input, Model
+from tensorflow.keras.layers import Lambda
 
 from ..head_models import norms
 

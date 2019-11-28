@@ -4,9 +4,9 @@ from pathlib import Path
 import imgaug.augmenters as iaa
 import pandas as pd
 from imgaug import parameters as iap
-from tensorflow.python.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, TensorBoard
-from tensorflow.python.keras.optimizer_v2.adam import Adam
-from tensorflow.python.keras.preprocessing.image import load_img, img_to_array, save_img
+from tensorflow.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, TensorBoard
+from tensorflow.keras.optimizer_v2.adam import Adam
+from tensorflow.keras.preprocessing.image import load_img, img_to_array, save_img
 
 from keras_fsl.dataframe.operators.random_assignment import RandomAssignment
 from keras_fsl.models import SiameseDetector

@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow.python.keras.layers import (
+from tensorflow.keras.layers import (
     Concatenate,
     Conv2D,
     Dense,
@@ -9,7 +9,7 @@ from tensorflow.python.keras.layers import (
     Lambda,
     Reshape,
 )
-from tensorflow.python.keras.models import Model
+from tensorflow.keras.models import Model
 
 
 def MixedNorms(input_shape, norms=None):

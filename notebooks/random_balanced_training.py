@@ -8,14 +8,14 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import yaml
-from tensorflow.python.keras.models import load_model
-from tensorflow.python.keras import applications as keras_applications
-from tensorflow.python.keras.callbacks import (
+from tensorflow.keras.models import load_model
+from tensorflow.keras import applications as keras_applications
+from tensorflow.keras.callbacks import (
     ModelCheckpoint,
     ReduceLROnPlateau,
     TensorBoard
 )
-from tensorflow.python.keras.optimizer_v2.adam import Adam
+from tensorflow.keras.optimizer_v2.adam import Adam
 
 from keras_fsl.models import SiameseNets
 from keras_fsl.sequences import training, prediction

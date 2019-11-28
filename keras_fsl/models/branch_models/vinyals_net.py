@@ -1,5 +1,5 @@
-from tensorflow.python.keras import Sequential
-from tensorflow.python.keras.layers import Conv2D, Input, BatchNormalization, Activation, MaxPooling2D, Flatten
+from tensorflow.keras import Sequential
+from tensorflow.keras.layers import Conv2D, Input, BatchNormalization, Activation, MaxPooling2D, Flatten
 
 
 def conv_block(*args, **kwargs):

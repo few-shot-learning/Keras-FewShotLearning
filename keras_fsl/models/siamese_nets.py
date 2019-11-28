@@ -1,5 +1,5 @@
-from tensorflow.python.keras import Model
-from tensorflow.python.keras.layers import Input
+from tensorflow.keras import Model
+from tensorflow.keras.layers import Input
 
 from keras_fsl.models import branch_models, head_models
 

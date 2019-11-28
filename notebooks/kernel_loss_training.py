@@ -16,7 +16,7 @@ from tensorflow.keras.callbacks import (
 )
 from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Sequential
-from tensorflow.python.keras.optimizer_v2.adam import Adam
+from tensorflow.keras.optimizers import Adam
 
 from keras_fsl.models import SiameseNets
 from keras_fsl.models.layers.kernel_matrix import KernelMatrix

@@ -1,6 +1,6 @@
 import tensorflow as tf
-from tensorflow.python.keras import Input, Model
-from tensorflow.python.keras.layers import Lambda, Flatten, Activation, Concatenate
+from tensorflow.keras import Input, Model
+from tensorflow.keras.layers import Lambda, Flatten, Activation, Concatenate
 
 
 def ProtoNets(input_shape, k_shot=5, n_way=5, **kwargs):

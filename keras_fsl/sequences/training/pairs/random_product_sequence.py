@@ -1,7 +1,7 @@
 import math
 
 import pandas as pd
-from tensorflow.python.keras.utils import Sequence
+from tensorflow.keras.utils import Sequence
 
 
 class RandomProductSequence(Sequence):

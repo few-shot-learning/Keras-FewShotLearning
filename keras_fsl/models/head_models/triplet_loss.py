@@ -1,6 +1,6 @@
 import tensorflow as tf
-from tensorflow.python.keras import Model
-from tensorflow.python.keras.layers import Input, Lambda
+from tensorflow.keras import Model
+from tensorflow.keras.layers import Input, Lambda
 
 
 def TripletLoss(input_shape, margin=0.1, *args, **kwargs):
