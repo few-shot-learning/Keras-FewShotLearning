@@ -141,7 +141,7 @@ model.fit_generator(
     validation_data=val_sequence,
     callbacks=callbacks,
     initial_epoch=10,
-    epochs=15,
+    epochs=11,
     use_multiprocessing=False,
     workers=0,
 )
@@ -149,13 +149,24 @@ model.load_weights(str(output_folder / 'kernel_loss_best_weights.h5'))
 
 for layer in siamese_nets.get_layer('branch_model').layers:
     layer.trainable = True
+model.compile(optimizer=optimizer, loss=pair_wise_loss(), metrics=[pair_wise_loss(0.0)])
+model.fit_generator(
+    train_sequence,
+    validation_data=val_sequence,
+    callbacks=callbacks,
+    initial_epoch=11,
+    epochs=25,
+    use_multiprocessing=False,
+    workers=0,
+)
+
 optimizer = Adam(lr=1e-6)
 model.compile(optimizer=optimizer, loss=pair_wise_loss(), metrics=[pair_wise_loss(0.0)])
 model.fit_generator(
     train_sequence,
     validation_data=val_sequence,
     callbacks=callbacks,
-    initial_epoch=15,
+    initial_epoch=25,
     epochs=30,
     use_multiprocessing=False,
     workers=0,
