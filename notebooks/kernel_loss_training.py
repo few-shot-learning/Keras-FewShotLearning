@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 import imgaug.augmenters as iaa
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import shutil
@@ -21,7 +22,7 @@ from tensorflow.keras.optimizers import Adam
 from keras_fsl.models import SiameseNets
 from keras_fsl.models.layers.kernel_matrix import KernelMatrix
 from keras_fsl.sequences import prediction, training
-from keras_fsl.losses import pair_wise_loss
+from keras_fsl.losses import pair_wise_loss, accuracy_at
 
 #%% Init data
 output_folder = Path('logs') / 'kernel_loss' / datetime.today().strftime('%Y%m%d-%H%M%S')
@@ -119,7 +120,8 @@ val_sequence = training.single.KShotNWaySequence(
 
 siamese_nets.get_layer('branch_model').trainable = False
 optimizer = Adam(lr=1e-4)
-model.compile(optimizer=optimizer, loss=pair_wise_loss(), metrics=[pair_wise_loss(0.0)])
+margin = 0.1
+model.compile(optimizer=optimizer, loss=pair_wise_loss(margin), metrics=[pair_wise_loss(0.0), accuracy_at(margin)])
 model.fit_generator(
     train_sequence,
     validation_data=val_sequence,
@@ -129,39 +131,37 @@ model.fit_generator(
     use_multiprocessing=False,
     workers=0,
 )
-model.load_weights(str(output_folder / 'kernel_loss_best_weights.h5'))
 
 siamese_nets.get_layer('branch_model').trainable = True
 for layer in siamese_nets.get_layer('branch_model').layers[:int(branch_depth * 0.6)]:
     layer.trainable = False
 optimizer = Adam(lr=1e-5)
-model.compile(optimizer=optimizer, loss=pair_wise_loss(), metrics=[pair_wise_loss(0.0)])
+model.compile(optimizer=optimizer, loss=pair_wise_loss(margin), metrics=[pair_wise_loss(0.0), accuracy_at(margin)])
 model.fit_generator(
     train_sequence,
     validation_data=val_sequence,
     callbacks=callbacks,
     initial_epoch=10,
-    epochs=11,
+    epochs=12,
     use_multiprocessing=False,
     workers=0,
 )
-model.load_weights(str(output_folder / 'kernel_loss_best_weights.h5'))
 
 for layer in siamese_nets.get_layer('branch_model').layers:
     layer.trainable = True
-model.compile(optimizer=optimizer, loss=pair_wise_loss(), metrics=[pair_wise_loss(0.0)])
+model.compile(optimizer=optimizer, loss=pair_wise_loss(margin), metrics=[pair_wise_loss(0.0), accuracy_at(margin)])
 model.fit_generator(
     train_sequence,
     validation_data=val_sequence,
     callbacks=callbacks,
-    initial_epoch=11,
+    initial_epoch=12,
     epochs=25,
     use_multiprocessing=False,
     workers=0,
 )
 
 optimizer = Adam(lr=1e-6)
-model.compile(optimizer=optimizer, loss=pair_wise_loss(), metrics=[pair_wise_loss(0.0)])
+model.compile(optimizer=optimizer, loss=pair_wise_loss(margin), metrics=[pair_wise_loss(0.0), accuracy_at(margin)])
 model.fit_generator(
     train_sequence,
     validation_data=val_sequence,
@@ -171,6 +171,8 @@ model.fit_generator(
     use_multiprocessing=False,
     workers=0,
 )
+
+model.save(output_folder / 'final_model.h5')
 
 #%% Eval on test set
 k_shot = 3
@@ -220,4 +222,8 @@ for _ in range(n_episode):
     )]
 
 scores = pd.DataFrame(scores)[['score', 'average_precision', 'good_prediction']]
+scores.boxplot()
+plt.savefig(output_folder / 'scores_boxplot.png')
+scores.good_prediction.hist()
+plt.savefig(output_folder / 'scores_good_predictions.png')
 scores.to_csv(output_folder / 'scores.csv', index=False)
