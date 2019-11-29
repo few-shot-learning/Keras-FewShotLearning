@@ -15,7 +15,6 @@ from tensorflow.keras.callbacks import (
     ReduceLROnPlateau,
     TensorBoard,
 )
-from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
 
@@ -46,20 +45,7 @@ test_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['test
 
 #%% Init model
 branch_model_name = 'MobileNet'
-
-preprocessing = iaa.Sequential([
-    iaa.Fliplr(0.5),
-    iaa.Flipud(0.5),
-    iaa.Affine(rotate=(-180, 180)),
-    iaa.CropToFixedSize(224, 224, position='center'),
-    iaa.PadToFixedSize(224, 224, position='center'),
-    iaa.AssertShape((None, 224, 224, 3)),
-    iaa.Lambda(lambda images_list, *_: (
-        getattr(keras_applications, branch_model_name.lower())
-        .preprocess_input(np.stack(images_list), data_format='channels_last')
-    )),
-])
-
+batch_size = 64
 siamese_nets = SiameseNets(
     branch_model={
         'name': branch_model_name,
@@ -77,15 +63,24 @@ siamese_nets = SiameseNets(
         }
     }
 )
+model = Sequential([
+    siamese_nets.get_layer('branch_model'),
+    KernelMatrix(kernel=siamese_nets.get_layer('head_model'), batch_size=batch_size),
+])
 branch_depth = len(siamese_nets.get_layer('branch_model').layers)
 
-#%% Train model with loss on kernel
-# tf.config.experimental_run_functions_eagerly(True)
-batch_size = 64
-model = Sequential([
-    Input(shape=siamese_nets.get_layer('branch_model').input.shape[1:], batch_size=batch_size),
-    siamese_nets.get_layer('branch_model'),
-    KernelMatrix(kernel=siamese_nets.get_layer('head_model')),
+# %% Init training
+preprocessing = iaa.Sequential([
+    iaa.Fliplr(0.5),
+    iaa.Flipud(0.5),
+    iaa.Affine(rotate=(-180, 180)),
+    iaa.CropToFixedSize(224, 224, position='center'),
+    iaa.PadToFixedSize(224, 224, position='center'),
+    iaa.AssertShape((None, 224, 224, 3)),
+    iaa.Lambda(lambda images_list, *_: (
+        getattr(keras_applications, branch_model_name.lower())
+        .preprocess_input(np.stack(images_list), data_format='channels_last')
+    )),
 ])
 
 callbacks = [
@@ -118,6 +113,8 @@ val_sequence = training.single.KShotNWaySequence(
     n_way=8,
 )
 
+#%% Train model with loss on kernel
+# tf.config.experimental_run_functions_eagerly(True)
 siamese_nets.get_layer('branch_model').trainable = False
 optimizer = Adam(lr=1e-4)
 margin = 0.1
