@@ -8,16 +8,28 @@ class KernelMatrix(Layer):
     given a model for instance).
     """
 
-    def __init__(self, kernel, **kwargs):
+    def __init__(self, kernel, batch_size=None, **kwargs):
         super().__init__(**kwargs)
         self.kernel = kernel
-        self.batch_size = None
+        self.batch_size = batch_size
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({
+            'kernel': self.kernel,
+            'batch_size': self.batch_size,
+        })
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
     def build(self, input_shape):
-        batch_size = input_shape[0]
-        if batch_size is None:
-            raise AttributeError('Layer has to be built with a proper batch_size')
-        self.batch_size = batch_size
+        if input_shape[0] is not None:
+            self.batch_size = input_shape[0]
+        if self.batch_size is None:
+            raise AttributeError('Layer has to be built with a proper batch_size, either from init or from previous'
+                                 'layer')
         super().build(input_shape)
 
     @tf.function

@@ -133,8 +133,6 @@ model.fit_generator(
 )
 
 siamese_nets.get_layer('branch_model').trainable = True
-for layer in siamese_nets.get_layer('branch_model').layers[:int(branch_depth * 0.6)]:
-    layer.trainable = False
 optimizer = Adam(lr=1e-5)
 model.compile(optimizer=optimizer, loss=pair_wise_loss(margin), metrics=[pair_wise_loss(0.0), accuracy_at(margin)])
 model.fit_generator(
@@ -142,32 +140,7 @@ model.fit_generator(
     validation_data=val_sequence,
     callbacks=callbacks,
     initial_epoch=10,
-    epochs=12,
-    use_multiprocessing=False,
-    workers=0,
-)
-
-for layer in siamese_nets.get_layer('branch_model').layers:
-    layer.trainable = True
-model.compile(optimizer=optimizer, loss=pair_wise_loss(margin), metrics=[pair_wise_loss(0.0), accuracy_at(margin)])
-model.fit_generator(
-    train_sequence,
-    validation_data=val_sequence,
-    callbacks=callbacks,
-    initial_epoch=12,
-    epochs=25,
-    use_multiprocessing=False,
-    workers=0,
-)
-
-optimizer = Adam(lr=1e-6)
-model.compile(optimizer=optimizer, loss=pair_wise_loss(margin), metrics=[pair_wise_loss(0.0), accuracy_at(margin)])
-model.fit_generator(
-    train_sequence,
-    validation_data=val_sequence,
-    callbacks=callbacks,
-    initial_epoch=25,
-    epochs=30,
+    epochs=35,
     use_multiprocessing=False,
     workers=0,
 )
