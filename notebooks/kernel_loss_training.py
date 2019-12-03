@@ -15,13 +15,15 @@ from tensorflow.keras.callbacks import (
     ReduceLROnPlateau,
     TensorBoard,
 )
+from tensorflow.keras.layers import Activation
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
 
 from keras_fsl.models import SiameseNets
-from keras_fsl.models.layers.kernel_matrix import KernelMatrix
+from keras_fsl.models.layers import Classification, KernelMatrix
 from keras_fsl.sequences import prediction, training
 from keras_fsl.losses import pair_wise_loss, accuracy_at
+# tf.config.experimental_run_functions_eagerly(True)
 
 #%% Init data
 output_folder = Path('logs') / 'kernel_loss' / datetime.today().strftime('%Y%m%d-%H%M%S')
@@ -65,7 +67,7 @@ siamese_nets = SiameseNets(
 )
 model = Sequential([
     siamese_nets.get_layer('branch_model'),
-    KernelMatrix(kernel=siamese_nets.get_layer('head_model'), batch_size=batch_size),
+    KernelMatrix(kernel=siamese_nets.get_layer('head_model')),
 ])
 branch_depth = len(siamese_nets.get_layer('branch_model').layers)
 
@@ -86,9 +88,15 @@ preprocessing = iaa.Sequential([
 callbacks = [
     TensorBoard(output_folder),
     ModelCheckpoint(
-        str(output_folder / 'kernel_loss_best_weights.h5'),
+        str(output_folder / 'kernel_loss_best_loss_weights.h5'),
         save_best_only=True,
         save_weights_only=True,
+    ),
+    ModelCheckpoint(
+        str(output_folder / 'kernel_loss_best_accuracy_weights.h5'),
+        save_best_only=True,
+        save_weights_only=True,
+        monitor='val_accuracy',
     ),
     ReduceLROnPlateau(),
 ]
@@ -114,7 +122,6 @@ val_sequence = training.single.KShotNWaySequence(
 )
 
 #%% Train model with loss on kernel
-# tf.config.experimental_run_functions_eagerly(True)
 siamese_nets.get_layer('branch_model').trainable = False
 optimizer = Adam(lr=1e-4)
 margin = 0.1
@@ -137,7 +144,7 @@ model.fit_generator(
     validation_data=val_sequence,
     callbacks=callbacks,
     initial_epoch=10,
-    epochs=35,
+    epochs=100,
     use_multiprocessing=False,
     workers=0,
 )
@@ -145,11 +152,21 @@ model.fit_generator(
 model.save(output_folder / 'final_model.h5')
 
 #%% Eval on test set
-k_shot = 3
-n_way = 10
-n_episode = 50
+k_shot = 1
+n_way = 5
+n_episode = 100
 test_sequence = training.single.DeterministicSequence(test_set, preprocessings=preprocessing, batch_size=16)
 embeddings = siamese_nets.get_layer('branch_model').predict_generator(test_sequence, verbose=1)
+
+classifier = Sequential([
+    siamese_nets.get_layer('branch_model'),
+    Classification(
+        kernel=siamese_nets.get_layer('head_model'),
+        support_tensors=tf.convert_to_tensor(np.random.rand(15, 1024)),
+        support_labels=tf.convert_to_tensor(tf.one_hot(np.random.choice([0, 1, 2], 15), depth=3)),
+    ),
+    Activation('softmax')
+])
 
 scores = []
 for _ in range(n_episode):
@@ -192,8 +209,10 @@ for _ in range(n_episode):
     )]
 
 scores = pd.DataFrame(scores)[['score', 'average_precision', 'good_prediction']]
+plt.clf()
 scores.boxplot()
 plt.savefig(output_folder / 'scores_boxplot.png')
+plt.clf()
 scores.good_prediction.hist()
 plt.savefig(output_folder / 'scores_good_predictions.png')
 scores.to_csv(output_folder / 'scores.csv', index=False)
