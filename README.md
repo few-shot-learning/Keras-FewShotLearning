@@ -24,23 +24,37 @@ classes is only described with few (from 1 to 5 in usual benchmarks) examples.
 
 Most of the state-of-the-art algorithms
 try to sort of learn a metric into a well suited (optimized) feature space. Thus deep networks usually first encode the
-base images into a feature space onto which a _distance_ or _similarity_ is learnt. 
+base images into a feature space onto which a _distance_ or _similarity_ is learnt.
+
+This similarity is meant to be used to later classify sample according to their relative distance, either in a pair-wise
+manner where the nearest support set samples is used to classify the query sample ([Voronoi diagram](https://en.wikipedia.org/wiki/Voronoi_diagram))
+or in a more advanced classifier. Indeed, this philosophy is most commonly known as [the kernel trick](https://en.wikipedia.org/wiki/Kernel_method)
+where the kernel is indeed the similarity learnt during training. Hence any kind of usual kernel based Machine Learning
+could potentially be plugged onto this learnt similarity.
+
+There is no easy answer to the optimal choice of such a classifier in the feature space. This may depend on performance
+as well as one complexity and real application parameters. For instance if the support set is strongly imbalanced, you
+may not want to fit an advanced classifier onto it but rather use a raw nearest neighbor approach.
+
+All these considerations lead the need of a code architecture that will let you play with these parameters with your
+own data in order to take the best from them.
 
 Amongst other, the Siamese Nets is usually known as the network from [Koch et al.](https://www.cs.cmu.edu/~rsalakhu/papers/oneshot1.pdf)
 This algorithm learns a pair-wise similarity between images. More precisely it uses a densely connected layers on top
 of the difference between the two embeddings to predict 0 (different) or 1 (same).
 
 In this repo we have called Siamese nets all the algorithms built within the same framework, i.e. choosing a backbone
-and a _head model_ to evaluate the embeddings. In this context the well known [Protypical networks](https://arxiv.org/pdf/1703.05175.pdf)
+and a _similarity_ to evaluate the embeddings. In this context the well known [Protypical networks](https://arxiv.org/pdf/1703.05175.pdf)
 falls into the Siamese Nets frameworks and is available here as `SiameseNets(head_model="ProtoNets")`.
 
 ## Overview
 
 This repos provides several tools for few-shot learning:
 
- - Keras models
+ - Keras layers and models
  - Keras sequences for training the models
- - Keras callbacks to monitor the trainings
+ - Usual few-shot learning datasets
+ - Notebooks with proven learning sequences
  
 All these tools can be used all together or separately. One may want to stick with the keras model trained on regular
 numpy arrays, with or without callbacks. When designing more advanced `keras.Sequence` for training, it is advised (and
