@@ -9,7 +9,7 @@ class Classification(Layer):
     the average score per class
     """
 
-    def __init__(self, kernel, support_tensors, support_labels, **kwargs):
+    def __init__(self, kernel, **kwargs):
         """
         Args:
             support_tensors (tf.Tensor): support set embeddings with shape (n, *embedding_shape)
@@ -23,27 +23,22 @@ class Classification(Layer):
         self.support_labels = tf.Variable(
             [], validate_shape=False, shape=tf.TensorShape((None, None)), name='support_labels',
         )
-        self.set_support_set(support_tensors, support_labels)
 
     def get_config(self):
         config = super().get_config()
-        config.update({
-            'kernel': self.kernel,
-            'support_tensors': self.support_tensors,
-            'support_labels': self.support_labels,
-        })
+        config.update({'kernel': self.kernel.to_json()})
         return config
 
     @classmethod
     def from_config(cls, config):
+        kernel = tf.keras.models.model_from_json(config['kernel'])
+        config['kernel'] = kernel
         return cls(**config)
 
     @staticmethod
     def _validate_support_set_shape(support_tensors, support_labels):
         if support_tensors.shape[0] != support_labels.shape[0]:
             raise AttributeError('Support tensors and support labels shape 0 should match')
-        if support_tensors.shape[0] == 0:
-            raise AttributeError('Support set cannot be empty')
 
     def set_support_set(self, support_tensors, support_labels):
         self._validate_support_set_shape(support_tensors, support_labels)

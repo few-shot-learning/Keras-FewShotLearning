@@ -14,11 +14,13 @@ class KernelMatrix(Layer):
 
     def get_config(self):
         config = super().get_config()
-        config.update({'kernel': self.kernel})
+        config.update({'kernel': self.kernel.to_json()})
         return config
 
     @classmethod
     def from_config(cls, config):
+        kernel = tf.keras.models.model_from_json(config['kernel'])
+        config['kernel'] = kernel
         return cls(**config)
 
     @tf.function
