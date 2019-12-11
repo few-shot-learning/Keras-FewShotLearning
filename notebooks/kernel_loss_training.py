@@ -22,7 +22,7 @@ from tensorflow.keras.optimizers import Adam
 from keras_fsl.models import SiameseNets
 from keras_fsl.models.layers import Classification, KernelMatrix
 from keras_fsl.sequences import prediction, training
-from keras_fsl.losses import pair_wise_loss, accuracy_at
+from keras_fsl.losses import pair_wise_loss, accuracy_at, mean_score_classification_loss
 # tf.config.experimental_run_functions_eagerly(True)
 
 #%% Init data
@@ -125,7 +125,11 @@ val_sequence = training.single.KShotNWaySequence(
 siamese_nets.get_layer('branch_model').trainable = False
 optimizer = Adam(lr=1e-4)
 margin = 0.1
-model.compile(optimizer=optimizer, loss=pair_wise_loss(margin), metrics=[pair_wise_loss(0.0), accuracy_at(margin)])
+model.compile(
+    optimizer=optimizer,
+    loss=pair_wise_loss(margin),
+    metrics=[pair_wise_loss(0.0), accuracy_at(margin), mean_score_classification_loss],
+)
 model.fit_generator(
     train_sequence,
     validation_data=val_sequence,
@@ -138,7 +142,11 @@ model.fit_generator(
 
 siamese_nets.get_layer('branch_model').trainable = True
 optimizer = Adam(lr=1e-5)
-model.compile(optimizer=optimizer, loss=pair_wise_loss(margin), metrics=[pair_wise_loss(0.0), accuracy_at(margin)])
+model.compile(
+    optimizer=optimizer,
+    loss=pair_wise_loss(margin),
+    metrics=[pair_wise_loss(0.0), accuracy_at(margin), mean_score_classification_loss],
+)
 model.fit_generator(
     train_sequence,
     validation_data=val_sequence,
