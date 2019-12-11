@@ -15,7 +15,7 @@ def mean_score_classification_loss(y_true, y_pred):
     return K.categorical_crossentropy(
         y_true,
         tf.nn.softmax(
-            tf.math.divide_no_nan(tf.linalg.matmul(y_pred, y_true), tf.reduce_sum(y_true, axis=0)),
+            tf.math.divide_no_nan(tf.linalg.matmul(1 - y_pred, y_true), tf.reduce_sum(y_true, axis=0)),
             axis=1,
         ),
     )
@@ -27,7 +27,7 @@ def pair_wise_loss(margin=0.1):
     which the difference is not taken into account, ie. |y_true - y_pred| < margin => loss = 0
     """
     def binary_crossentropy(y_true, y_pred):
-        y_true = tf.matmul(y_true, y_true, transpose_b=True)
+        y_true = 1 - tf.matmul(y_true, y_true, transpose_b=True)
         return (K.cast(K.abs(y_true - y_pred) > margin, 'float32')) * K.binary_crossentropy(y_true, y_pred)
     return binary_crossentropy
 
@@ -37,7 +37,7 @@ def accuracy_at(margin=0.1):
     Compute the relative number of pairs with a score in the margin, ie. #{pairs | |y_true - y_pred| < m}
     """
     def accuracy(y_true, y_pred):
-        y_true = tf.matmul(y_true, y_true, transpose_b=True)
+        y_true = 1 - tf.matmul(y_true, y_true, transpose_b=True)
         return K.mean(K.cast(K.abs(y_true - y_pred) < margin, 'float32'))
     return accuracy
 

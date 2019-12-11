@@ -61,7 +61,8 @@ siamese_nets = SiameseNets(
                 lambda x: tf.math.abs(x[0] - x[1]),
                 lambda x: tf.nn.softmax(tf.math.abs(x[0] - x[1])),
                 lambda x: tf.square(x[0] - x[1]),
-            ]
+            ],
+            'use_bias': False,
         }
     }
 )
@@ -86,7 +87,7 @@ preprocessing = iaa.Sequential([
 ])
 
 callbacks = [
-    TensorBoard(output_folder),
+    TensorBoard(output_folder, write_images=True, histogram_freq=1),
     ModelCheckpoint(
         str(output_folder / 'kernel_loss_best_loss_weights.h5'),
         save_best_only=True,
