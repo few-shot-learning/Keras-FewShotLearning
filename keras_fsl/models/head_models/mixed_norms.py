@@ -12,7 +12,7 @@ from tensorflow.keras.layers import (
 from tensorflow.keras.models import Model
 
 
-def MixedNorms(input_shape, norms=None):
+def MixedNorms(input_shape, norms=None, use_bias=True):
     """
     Head inspired by
     [this kaggle notebook](https://www.kaggle.com/martinpiotte/whale-recognition-model-with-score-0-78563)
@@ -21,6 +21,7 @@ def MixedNorms(input_shape, norms=None):
     Args:
         input_shape (tuple): arg to be passed to keras.layer.Input
         norms (List[function]): list of function to be applied to the list of tensors [query, support] in a Lambda layer
+        use_bias (bool), whether to use bias in layers or not
     """
     if norms is None:
         norms = [
@@ -40,11 +41,25 @@ def MixedNorms(input_shape, norms=None):
     prediction = Reshape((len(norms), inputs[0].shape[1], 1), name='reshape1')(prediction)
 
     # Per feature NN with shared weight is implemented using CONV2D with appropriate stride.
-    prediction = Conv2D(32, (len(norms), 1), activation='relu', padding='valid', name='norms_selection')(prediction)
+    prediction = Conv2D(
+        filters=32,
+        kernel_size=(len(norms), 1),
+        activation='relu',
+        padding='valid',
+        name='norms_selection',
+        use_bias=use_bias,
+    )(prediction)
     prediction = Reshape((inputs[0].shape[1], 32, 1))(prediction)
-    prediction = Conv2D(1, (1, 32), activation='linear', padding='valid', name='norms_average')(prediction)
+    prediction = Conv2D(
+        filters=1,
+        kernel_size=(1, 32),
+        activation='linear',
+        padding='valid',
+        name='norms_average',
+        use_bias=use_bias,
+    )(prediction)
     prediction = Flatten(name='flatten')(prediction)
 
     # Weighted sum implemented as a Dense layer.
-    prediction = Dense(1, use_bias=True, activation='sigmoid', name='prediction')(prediction)
+    prediction = Dense(1, activation='sigmoid', name='prediction', use_bias=use_bias)(prediction)
     return Model(inputs=[query, support], outputs=prediction)
