@@ -15,7 +15,7 @@ from tensorflow.keras.callbacks import (
     ReduceLROnPlateau,
     TensorBoard
 )
-from tensorflow.keras.optimizer_v2.adam import Adam
+from tensorflow.keras.optimizers import Adam
 
 from keras_fsl.models import SiameseNets
 from keras_fsl.sequences import training, prediction
