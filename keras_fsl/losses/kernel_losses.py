@@ -40,3 +40,12 @@ def accuracy_at(margin=0.1):
         y_true = tf.matmul(y_true, y_true, transpose_b=True)
         return K.mean(K.cast(K.abs(y_true - y_pred) < margin, 'float32'))
     return accuracy
+
+
+def min_eigenvalue(_, y_pred):
+    """
+    Compute the minimum eigenvalue of the y_pred tensor. If this value if non-negative (resp. positive) then the
+    similarity or distance learnt is a positive semi-definite (resp. positive definite) kernel.
+    See Also [Positive-definite kernel](https://en.wikipedia.org/wiki/Positive-definite_kernel)
+    """
+    return tf.reduce_min(tf.linalg.svd(y_pred, compute_uv=False))

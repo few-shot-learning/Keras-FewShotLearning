@@ -22,7 +22,7 @@ from tensorflow.keras.optimizers import Adam
 from keras_fsl.models import SiameseNets
 from keras_fsl.models.layers import Classification, KernelMatrix
 from keras_fsl.sequences import prediction, training
-from keras_fsl.losses import pair_wise_loss, accuracy_at, mean_score_classification_loss
+from keras_fsl.losses import pair_wise_loss, accuracy_at, mean_score_classification_loss, min_eigenvalue
 # tf.config.experimental_run_functions_eagerly(True)
 
 #%% Init data
@@ -128,7 +128,7 @@ margin = 0.1
 model.compile(
     optimizer=optimizer,
     loss=pair_wise_loss(margin),
-    metrics=[pair_wise_loss(0.0), accuracy_at(margin), mean_score_classification_loss],
+    metrics=[pair_wise_loss(0.0), accuracy_at(margin), mean_score_classification_loss, min_eigenvalue],
 )
 model.fit_generator(
     train_sequence,
@@ -145,7 +145,7 @@ optimizer = Adam(lr=1e-5)
 model.compile(
     optimizer=optimizer,
     loss=pair_wise_loss(margin),
-    metrics=[pair_wise_loss(0.0), accuracy_at(margin), mean_score_classification_loss],
+    metrics=[pair_wise_loss(0.0), accuracy_at(margin), mean_score_classification_loss, min_eigenvalue],
 )
 model.fit_generator(
     train_sequence,
