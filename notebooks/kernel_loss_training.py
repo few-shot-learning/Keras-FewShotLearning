@@ -18,6 +18,7 @@ from tensorflow.keras.callbacks import (
 from tensorflow.keras.layers import Activation
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.metrics import AUC
 
 from keras_fsl.models import SiameseNets
 from keras_fsl.models.layers import Classification, KernelMatrix
@@ -128,7 +129,7 @@ margin = 0.1
 model.compile(
     optimizer=optimizer,
     loss=pair_wise_loss(margin),
-    metrics=[pair_wise_loss(0.0), accuracy_at(margin), mean_score_classification_loss, min_eigenvalue],
+    metrics=[pair_wise_loss(0.0), accuracy_at(margin), mean_score_classification_loss, min_eigenvalue, AUC(11)],
 )
 model.fit_generator(
     train_sequence,
@@ -145,7 +146,7 @@ optimizer = Adam(lr=1e-5)
 model.compile(
     optimizer=optimizer,
     loss=pair_wise_loss(margin),
-    metrics=[pair_wise_loss(0.0), accuracy_at(margin), mean_score_classification_loss, min_eigenvalue],
+    metrics=[pair_wise_loss(0.0), accuracy_at(margin), mean_score_classification_loss, min_eigenvalue, AUC(11)],
 )
 model.fit_generator(
     train_sequence,
