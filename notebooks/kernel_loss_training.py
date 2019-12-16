@@ -47,7 +47,7 @@ test_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['test
 
 #%% Init model
 branch_model_name = 'MobileNet'
-batch_size = 64
+batch_size = 128
 siamese_nets = SiameseNets(
     branch_model={
         'name': branch_model_name,
