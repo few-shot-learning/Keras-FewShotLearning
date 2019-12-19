@@ -2,10 +2,10 @@ import tensorflow as tf
 from tensorflow.keras.layers import Layer
 
 
-class KernelMatrix(Layer):
+class GramMatrix(Layer):
     """
-    Compute the kernel matrix of the input batch using the given function. Note that this function can be learnt (if
-    given a model for instance).
+    Compute the gram matrix of the input batch using the given function. Note that this function can be learnt (if
+    given a layer for instance).
     """
 
     def __init__(self, kernel, **kwargs):
