@@ -3,6 +3,5 @@ imgaug==0.3.0
 numpy==1.16.4
 pandas==0.25.3
 PyYAML==5.1.2
-tensorboard==2.0.0
-tensorflow-gpu==2.0.0b1
+tensorflow-gpu==2.0.0
 gast==0.2.2

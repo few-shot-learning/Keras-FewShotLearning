@@ -55,7 +55,7 @@ class DeterministicSequence(AbstractSequence):
             self.preprocessings[0].augment_images(self.load_img(self.annotations[0].iloc[start_index:end_index])),
             axis=0,
         )]
-        output = [self.targets.iloc[start_index:end_index].values]
+        output = [self.targets.iloc[start_index:end_index].values.astype("float32")]
         if self.labels_in_input:
             inputs += output
         if not self.labels_in_output:
