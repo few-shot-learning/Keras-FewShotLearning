@@ -1,5 +1,5 @@
 """
-All these loss functions assume y_pred is a kernel matrix computed on the batch (output of KernelMatrix layer for
+All these loss functions assume y_pred is a gram matrix computed on the batch (output of GramMatrix layer for
 instance). y_true should be one-hot encoded
 """
 import tensorflow as tf

@@ -20,7 +20,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
 
 from keras_fsl.models import SiameseNets
-from keras_fsl.models.layers import Classification, KernelMatrix
+from keras_fsl.models.layers import Classification, GramMatrix
 from keras_fsl.sequences import prediction, training
 from keras_fsl.losses import pair_wise_loss, accuracy_at, mean_score_classification_loss, min_eigenvalue
 # tf.config.experimental_run_functions_eagerly(True)
@@ -47,7 +47,6 @@ test_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['test
 
 #%% Init model
 branch_model_name = 'MobileNet'
-batch_size = 64
 siamese_nets = SiameseNets(
     branch_model={
         'name': branch_model_name,
@@ -61,14 +60,15 @@ siamese_nets = SiameseNets(
                 lambda x: tf.math.abs(x[0] - x[1]),
                 lambda x: tf.nn.softmax(tf.math.abs(x[0] - x[1])),
                 lambda x: tf.square(x[0] - x[1]),
-            ]
+            ],
+            'use_bias': False,
         }
     }
 )
 
 model = Sequential([
     siamese_nets.get_layer('branch_model'),
-    KernelMatrix(kernel=siamese_nets.get_layer('head_model')),
+    GramMatrix(kernel=siamese_nets.get_layer('head_model')),
 ])
 
 # %% Init training
@@ -84,9 +84,9 @@ preprocessing = iaa.Sequential([
         .preprocess_input(np.stack(images_list), data_format='channels_last')
     )),
 ])
-
+batch_size = 64
 callbacks = [
-    TensorBoard(output_folder),
+    TensorBoard(output_folder, write_images=True, histogram_freq=1),
     ModelCheckpoint(
         str(output_folder / 'kernel_loss_best_loss_weights.h5'),
         save_best_only=True,
@@ -124,7 +124,7 @@ val_sequence = training.single.KShotNWaySequence(
 #%% Train model with loss on kernel
 siamese_nets.get_layer('branch_model').trainable = False
 optimizer = Adam(lr=1e-4)
-margin = 0.1
+margin = 0.05
 model.compile(
     optimizer=optimizer,
     loss=pair_wise_loss(margin),

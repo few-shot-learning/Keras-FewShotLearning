@@ -1,1 +1,1 @@
-from .kernel_losses import *
+from .gram_matrix_losses import *
