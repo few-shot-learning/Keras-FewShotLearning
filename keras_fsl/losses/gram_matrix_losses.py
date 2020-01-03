@@ -21,15 +21,15 @@ def mean_score_classification_loss(y_true, y_pred):
     )
 
 
-def pair_wise_loss(margin=0.1):
+def binary_crossentropy(margin=0.1):
     """
     Compute the binary crossentropy loss of each possible pair in the batch. The margin lets define a threshold against
     which the difference is not taken into account, ie. |y_true - y_pred| < margin => loss = 0
     """
-    def binary_crossentropy(y_true, y_pred):
+    def _binary_crossentropy(y_true, y_pred):
         y_true = tf.matmul(y_true, y_true, transpose_b=True)
         return (K.cast(K.abs(y_true - y_pred) > margin, 'float32')) * K.binary_crossentropy(y_true, y_pred)
-    return binary_crossentropy
+    return _binary_crossentropy
 
 
 def accuracy_at(margin=0.1):
