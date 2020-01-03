@@ -37,29 +37,27 @@ def MixedNorms(input_shape, norms=None, use_bias=True):
     if len(input_shape) == 4:
         inputs = [GlobalAveragePooling2D()(input_) for input_ in inputs]
 
-    prediction = Concatenate()([Lambda(norm)(inputs) for norm in norms])
-    prediction = Reshape((len(norms), inputs[0].shape[1], 1), name='reshape1')(prediction)
+    output = Concatenate()([Lambda(norm)(inputs) for norm in norms])
+    output = Reshape((len(norms), inputs[0].shape[1], 1), name='reshape1')(output)
 
-    # Per feature NN with shared weight is implemented using CONV2D with appropriate stride.
-    prediction = Conv2D(
+    output = Conv2D(
         filters=32,
         kernel_size=(len(norms), 1),
         activation='relu',
         padding='valid',
         name='norms_selection',
         use_bias=use_bias,
-    )(prediction)
-    prediction = Reshape((inputs[0].shape[1], 32, 1))(prediction)
-    prediction = Conv2D(
+    )(output)
+    output = Reshape((inputs[0].shape[1], 32, 1))(output)
+    output = Conv2D(
         filters=1,
         kernel_size=(1, 32),
         activation='linear',
         padding='valid',
         name='norms_average',
         use_bias=use_bias,
-    )(prediction)
-    prediction = Flatten(name='flatten')(prediction)
+    )(output)
+    output = Flatten()(output)
 
-    # Weighted sum implemented as a Dense layer.
-    prediction = Dense(1, activation='sigmoid', name='prediction', use_bias=use_bias)(prediction)
-    return Model(inputs=[query, support], outputs=prediction)
+    output = Dense(1, activation='sigmoid', name='output', use_bias=use_bias)(output)
+    return Model(inputs=inputs, outputs=output)
