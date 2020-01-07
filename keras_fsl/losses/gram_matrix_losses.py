@@ -12,16 +12,13 @@ def mean_score_classification_loss(y_true, y_pred):
     Then softmax is applied to use a classical categorical_crossentropy loss.
     """
     y_true = tf.dtypes.cast(y_true, tf.float32)
-    return K.categorical_crossentropy(
+    return K.binary_crossentropy(
         y_true,
-        tf.nn.softmax(
-            tf.math.divide_no_nan(tf.linalg.matmul(y_pred, y_true), tf.reduce_sum(y_true, axis=0)),
-            axis=1,
-        ),
+        tf.math.divide_no_nan(tf.linalg.matmul(y_pred, y_true), tf.reduce_sum(y_true, axis=0)),
     )
 
 
-def binary_crossentropy(margin=0.1):
+def binary_crossentropy(margin=0.0):
     """
     Compute the binary crossentropy loss of each possible pair in the batch. The margin lets define a threshold against
     which the difference is not taken into account, ie. |y_true - y_pred| < margin => loss = 0
@@ -32,14 +29,14 @@ def binary_crossentropy(margin=0.1):
     return _binary_crossentropy
 
 
-def accuracy_at(margin=0.1):
+def accuracy(margin=0.0):
     """
     Compute the relative number of pairs with a score in the margin, ie. #{pairs | |y_true - y_pred| < m}
     """
-    def accuracy(y_true, y_pred):
+    def _accuracy(y_true, y_pred):
         y_true = tf.matmul(y_true, y_true, transpose_b=True)
         return K.mean(K.cast(K.abs(y_true - y_pred) < margin, 'float32'))
-    return accuracy
+    return _accuracy
 
 
 def min_eigenvalue(_, y_pred):
