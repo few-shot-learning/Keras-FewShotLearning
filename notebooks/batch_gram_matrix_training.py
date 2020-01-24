@@ -25,6 +25,76 @@ from keras_fsl.sequences import prediction, training
 from keras_fsl.losses import binary_crossentropy, accuracy, mean_score_classification_loss, min_eigenvalue
 # tf.config.experimental_run_functions_eagerly(True)
 
+def build_k_way_n_shot_dataset(annotations, n_shot, k_way, classes=None, to_categorical=True, training=True):
+    annotations = annotations.assign(label=pd.Categorical(annotations.label, categories=classes))
+
+    targets = annotations.label.cat.codes
+    if to_categorical:
+        targets = (
+            pd.get_dummies(targets)
+              .reindex(list(range(len(targets.unique()))), axis=1)
+              .fillna(0)
+        )
+
+    num_classes = len(targets.columns)
+    batch_size = n_shot * k_way
+
+    def load_image_and_crop(image_path, x1, y1, x2, y2):
+        image = tf.io.read_file(image_path)
+        image = tf.image.decode_png(image)
+        image = (tf.image.convert_image_dtype(image, tf.float32) - 0.5) * 2
+        image = tf.image.crop_to_bounding_box(image, y1, x1, y2 - y1, x2 - x1)
+        image = tf.image.resize_with_crop_or_pad(image, 224, 224)
+
+        return image
+
+    def data_aug(image):
+        image = tf.image.random_flip_left_right(image)
+        image = tf.image.random_flip_up_down(image)
+
+        return image
+
+    def build_datasets_for_class(annotations, targets, index_class):
+        print(f"Building for {index_class}")
+        class_targets = targets[targets[index_class] > 0]
+        class_annotations = annotations.loc[class_targets.index]
+
+        dataset = tf.data.Dataset.from_tensor_slices((
+            class_annotations["image_name"],
+            class_annotations["x1"],
+            class_annotations["y1"],
+            class_annotations["x2"],
+            class_annotations["y2"],
+            class_targets.values.astype("float32"),
+        ))
+
+        dataset = dataset.map(
+            lambda image_name, x1, y1, x2, y2, target: (load_image_and_crop(image_name, x1, y1, x2, y2), target),
+            num_parallel_calls=tf.data.experimental.AUTOTUNE,
+        )
+
+        if training:
+            dataset = dataset.cache()
+            dataset = dataset.map(
+                lambda image, target: (data_aug(image), target),
+                num_parallel_calls=tf.data.experimental.AUTOTUNE,
+            )
+
+        return dataset
+
+    datasets_by_class = [build_datasets_for_class(annotations, targets, index_class=index_class) for index_class in targets.columns]
+
+    choice_dataset = tf.data.Dataset.range(num_classes).shuffle(buffer_size=num_classes).repeat().interleave(
+        lambda index: tf.data.Dataset.from_tensors(index).repeat(n_shot),
+        cycle_length=1,
+        block_length=n_shot,
+    )
+
+    dataset = tf.data.experimental.choose_from_datasets(datasets_by_class, choice_dataset).batch(batch_size)
+
+    return dataset
+
+
 #%% Init data
 output_folder = Path('logs') / 'kernel_loss' / datetime.today().strftime('%Y%m%d-%H%M%S')
 output_folder.mkdir(parents=True, exist_ok=True)
@@ -47,6 +117,17 @@ test_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split['test
 
 #%% Init model
 branch_model_name = 'MobileNet'
+batch_size = 64
+n_shot = batch_size // 8
+k_way = 8
+num_classes = len(train_set.label.unique())
+
+print("Building image dataset.")
+dataset = build_k_way_n_shot_dataset(train_set, k_way=k_way, n_shot=n_shot, training=True).repeat()
+print("Done training.")
+val_dataset = build_k_way_n_shot_dataset(val_set, k_way=k_way, n_shot=n_shot, training=False).repeat()
+print("Done validation.")
+
 siamese_nets = SiameseNets(
     branch_model={
         'name': branch_model_name,
@@ -100,26 +181,6 @@ callbacks = [
     ),
     ReduceLROnPlateau(),
 ]
-train_sequence = training.single.KShotNWaySequence(
-    train_set,
-    preprocessings=preprocessing,
-    batch_size=batch_size,
-    labels_in_input=False,
-    labels_in_output=True,
-    to_categorical=True,
-    k_shot=batch_size // 8,
-    n_way=8,
-)
-val_sequence = training.single.KShotNWaySequence(
-    val_set,
-    preprocessings=preprocessing,
-    batch_size=batch_size,
-    labels_in_input=False,
-    labels_in_output=True,
-    to_categorical=True,
-    k_shot=batch_size // 8,
-    n_way=8,
-)
 
 #%% Train model with loss on kernel
 siamese_nets.get_layer('branch_model').trainable = False
@@ -130,14 +191,14 @@ model.compile(
     loss=binary_crossentropy(margin),
     metrics=[binary_crossentropy(0.0), accuracy(margin), mean_score_classification_loss, min_eigenvalue],
 )
-model.fit_generator(
-    train_sequence,
-    validation_data=val_sequence,
+model.fit(
+    dataset,
+    validation_data=val_dataset,
     callbacks=callbacks,
     initial_epoch=0,
+    steps_per_epoch=361,
+    validation_steps=78,
     epochs=10,
-    use_multiprocessing=False,
-    workers=0,
 )
 
 siamese_nets.get_layer('branch_model').trainable = True
@@ -148,13 +209,13 @@ model.compile(
     metrics=[binary_crossentropy(0.0), accuracy(margin), mean_score_classification_loss, min_eigenvalue],
 )
 model.fit_generator(
-    train_sequence,
-    validation_data=val_sequence,
+    dataset,
+    validation_data=val_dataset,
     callbacks=callbacks,
+    steps_per_epoch=361,
+    validation_steps=78,
     initial_epoch=10,
     epochs=100,
-    use_multiprocessing=False,
-    workers=0,
 )
 
 model.save(output_folder / 'final_model.h5')
