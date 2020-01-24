@@ -4,3 +4,4 @@ data
 logs
 .polyaxon
 venv
+*.egg-info/
