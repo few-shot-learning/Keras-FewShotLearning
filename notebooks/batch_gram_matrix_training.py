@@ -80,7 +80,7 @@ def build_k_way_n_shot_dataset(annotations, n_shot, k_way, classes=None, to_cate
                 num_parallel_calls=tf.data.experimental.AUTOTUNE,
             )
 
-        return dataset
+        return dataset.repeat()
 
     datasets_by_class = [build_datasets_for_class(annotations, targets, index_class=index_class) for index_class in targets.columns]
 
