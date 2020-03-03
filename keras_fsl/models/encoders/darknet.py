@@ -12,11 +12,7 @@ def conv_2d(*args, **kwargs):
 
 @wraps(Conv2D)
 def conv_block(*args, **kwargs):
-    return Sequential([
-        conv_2d(*args, **kwargs, use_bias=False),
-        BatchNormalization(),
-        LeakyReLU(alpha=0.1),
-    ])
+    return Sequential([conv_2d(*args, **kwargs, use_bias=False), BatchNormalization(), LeakyReLU(alpha=0.1),])
 
 
 def residual_block(input_shape, num_filters, num_blocks):
