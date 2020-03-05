@@ -1,5 +1,5 @@
 """
-Activation function for mapping feature into output coordinates as in Yolo V3
+Activation function for mapping feature into output box dimensions as in Yolo V3
 """
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
