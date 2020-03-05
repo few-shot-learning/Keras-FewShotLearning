@@ -2,13 +2,11 @@ from datetime import datetime
 from functools import partial
 from pathlib import Path
 
-import imgaug.augmenters as iaa
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import shutil
 import tensorflow as tf
-import tensorflow_addons as tfa
 import yaml
 from tensorflow.keras import applications as keras_applications
 from tensorflow.keras.callbacks import (
@@ -86,23 +84,9 @@ preprocessing = compose(
     partial(tf.cast, dtype=tf.float32),
     tf.image.random_flip_left_right,
     tf.image.random_flip_up_down,
-    partial(tfa.image.rotate, angles=2),
     partial(tf.image.resize_with_crop_or_pad, target_height=224, target_width=224),
     partial(getattr(keras_applications, branch_model_name.lower()).preprocess_input, data_format='channels_last'),
 )
-#
-# preprocessing = iaa.Sequential([
-#     iaa.Fliplr(0.5),
-#     iaa.Flipud(0.5),
-#     iaa.Affine(rotate=(-180, 180)),
-#     iaa.CropToFixedSize(224, 224, position='center'),
-#     iaa.PadToFixedSize(224, 224, position='center'),
-#     iaa.AssertShape((None, 224, 224, 3)),
-#     iaa.Lambda(lambda images_list, *_: (
-#         getattr(keras_applications, branch_model_name.lower())
-#         .preprocess_input(np.stack(images_list), data_format='channels_last')
-#     )),
-# ])
 
 callbacks = [
     TensorBoard(output_folder, write_images=True, histogram_freq=1),
@@ -115,7 +99,7 @@ callbacks = [
         str(output_folder / 'kernel_loss_best_accuracy_weights.h5'),
         save_best_only=True,
         save_weights_only=True,
-        monitor='val_accuracy',
+        monitor='val__accuracy',
     ),
     ReduceLROnPlateau(),
 ]
@@ -141,12 +125,12 @@ model.compile(
     metrics=[binary_crossentropy(0.0), accuracy(margin), mean_score_classification_loss, min_eigenvalue],
 )
 model.fit(
-    train_dataset.batch(batch_size),
+    train_dataset.batch(batch_size).repeat(),
     steps_per_epoch=len(train_set) // batch_size,
-    validation_data=val_dataset.batch(batch_size),
+    validation_data=val_dataset.batch(batch_size).repeat(),
     validation_steps=len(val_set) // batch_size,
     initial_epoch=0,
-    epochs=10,
+    epochs=5,
     callbacks=callbacks,
 )
 
@@ -158,12 +142,12 @@ model.compile(
     metrics=[binary_crossentropy(0.0), accuracy(margin), mean_score_classification_loss, min_eigenvalue],
 )
 model.fit(
-    train_dataset.batch(batch_size),
+    train_dataset.batch(batch_size).repeat(),
     steps_per_epoch=len(train_set) // batch_size,
-    validation_data=val_dataset.batch(batch_size),
+    validation_data=val_dataset.batch(batch_size).repeat(),
     validation_steps=len(val_set) // batch_size,
-    initial_epoch=10,
-    epochs=100,
+    initial_epoch=5,
+    epochs=20,
     callbacks=callbacks,
 )
 
