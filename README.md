@@ -1,4 +1,4 @@
-# Welcome to Keras-FewShotLearning!
+# Welcome to keras-fsl!
 
 As years go by, Few Shot Learning (FSL) is becoming a hot topic not only in academic papers but also in production
 applications.
@@ -26,7 +26,7 @@ Most of the state-of-the-art algorithms
 try to sort of learn a metric into a well suited (optimized) feature space. Thus deep networks usually first encode the
 base images into a feature space onto which a _distance_ or _similarity_ is learnt.
 
-This similarity is meant to be used to later classify sample according to their relative distance, either in a pair-wise
+This similarity is meant to be used to later classify samples according to their relative distance, either in a pair-wise
 manner where the nearest support set samples is used to classify the query sample ([Voronoi diagram](https://en.wikipedia.org/wiki/Voronoi_diagram))
 or in a more advanced classifier. Indeed, this philosophy is most commonly known as [the kernel trick](https://en.wikipedia.org/wiki/Kernel_method)
 where the kernel is indeed the similarity learnt during training. Hence any kind of usual kernel based Machine Learning
@@ -36,7 +36,7 @@ There is no easy answer to the optimal choice of such a classifier in the featur
 as well as one complexity and real application parameters. For instance if the support set is strongly imbalanced, you
 may not want to fit an advanced classifier onto it but rather use a raw nearest neighbor approach.
 
-All these considerations lead the need of a code architecture that will let you play with these parameters with your
+All these considerations lead to the need of a code architecture that will let you play with these parameters with your
 own data in order to take the best from them.
 
 Amongst other, the Siamese Nets is usually known as the network from [Koch et al.](https://www.cs.cmu.edu/~rsalakhu/papers/oneshot1.pdf)
@@ -52,24 +52,24 @@ falls into the Siamese Nets frameworks and is available here as `SiameseNets(hea
 This repos provides several tools for few-shot learning:
 
  - Keras layers and models
- - Keras sequences for training the models
- - Usual few-shot learning datasets
+ - Keras sequences and Tensorflow datasets for training the models
  - Notebooks with proven learning sequences
  
 All these tools can be used all together or separately. One may want to stick with the keras model trained on regular
-numpy arrays, with or without callbacks. When designing more advanced `keras.Sequence` for training, it is advised (and
-some examples are provided) to use Pandas though it is not necessary at all.
+numpy arrays, with or without callbacks. When designing more advanced `keras.Sequence` or `tf.data.Dataset` for
+training, it is advised (and some examples are provided) to use Pandas though it is not necessary at all.
 
 We think that fast experimentation requires the good level of modularity. Modularity means that the flow of operations
 should be described as a sequence of operations with well defined interfaces. Furthermore you should be able to change
 or update any of these single operations without changing anything else. For these reasons we think that stacked Layers
-as well as stacked (chained) Pandas operations are the right way of building ML pipelines. In this context we also rely
-on ImgAug for preprocessing the data. Feel free to experiment and share your thought on this repo by contributing to it! 
+as well as stacked (chained) Pandas or tf.data operations are the right way of building ML pipelines. In this context we
+also rely on ImgAug for preprocessing the data.
+
+Feel free to experiment and share your thought on this repo by contributing to it! 
 
 ## Getting started
 
-The [notebooks](notebooks) section provides examples on how to run several models onto the standard FSL dataset. As an
-example, just run:
+The [notebooks](notebooks) section provides some examples. For instance, just run:
 
 ```python
 from keras_fsl.models import SiameseNets
