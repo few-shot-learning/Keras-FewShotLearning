@@ -8,9 +8,7 @@ from tensorflow.keras.regularizers import l2
 @wraps(Conv2D)
 def conv_2d(*args, **kwargs):
     return Conv2D(
-        *args, **kwargs,
-        kernel_regularizer=l2(5e-4),
-        padding='valid' if kwargs.get('strides') == (2, 2) else 'same',
+        *args, **kwargs, kernel_regularizer=l2(5e-4), padding="valid" if kwargs.get("strides") == (2, 2) else "same",
     )
 
 
@@ -49,18 +47,22 @@ def Darknet7(input_shape=(224, 224, 3), *args, **kwargs):
     """
     Backbone of tiny YOLO
     """
-    return Sequential([
-        conv_block(16, (3, 3), input_shape=input_shape),
-        MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding='same'),
-        conv_block(32, (3, 3)),
-        MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding='same'),
-        conv_block(64, (3, 3)),
-        MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding='same'),
-        conv_block(128, (3, 3)),
-        MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding='same'),
-        conv_block(256, (3, 3)),
-        MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding='same'),
-        conv_block(512, (3, 3)),
-        MaxPooling2D(pool_size=(2, 2), strides=(1, 1), padding='same'),
-        conv_block(1024, (3, 3)),
-    ], *args, **kwargs)
+    return Sequential(
+        [
+            conv_block(16, (3, 3), input_shape=input_shape),
+            MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding="same"),
+            conv_block(32, (3, 3)),
+            MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding="same"),
+            conv_block(64, (3, 3)),
+            MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding="same"),
+            conv_block(128, (3, 3)),
+            MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding="same"),
+            conv_block(256, (3, 3)),
+            MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding="same"),
+            conv_block(512, (3, 3)),
+            MaxPooling2D(pool_size=(2, 2), strides=(1, 1), padding="same"),
+            conv_block(1024, (3, 3)),
+        ],
+        *args,
+        **kwargs,
+    )

@@ -6,9 +6,9 @@ from .random_assignment import RandomAssignment
 
 
 __all__ = [
-    'CenterCoordinatesToKeypoint',
-    'CoordinatesToBoundingBox',
-    'CornerToCenterCoordinates',
-    'NaiveMaxProba',
-    'RandomAssignment',
+    "CenterCoordinatesToKeypoint",
+    "CoordinatesToBoundingBox",
+    "CornerToCenterCoordinates",
+    "NaiveMaxProba",
+    "RandomAssignment",
 ]

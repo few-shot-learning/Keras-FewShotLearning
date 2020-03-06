@@ -5,7 +5,6 @@ from tensorflow.keras.utils import Sequence
 
 
 class RandomProductSequence(Sequence):
-
     def __init__(self, images_array, labels, batch_size):
         """
 
@@ -15,10 +14,12 @@ class RandomProductSequence(Sequence):
             batch_size (int): batch_size for the sequence
         """
         self.pairs_indexes = (
-            pd.DataFrame({
-                'query_index': pd.np.repeat(pd.np.arange(len(labels)), len(labels)),
-                'support_index': pd.np.tile(pd.np.arange(len(labels)), reps=len(labels)),
-            })
+            pd.DataFrame(
+                {
+                    "query_index": pd.np.repeat(pd.np.arange(len(labels)), len(labels)),
+                    "support_index": pd.np.tile(pd.np.arange(len(labels)), reps=len(labels)),
+                }
+            )
             .assign(
                 query_label=lambda df: labels[df.query_index],
                 support_label=lambda df: labels[df.support_index],
@@ -36,7 +37,7 @@ class RandomProductSequence(Sequence):
         support_index = self.pairs_indexes.support_index.iloc[start:end]
         return (
             [self.images_array[query_index], self.images_array[support_index]],
-            self.pairs_indexes.target.iloc[start:end]
+            self.pairs_indexes.target.iloc[start:end],
         )
 
     def __len__(self):

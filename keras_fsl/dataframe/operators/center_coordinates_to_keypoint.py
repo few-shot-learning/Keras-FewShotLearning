@@ -9,7 +9,4 @@ class CenterCoordinatesToKeypoint(AbstractOperator):
     """
 
     def __call__(self, input_dataframe):
-        return (
-            input_dataframe
-            .assign(center=lambda df: df[['x', 'y']].apply(lambda row: Keypoint(**row), axis=1))
-        )
+        return input_dataframe.assign(center=lambda df: df[["x", "y"]].apply(lambda row: Keypoint(**row), axis=1))

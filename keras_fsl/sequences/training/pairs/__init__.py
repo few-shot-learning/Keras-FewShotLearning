@@ -4,8 +4,8 @@ from .random_pairs_sequence import RandomPairsSequence
 from .random_product_sequence import RandomProductSequence
 
 __all__ = [
-    'BalancedPairsSequence',
-    'RandomBalancedPairsSequence',
-    'RandomPairsSequence',
-    'RandomProductSequence',
+    "BalancedPairsSequence",
+    "RandomBalancedPairsSequence",
+    "RandomPairsSequence",
+    "RandomProductSequence",
 ]

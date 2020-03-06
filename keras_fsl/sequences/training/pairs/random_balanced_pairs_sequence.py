@@ -13,9 +13,9 @@ class RandomBalancedPairsSequence(AbstractPairsSequence):
     def on_epoch_end(self):
         self.query_samples = self.query_annotations.sample(frac=1).reset_index(drop=True)
         self.support_samples = pd.concat(
-            self.query_samples
-            .apply(lambda row: self.support_annotations_by_label[self.select_support_label(row)].sample(1), axis=1)
-            .to_list()
+            self.query_samples.apply(
+                lambda row: self.support_annotations_by_label[self.select_support_label(row)].sample(1), axis=1
+            ).to_list()
         ).reset_index(drop=True)
 
     def select_support_label(self, row):

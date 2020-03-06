@@ -14,26 +14,28 @@ class GramMatrix(Layer):
 
     def get_config(self):
         config = super().get_config()
-        config.update({'kernel': self.kernel.to_json()})
+        config.update({"kernel": self.kernel.to_json()})
         return config
 
     @classmethod
     def from_config(cls, config):
-        kernel = tf.keras.models.model_from_json(config['kernel'])
-        config['kernel'] = kernel
+        kernel = tf.keras.models.model_from_json(config["kernel"])
+        config["kernel"] = kernel
         return cls(**config)
 
     @tf.function
     def call(self, inputs, **kwargs):
         if isinstance(inputs, list):
             if len(inputs) > 1:
-                raise AttributeError('Layer should be called on a single tensor')
+                raise AttributeError("Layer should be called on a single tensor")
             inputs = inputs[0]
         batch_size = tf.shape(inputs)[0]
         return tf.reshape(
-            self.kernel([
-                tf.reshape(tf.tile(inputs, [1, batch_size]), [-1, inputs.shape[1]], name='tf.repeat'),
-                tf.tile(inputs, [batch_size, 1]),
-            ]),
+            self.kernel(
+                [
+                    tf.reshape(tf.tile(inputs, [1, batch_size]), [-1, inputs.shape[1]], name="tf.repeat"),
+                    tf.tile(inputs, [batch_size, 1]),
+                ]
+            ),
             [batch_size, batch_size],
         )

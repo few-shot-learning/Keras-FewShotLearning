@@ -7,12 +7,9 @@ class CornerToCenterCoordinates(AbstractOperator):
     """
 
     def __call__(self, input_dataframe):
-        return (
-            input_dataframe
-            .assign(
-                width=lambda df: df.x2 - df.x1,
-                height=lambda df: df.y2 - df.y1,
-                x=lambda df: (df.x1 + df.x2) // 2,
-                y=lambda df: (df.y1 + df.y2) // 2,
-            )
+        return input_dataframe.assign(
+            width=lambda df: df.x2 - df.x1,
+            height=lambda df: df.y2 - df.y1,
+            x=lambda df: (df.x1 + df.x2) // 2,
+            y=lambda df: (df.y1 + df.y2) // 2,
         )

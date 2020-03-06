@@ -13,12 +13,7 @@ class NaiveMaxProba:
         Args:
             **histogram_kwargs: any kwargs to pass to np.histogram
         """
-        self.histogram_kwargs = {
-            'bins': 25,
-            'density': True,
-            'range': (0, 1),
-            **histogram_kwargs
-        }
+        self.histogram_kwargs = {"bins": 25, "density": True, "range": (0, 1), **histogram_kwargs}
 
     @staticmethod
     def get_p(dataframe):
@@ -44,18 +39,17 @@ class NaiveMaxProba:
             pandas.DataFrame: dataframe with one score per image per label
         """
         return (
-            input_dataframe
-            .groupby(['image_name', 'label'], as_index=False)
-            .agg({'score': list})
+            input_dataframe.groupby(["image_name", "label"], as_index=False)
+            .agg({"score": list})
             .assign(
                 pdf=lambda df: (
                     df.score.apply(lambda values: np.histogram(values, **self.histogram_kwargs)[0])
-                    / self.histogram_kwargs['bins']
+                    / self.histogram_kwargs["bins"]
                 ),
                 cdf=lambda df: df.pdf.apply(lambda p: np.cumsum(p)),
             )
-            .groupby('image_name')
+            .groupby("image_name")
             .apply(lambda group: group.assign(confidence=lambda df: self.get_p(df)))
             .reset_index(drop=True)
-            .drop(['pdf', 'cdf'], axis=1)
+            .drop(["pdf", "cdf"], axis=1)
         )

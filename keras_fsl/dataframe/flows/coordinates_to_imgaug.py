@@ -5,9 +5,8 @@ from keras_fsl.dataframe.operators.corner_to_center_coordinates import CornerToC
 
 def CoordinatesToImgAug(input_dataframe):
     return (
-        input_dataframe
-        .pipe(CoordinatesToBoundingBox())
+        input_dataframe.pipe(CoordinatesToBoundingBox())
         .pipe(CornerToCenterCoordinates())
         .pipe(CenterCoordinatesToKeypoint())
-        .drop(['x1', 'y1', 'x2', 'y2', 'x', 'y', 'width', 'height'], axis=1)
+        .drop(["x1", "y1", "x2", "y2", "x", "y", "width", "height"], axis=1)
     )

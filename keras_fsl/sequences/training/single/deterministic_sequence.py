@@ -37,11 +37,7 @@ class DeterministicSequence(AbstractSequence):
         self.targets = self.annotations[0].label.cat.codes
         self.shuffle = shuffle
         if to_categorical:
-            self.targets = (
-                pd.get_dummies(self.targets)
-                .reindex(list(range(len(self.classes))), axis=1)
-                .fillna(0)
-            )
+            self.targets = pd.get_dummies(self.targets).reindex(list(range(len(self.classes))), axis=1).fillna(0)
         self.on_epoch_end()
 
     @property
@@ -51,10 +47,12 @@ class DeterministicSequence(AbstractSequence):
     def __getitem__(self, index):
         start_index = index * self.batch_size
         end_index = (index + 1) * self.batch_size
-        inputs = [pd.np.stack(
-            self.preprocessings[0].augment_images(self.load_img(self.annotations[0].iloc[start_index:end_index])),
-            axis=0,
-        )]
+        inputs = [
+            pd.np.stack(
+                self.preprocessings[0].augment_images(self.load_img(self.annotations[0].iloc[start_index:end_index])),
+                axis=0,
+            )
+        ]
         output = [self.targets.iloc[start_index:end_index].values.astype("float32")]
         if self.labels_in_input:
             inputs += output
