@@ -6,7 +6,6 @@ from tensorflow.keras.callbacks import Callback
 
 
 class BinaryStatistics(Callback):
-
     def __init__(self, validation_data, log_dir):
         super().__init__()
         X, y = validation_data

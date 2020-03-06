@@ -20,10 +20,7 @@ class AbstractPairsSequence(AbstractSequence):
         self.support_preprocessing = self.preprocessings[-1]
         self.query_annotations = self.annotations[0]
         self.support_annotations = self.annotations[-1]
-        self.support_annotations_by_label = {
-            group[0]: group[1]
-            for group in self.support_annotations.groupby('label')
-        }
+        self.support_annotations_by_label = {group[0]: group[1] for group in self.support_annotations.groupby("label")}
 
         self.query_samples = pd.DataFrame()
         self.support_samples = pd.DataFrame()
@@ -31,9 +28,7 @@ class AbstractPairsSequence(AbstractSequence):
     def __getitem__(self, index):
         start_index = index * self.batch_size
         end_index = (index + 1) * self.batch_size
-        query_images = self.query_preprocessing(
-            images=self.load_img(self.query_samples.iloc[start_index:end_index]),
-        )
+        query_images = self.query_preprocessing(images=self.load_img(self.query_samples.iloc[start_index:end_index]),)
         support_images = self.support_preprocessing(
             images=self.load_img(self.support_samples.iloc[start_index:end_index])
         )

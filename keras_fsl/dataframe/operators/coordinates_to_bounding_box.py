@@ -9,7 +9,6 @@ class CoordinatesToBoundingBox(AbstractOperator):
     """
 
     def __call__(self, input_dataframe):
-        return (
-            input_dataframe
-            .assign(bounding_box=lambda df: df[['x1', 'y1', 'x2', 'y2']].apply(lambda row: BoundingBox(**row), axis=1))
+        return input_dataframe.assign(
+            bounding_box=lambda df: df[["x1", "y1", "x2", "y2"]].apply(lambda row: BoundingBox(**row), axis=1)
         )

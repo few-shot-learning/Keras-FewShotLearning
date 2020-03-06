@@ -8,7 +8,6 @@ from tensorflow.keras.utils import Sequence
 
 
 class AbstractSequence(Sequence, metaclass=ABCMeta):
-
     def __init__(self, annotations, batch_size, preprocessings=None, **load_img_kwargs):
         """
         Args:
@@ -22,8 +21,7 @@ class AbstractSequence(Sequence, metaclass=ABCMeta):
         if not isinstance(annotations, list):
             annotations = [annotations]
         self.annotations = [
-            annotations_.assign(crop_coordinates=lambda df: df.get('crop_coordinates'))
-            for annotations_ in annotations
+            annotations_.assign(crop_coordinates=lambda df: df.get("crop_coordinates")) for annotations_ in annotations
         ]
 
         self.load_img_kwargs = load_img_kwargs
@@ -33,8 +31,7 @@ class AbstractSequence(Sequence, metaclass=ABCMeta):
         if type(preprocessings) is not list:
             preprocessings = [preprocessings]
         self.preprocessings = [
-            preprocessing if preprocessing is not None else iaa.Sequential()
-            for preprocessing in preprocessings
+            preprocessing if preprocessing is not None else iaa.Sequential() for preprocessing in preprocessings
         ]
 
     def __len__(self):

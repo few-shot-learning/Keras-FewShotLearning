@@ -13,8 +13,7 @@ def mean_score_classification_loss(y_true, y_pred):
     """
     y_true = tf.dtypes.cast(y_true, tf.float32)
     return K.binary_crossentropy(
-        y_true,
-        tf.math.divide_no_nan(tf.linalg.matmul(y_pred, y_true), tf.reduce_sum(y_true, axis=0)),
+        y_true, tf.math.divide_no_nan(tf.linalg.matmul(y_pred, y_true), tf.reduce_sum(y_true, axis=0)),
     )
 
 
@@ -23,9 +22,11 @@ def binary_crossentropy(margin=0.0):
     Compute the binary crossentropy loss of each possible pair in the batch. The margin lets define a threshold against
     which the difference is not taken into account, ie. |y_true - y_pred| < margin => loss = 0
     """
+
     def _binary_crossentropy(y_true, y_pred):
         y_true = tf.matmul(y_true, y_true, transpose_b=True)
-        return (K.cast(K.abs(y_true - y_pred) > margin, 'float32')) * K.binary_crossentropy(y_true, y_pred)
+        return (K.cast(K.abs(y_true - y_pred) > margin, "float32")) * K.binary_crossentropy(y_true, y_pred)
+
     return _binary_crossentropy
 
 
@@ -33,9 +34,11 @@ def accuracy(margin=0.0):
     """
     Compute the relative number of pairs with a score in the margin, ie. #{pairs | |y_true - y_pred| < m}
     """
+
     def _accuracy(y_true, y_pred):
         y_true = tf.matmul(y_true, y_true, transpose_b=True)
-        return K.mean(K.cast(K.abs(y_true - y_pred) < margin, 'float32'))
+        return K.mean(K.cast(K.abs(y_true - y_pred) < margin, "float32"))
+
     return _accuracy
 
 

@@ -8,11 +8,11 @@ from keras_fsl.models import layers
 
 
 def SiameseDetector(
-    branch_model='Darknet7',
-    head_model='DenseSigmoid',
+    branch_model="Darknet7",
+    head_model="DenseSigmoid",
     *args,
     support_input_shape=None,
-    pooling_layer='CenterSlicing2D',
+    pooling_layer="CenterSlicing2D",
     weights=None,
     **kwargs,
 ):
@@ -40,10 +40,10 @@ def SiameseDetector(
     """
     if not isinstance(branch_model, Model):
         if isinstance(branch_model, str):
-            branch_model = {'name': branch_model}
-        branch_model_name = branch_model['name']
-        branch_model = getattr(branch_models, branch_model_name)(**branch_model.get('init', {}))
-    branch_model = Model(branch_model.inputs, branch_model.outputs, name='branch_model')
+            branch_model = {"name": branch_model}
+        branch_model_name = branch_model["name"]
+        branch_model = getattr(branch_models, branch_model_name)(**branch_model.get("init", {}))
+    branch_model = Model(branch_model.inputs, branch_model.outputs, name="branch_model")
     support_input_shape = support_input_shape or branch_model.input_shape[1:]
 
     embedding_dimension = branch_model.output_shape[-1]
@@ -51,23 +51,23 @@ def SiameseDetector(
 
     if not isinstance(head_model, Model):
         if isinstance(head_model, str):
-            head_model = {'name': head_model}
-        head_model_name = head_model['name']
+            head_model = {"name": head_model}
+        head_model_name = head_model["name"]
         head_model_init = {
-            **head_model.get('init', {}),
-            'input_shape': (embedding_dimension,),
+            **head_model.get("init", {}),
+            "input_shape": (embedding_dimension,),
         }
         head_model = getattr(head_models, head_model_name)(**head_model_init)
-    head_model = Model(head_model.inputs, head_model.outputs, name='head_model')
+    head_model = Model(head_model.inputs, head_model.outputs, name="head_model")
 
     if not isinstance(pooling_layer, Model):
         if isinstance(pooling_layer, str):
-            pooling_layer = {'name': pooling_layer}
-        pooling_layer_name = pooling_layer['name']
-        pooling_layer = getattr(layers, pooling_layer_name)(**pooling_layer.get('init', {}))
+            pooling_layer = {"name": pooling_layer}
+        pooling_layer_name = pooling_layer["name"]
+        pooling_layer = getattr(layers, pooling_layer_name)(**pooling_layer.get("init", {}))
 
-    query = Input(shape=branch_model.input_shape[1:], name='query')
-    supports = [Input(shape=support_input_shape, name=f'support_{i}') for i in range(1, len(head_model.inputs))]
+    query = Input(shape=branch_model.input_shape[1:], name="query")
+    supports = [Input(shape=support_input_shape, name=f"support_{i}") for i in range(1, len(head_model.inputs))]
 
     query_embedding = Lambda(lambda x: tf.reshape(x, (-1, embedding_dimension)))(branch_model(query))
     supports_embeddings = [

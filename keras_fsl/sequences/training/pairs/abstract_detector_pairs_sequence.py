@@ -22,10 +22,7 @@ class AbstractPairsSequence(AbstractSequence):
         self.support_preprocessing = self.preprocessings[-1]
         self.query_annotations = self.annotations[0]
         self.support_annotations = self.annotations[-1]
-        self.support_annotations_by_label = {
-            group[0]: group[1]
-            for group in self.support_annotations.groupby('label')
-        }
+        self.support_annotations_by_label = {group[0]: group[1] for group in self.support_annotations.groupby("label")}
 
         self.query_samples = pd.DataFrame()
         self.support_samples = pd.DataFrame()
@@ -41,11 +38,13 @@ class AbstractPairsSequence(AbstractSequence):
         support_images = self.support_preprocessing(
             images=self.load_img(self.support_samples.iloc[start_index:end_index])
         )
-        targets = pd.np.stack([
-            self.target_augmenter.augment_keypoints(kp).to_keypoint_image().clip(max=1).squeeze() *
-            self.targets[start_index:end_index].iloc[i].astype(int)
-            for i, kp in enumerate(query_keypoints)
-        ])
+        targets = pd.np.stack(
+            [
+                self.target_augmenter.augment_keypoints(kp).to_keypoint_image().clip(max=1).squeeze()
+                * self.targets[start_index:end_index].iloc[i].astype(int)
+                for i, kp in enumerate(query_keypoints)
+            ]
+        )
         return [query_images, support_images], targets
 
     @property
