@@ -39,7 +39,7 @@ class ToKShotDataset(AbstractOperator):
         """
         return (
             tf.data.Dataset.from_tensor_slices(group.to_dict('list'))
-            .map(self.load_img)
+            .map(self.load_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)
             .cache()
             .shuffle(buffer_size=len(group), reshuffle_each_iteration=True)
             .repeat()
