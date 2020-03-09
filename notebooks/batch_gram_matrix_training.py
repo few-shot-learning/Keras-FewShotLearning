@@ -107,7 +107,7 @@ callbacks = [
 train_dataset = (
     train_set
     .pipe(ToKShotDataset(k_shot=8))
-    .map(lambda annotation: (preprocessing(annotation['image']), tf.cast(annotation['label_one_hot'], tf.float32)))
+    .map(lambda annotation: (preprocessing(annotation['image']), tf.cast(annotation['label_one_hot'], tf.float32)), num_parallel_calls=tf.data.experimental.AUTOTUNE)
 )
 val_dataset = (
     val_set
