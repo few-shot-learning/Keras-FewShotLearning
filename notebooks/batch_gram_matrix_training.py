@@ -112,7 +112,7 @@ train_dataset = (
 val_dataset = (
     val_set
     .pipe(ToKShotDataset(k_shot=8))
-    .map(lambda annotation: (preprocessing(annotation['image']), tf.cast(annotation['label_one_hot'], tf.float32)))
+    .map(lambda annotation: (preprocessing(annotation['image']), tf.cast(annotation['label_one_hot'], tf.float32)), num_parallel_calls=tf.data.experimental.AUTOTUNE)
 )
 
 #%% Train model with loss on kernel
