@@ -223,21 +223,3 @@ plt.clf()
 scores.good_prediction.hist()
 plt.savefig(output_folder / "scores_good_predictions.png")
 scores.to_csv(output_folder / "scores.csv", index=False)
-
-#%% Export classification model with SavedModel
-model.load_weights(str(output_folder / "kernel_loss_best_loss_weights.h5"))
-classifier = Sequential(
-    [
-        siamese_nets.get_layer("branch_model"),
-        Classification(kernel=siamese_nets.get_layer("head_model")),
-        Activation("softmax"),
-    ]
-)
-tf.saved_model.save(classifier, str(output_folder / "saved_model/1/"))
-
-#%% Example of use as classifier
-classifier.get_layer("classification").set_support_set(
-    support_tensors=tf.convert_to_tensor(support_set_embeddings, tf.float32),
-    support_labels=tf.convert_to_tensor(pd.get_dummies(support_set.label.values).values, tf.float32),
-)
-y = classifier.predict_generator(test_sequence, verbose=1)
