@@ -9,8 +9,17 @@ class ToKShotDataset(AbstractOperator):
     Create tf.data.Dataset with random groups of k_shot consecutive images with the same label
     """
 
-    def __init__(self, k_shot):
+    def __init__(self, k_shot, preprocessing, label_column='label_one_hot'):
+        """
+
+        Args:
+            k_shot (int): number of consecutive crops from the same class
+            preprocessing (function): to be applied onto the image after opening
+            label_column (str): either "label_one_hot" or "label" depending on the expected form of the network
+        """
         self.k_shot = k_shot
+        self.preprocessing = preprocessing
+        self.label_column = label_column
 
     @staticmethod
     def load_img(annotation):
@@ -47,19 +56,25 @@ class ToKShotDataset(AbstractOperator):
         )
 
     def __call__(self, input_dataframe):
-        return tf.data.experimental.choose_from_datasets(
-            datasets=(
-                input_dataframe
-                .assign(
-                    label_one_hot=lambda df: pd.get_dummies(df.label).values.tolist(),
-                    crop_window=lambda df: df[["crop_y", "crop_x", "crop_height", "crop_width"]].values.tolist(),
-                )
-                .groupby('label')
-                .apply(self.to_dataset)
-            ),
-            choice_dataset=(
-                tf.data.Dataset.range(len(input_dataframe.label.unique()))
-                .shuffle(buffer_size=len(input_dataframe.label.unique()), reshuffle_each_iteration=True)
-                .flat_map(self.repeat_k_shot)
-            ),
+        return (
+            tf.data.experimental.choose_from_datasets(
+                datasets=(
+                    input_dataframe
+                    .assign(
+                        label_one_hot=lambda df: pd.get_dummies(df.label).values.tolist(),
+                        crop_window=lambda df: df[["crop_y", "crop_x", "crop_height", "crop_width"]].values.tolist(),
+                    )
+                    .groupby('label')
+                    .apply(self.to_dataset)
+                ),
+                choice_dataset=(
+                    tf.data.Dataset.range(len(input_dataframe.label.unique()))
+                    .shuffle(buffer_size=len(input_dataframe.label.unique()), reshuffle_each_iteration=True)
+                    .flat_map(self.repeat_k_shot)
+                ),
+            )
+            .map(
+                lambda annotation: (self.preprocessing(annotation['image']), tf.cast(annotation[self.label_column], tf.float32)),
+                num_parallel_calls=tf.data.experimental.AUTOTUNE,
+            )
         )
