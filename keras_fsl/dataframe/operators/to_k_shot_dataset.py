@@ -1,3 +1,4 @@
+import pandas as pd
 import tensorflow as tf
 
 from keras_fsl.dataframe.operators.abstract_operator import AbstractOperator
@@ -49,6 +50,10 @@ class ToKShotDataset(AbstractOperator):
         return tf.data.experimental.choose_from_datasets(
             datasets=(
                 input_dataframe
+                .assign(
+                    label_one_hot=lambda df: pd.get_dummies(df.label).values.tolist(),
+                    crop_window=lambda df: df[["crop_y", "crop_x", "crop_height", "crop_width"]].values.tolist(),
+                )
                 .groupby('label')
                 .apply(self.to_dataset)
             ),

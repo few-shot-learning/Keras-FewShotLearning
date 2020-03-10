@@ -44,14 +44,12 @@ all_annotations = (
     .assign(
         day=lambda df: df.image_name.str.slice(3, 11),
         image_name=lambda df: "data/images/cropped_images/" + df.image_name,
-        label_one_hot=lambda df: pd.get_dummies(df.label).values.tolist(),
         crop_y=lambda df: df.y1,
         crop_x=lambda df: df.x1,
         crop_height=lambda df: df.y2 - df.y1,
         crop_width=lambda df: df.x2 - df.x1,
-        crop_window=lambda df: df[["crop_y", "crop_x", "crop_height", "crop_width"]].values.tolist(),
     )
-    .filter(items=["day", "image_name", "crop_window", "label", "label_one_hot"])
+    .filter(items=["day", "image_name", "crop_x", "crop_y", "crop_height", "crop_width", "label"])
 )
 train_val_test_split = yaml.safe_load(open("data/annotations/cropped_images_split.yaml"))
 train_set = all_annotations.loc[lambda df: df.day.isin(train_val_test_split["train_set_dates"])]
