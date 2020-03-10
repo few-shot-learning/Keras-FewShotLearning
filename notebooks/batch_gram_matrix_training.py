@@ -14,20 +14,19 @@ from tensorflow.keras.callbacks import (
     ReduceLROnPlateau,
     TensorBoard,
 )
-from tensorflow.keras.layers import Activation
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
 
 from keras_fsl.dataframe.operators import ToKShotDataset
 from keras_fsl.models import SiameseNets
-from keras_fsl.models.layers import Classification, GramMatrix
-from keras_fsl.sequences import prediction
+from keras_fsl.models.layers import GramMatrix
 from keras_fsl.losses import (
     binary_crossentropy,
     accuracy,
     mean_score_classification_loss,
     min_eigenvalue,
 )
+from keras_fsl.sequences.prediction.pairs import ProductSequence
 from keras_fsl.utils import compose
 
 # tf.config.experimental_run_functions_eagerly(True)
@@ -107,12 +106,18 @@ callbacks = [
 train_dataset = (
     train_set
     .pipe(ToKShotDataset(k_shot=8))
-    .map(lambda annotation: (preprocessing(annotation['image']), tf.cast(annotation['label_one_hot'], tf.float32)), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    .map(
+        lambda annotation: (preprocessing(annotation['image']), tf.cast(annotation['label_one_hot'], tf.float32)),
+        num_parallel_calls=tf.data.experimental.AUTOTUNE,
+    )
 )
 val_dataset = (
     val_set
     .pipe(ToKShotDataset(k_shot=8))
-    .map(lambda annotation: (preprocessing(annotation['image']), tf.cast(annotation['label_one_hot'], tf.float32)), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    .map(
+        lambda annotation: (preprocessing(annotation['image']), tf.cast(annotation['label_one_hot'], tf.float32)),
+        num_parallel_calls=tf.data.experimental.AUTOTUNE,
+    )
 )
 
 #%% Train model with loss on kernel
@@ -188,7 +193,7 @@ for _ in range(n_episode):
     )
     support_set_embeddings = embeddings[support_set.index]
     query_set_embeddings = embeddings[query_set.index]
-    test_sequence = prediction.pairs.ProductSequence(
+    test_sequence = ProductSequence(
         support_images_array=support_set_embeddings,
         query_images_array=query_set_embeddings,
         support_labels=support_set.label.values,
