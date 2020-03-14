@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "keras-fsl"
 version = "0.1.0"
-description = "Model builder for some State-of-the-Art architecture in few-shot learning"
+description = "Model builders for some State-of-the-Art architectures in few-shot and contrastive learning"
 authors = ["Clément Walter <clement0walter@gmail.com>"]
 
 [tool.poetry.dependencies]
