@@ -4,7 +4,7 @@ from .to_k_shot_dataset import ToKShotDataset
 
 
 __all__ = [
-    'NaiveMaxProba',
-    'RandomAssignment',
-    'ToKShotDataset',
+    "NaiveMaxProba",
+    "RandomAssignment",
+    "ToKShotDataset",
 ]
