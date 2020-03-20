@@ -107,8 +107,8 @@ datasets = all_annotations.groupby("split").apply(
 )
 model.compile(
     optimizer=optimizer,
-    loss=binary_crossentropy(margin),
-    metrics=[binary_crossentropy(0.0), accuracy(margin), mean_score_classification_loss, min_eigenvalue],
+    loss=binary_crossentropy(margin, 1 - margin),
+    metrics=[binary_crossentropy(), accuracy(margin), mean_score_classification_loss, min_eigenvalue],
 )
 model.fit(
     datasets["train"],
@@ -125,7 +125,7 @@ optimizer = Adam(lr=1e-5)
 model.compile(
     optimizer=optimizer,
     loss=binary_crossentropy(margin),
-    metrics=[binary_crossentropy(0.0), accuracy(margin), mean_score_classification_loss, min_eigenvalue],
+    metrics=[binary_crossentropy(), accuracy(margin), mean_score_classification_loss, min_eigenvalue],
 )
 model.fit(
     datasets["train"],
