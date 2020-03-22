@@ -34,6 +34,14 @@ def binary_crossentropy(lower_margin=0.0, upper_margin=1.0):
     return _binary_crossentropy
 
 
+def max_crossentropy(y_true_, y_pred):
+    return tf.reduce_max(binary_crossentropy(0.0)(y_true_, y_pred))
+
+
+def std_crossentropy(y_true_, y_pred):
+    return tf.math.reduce_std(binary_crossentropy(0.0)(y_true_, y_pred))
+
+
 def accuracy(margin=0.0):
     """
     Compute the relative number of pairs with a score in the margin, ie. #{pairs | |y_true - y_pred| < m}
