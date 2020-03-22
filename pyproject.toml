@@ -18,7 +18,7 @@ black = "^19.10b0"
 
 [tool.black]
 line-length = 130
+
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
-
