@@ -30,10 +30,7 @@ from tensorflow.keras.optimizers import Adam
 
 #%% CLI args
 @click.option(
-    "--base_dir",
-    help="Base directory for the training",
-    type=Path,
-    default="/home/clementw/totem/scripts/trainings/siamese_container",
+    "--base_dir", help="Base directory for the training", type=Path,
 )
 @click.command()
 def train(base_dir):
