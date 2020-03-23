@@ -11,17 +11,13 @@ def top_score_classification_accuracy(y_true, y_pred):
     """
     y_true = tf.dtypes.cast(y_true, tf.float32)
     y_pred = y_pred - tf.linalg.diag(tf.linalg.diag_part(y_pred))
-    return tf.reduce_mean(
-        tf.reduce_sum(
-            y_true * tf.linalg.matmul(tf.cast(y_pred == tf.reduce_max(y_pred, axis=1, keepdims=True), tf.float32), y_true),
-            axis=1,
-        )
-    )
+    y_pred = tf.map_fn(lambda x: y_true[x], tf.math.argmax(y_pred, axis=1), dtype=tf.float32)
+    return tf.reduce_mean(tf.reduce_sum(y_true * y_pred, axis=1))
 
 
 def same_image_score(y_pred, _):
     """
-    Same image score may not be always one especially when bias is used in the head_model
+    Same image score may not be always zero especially when bias is used in the head_model
     """
     return tf.reduce_mean(tf.linalg.diag_part(y_pred))
 
