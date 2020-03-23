@@ -11,7 +11,7 @@ class ToKShotDataset(AbstractOperator):
     Create tf.data.Dataset with random groups of k_shot consecutive images with the same label
     """
 
-    def __init__(self, k_shot, preprocessing, label_column="label_one_hot", cache=""):
+    def __init__(self, k_shot, preprocessing, label_column="label_one_hot", cache=None):
         """
 
         Args:
@@ -24,8 +24,10 @@ class ToKShotDataset(AbstractOperator):
         self.k_shot = k_shot
         self.preprocessing = preprocessing
         self.label_column = label_column
-        self.cache = Path(cache)
-        self.cache.mkdir(exist_ok=True)
+        self.cache = cache
+        if cache is not None:
+            self.cache = Path(cache)
+            self.cache.mkdir(exist_ok=True)
 
     @staticmethod
     def load_img(annotation):
@@ -52,7 +54,7 @@ class ToKShotDataset(AbstractOperator):
         return (
             tf.data.Dataset.from_tensor_slices(group.to_dict("list"))
             .map(self.load_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-            .cache(str(self.cache / group.name))
+            .cache(str(self.cache / group.name) if self.cache is not None else "")
             .shuffle(buffer_size=len(group), reshuffle_each_iteration=True)
             .repeat()
         )
