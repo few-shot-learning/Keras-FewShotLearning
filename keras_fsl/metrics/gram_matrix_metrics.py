@@ -10,10 +10,13 @@ def top_score_classification_accuracy(y_true, y_pred):
     Use the top score of an image against all the samples from the same class to get a score per class for each image.
     """
     y_true = tf.dtypes.cast(y_true, tf.float32)
-    y_pred = tf.linalg.set_diag(y_pred, tf.zeros(tf.shape(y_pred)[0]))
-    return tf.reduce_sum(
-        y_true * tf.linalg.matmul(tf.cast(y_pred == tf.reduce_max(y_pred, axis=1, keepdims=True), tf.float32), y_true)
-    ) / tf.cast(tf.shape(y_pred)[0], tf.float32)
+    y_pred = y_pred - tf.linalg.diag(tf.linalg.diag_part(y_pred))
+    return tf.reduce_mean(
+        tf.reduce_sum(
+            y_true * tf.linalg.matmul(tf.cast(y_pred == tf.reduce_max(y_pred, axis=1, keepdims=True), tf.float32), y_true),
+            axis=1,
+        )
+    )
 
 
 def same_image_score(y_pred, _):
