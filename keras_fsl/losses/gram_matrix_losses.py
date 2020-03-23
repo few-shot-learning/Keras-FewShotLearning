@@ -8,8 +8,7 @@ import tensorflow.keras.backend as K
 
 def mean_score_classification_loss(y_true, y_pred):
     """
-    Use the mean score of an image against all the sample from the same class to get a score per class for each image.
-    Then softmax is applied to use a classical categorical_crossentropy loss.
+    Use the mean score of an image against all the samples from the same class to get a score per class for each image.
     """
     y_true = tf.dtypes.cast(y_true, tf.float32)
     return K.binary_crossentropy(y_true, tf.math.divide_no_nan(tf.linalg.matmul(y_pred, y_true), tf.reduce_sum(y_true, axis=0)))
@@ -40,24 +39,3 @@ def max_crossentropy(y_true_, y_pred):
 
 def std_crossentropy(y_true_, y_pred):
     return tf.math.reduce_std(binary_crossentropy(0.0)(y_true_, y_pred))
-
-
-def accuracy(margin=0.0):
-    """
-    Compute the relative number of pairs with a score in the margin, ie. #{pairs | |y_true - y_pred| < m}
-    """
-
-    def _accuracy(y_true, y_pred):
-        y_true = tf.matmul(y_true, y_true, transpose_b=True)
-        return K.mean(K.cast(K.abs(y_true - y_pred) < margin, "float32"))
-
-    return _accuracy
-
-
-def min_eigenvalue(_, y_pred):
-    """
-    Compute the minimum eigenvalue of the y_pred tensor. If this value if non-negative (resp. positive) then the
-    similarity or distance learnt is a positive semi-definite (resp. positive definite) kernel.
-    See Also [Positive-definite kernel](https://en.wikipedia.org/wiki/Positive-definite_kernel)
-    """
-    return tf.reduce_min(tf.linalg.svd(y_pred, compute_uv=False))

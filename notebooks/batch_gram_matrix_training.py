@@ -22,8 +22,10 @@ from keras_fsl.models import SiameseNets
 from keras_fsl.models.layers import GramMatrix
 from keras_fsl.losses import (
     binary_crossentropy,
-    accuracy,
     mean_score_classification_loss,
+)
+from keras_fsl.metrics import (
+    accuracy,
     min_eigenvalue,
 )
 from keras_fsl.utils import compose
@@ -33,7 +35,7 @@ from keras_fsl.utils import compose
 #%% Init model
 branch_model_name = "MobileNet"
 siamese_nets = SiameseNets(
-    branch_model={"name": branch_model_name, "init": {"include_top": False, "input_shape": (224, 224, 3), "pooling": "avg"},},
+    branch_model={"name": branch_model_name, "init": {"include_top": False, "input_shape": (224, 224, 3), "pooling": "avg"}},
     head_model={
         "name": "MixedNorms",
         "init": {
