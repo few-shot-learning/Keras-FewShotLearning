@@ -15,7 +15,7 @@ def top_score_classification_accuracy(y_true, y_pred):
     return tf.reduce_mean(tf.reduce_sum(y_true * y_pred, axis=1))
 
 
-def same_image_score(y_pred, _):
+def same_image_score(_, y_pred):
     """
     Same image score may not be always zero especially when bias is used in the head_model
     """
