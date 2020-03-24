@@ -12,7 +12,7 @@ def mean_score_classification_loss(y_true, y_pred):
     """
     return tf.nn.sparse_softmax_cross_entropy_with_logits(
         tf.argmax(y_true, axis=1),
-        tf.math.divide_no_nan(tf.linalg.matmul(y_pred, tf.dtypes.cast(y_true, tf.float32)), tf.reduce_sum(y_true, axis=0)),
+        tf.math.divide_no_nan(tf.linalg.matmul(y_pred, tf.dtypes.cast(y_true, y_pred.dtype)), tf.reduce_sum(y_true, axis=0)),
     )
 
 
@@ -41,7 +41,7 @@ def binary_crossentropy(lower_margin=0.0, upper_margin=1.0):
     def _binary_crossentropy(y_true, y_pred):
         y_true = tf.matmul(y_true, y_true, transpose_b=True)
         keep_loss = tf.math.logical_and(tf.abs(y_true - y_pred) < upper_margin, tf.abs(y_true - y_pred) > lower_margin)
-        return tf.cast(keep_loss, dtype=tf.float32) * K.binary_crossentropy(y_true, y_pred)
+        return tf.cast(keep_loss, dtype=y_pred.dtype) * K.binary_crossentropy(y_true, y_pred)
 
     return _binary_crossentropy
 
