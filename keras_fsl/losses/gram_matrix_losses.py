@@ -10,10 +10,10 @@ def mean_score_classification_loss(y_true, y_pred):
     """
     Use the mean score of an image against all the samples from the same class to get a score per class for each image.
     """
-    return tf.nn.sparse_softmax_cross_entropy_with_logits(
-        tf.argmax(y_true, axis=1),
-        tf.math.divide_no_nan(tf.linalg.matmul(y_pred, tf.dtypes.cast(y_true, y_pred.dtype)), tf.reduce_sum(y_true, axis=0)),
-    )
+    y_pred_by_label = tf.linalg.normalize(
+        tf.linalg.matmul(y_pred, tf.math.divide_no_nan(y_true, tf.reduce_sum(y_true, axis=0))), ord=1, axis=1
+    )[0]
+    return K.categorical_crossentropy(y_true, y_pred_by_label)
 
 
 def class_consistency_loss(y_true, y_pred):
@@ -22,8 +22,11 @@ def class_consistency_loss(y_true, y_pred):
     over all the samples to get a class_wise confusion matrix
     """
     y_true = tf.math.divide_no_nan(y_true, tf.reduce_sum(y_true, axis=0))
-    confusion_matrix = tf.matmul(y_true, tf.matmul(y_pred, y_true), transpose_a=True)
-    identity_matrix = tf.eye(tf.shape(y_true)[1])
+    class_mask = tf.reduce_sum(y_true, axis=0) > 0
+    confusion_matrix = tf.boolean_mask(
+        tf.matmul(y_true, tf.matmul(y_pred, y_true), transpose_a=True)[class_mask], class_mask, axis=1
+    )
+    identity_matrix = tf.eye(tf.shape(confusion_matrix)[0])
     return tf.reduce_mean(K.binary_crossentropy(identity_matrix, confusion_matrix))
 
 
