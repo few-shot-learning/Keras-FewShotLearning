@@ -1,6 +1,8 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Layer
 
+from keras_fsl.losses import class_consistency_loss
+
 
 class Classification(Layer):
     """
@@ -23,6 +25,7 @@ class Classification(Layer):
         self.kernel = kernel
         self.support_tensors = tf.Variable([[]], validate_shape=False, shape=self.support_tensors_shape, name="support_tensors")
         self.support_labels = tf.Variable([[]], validate_shape=False, shape=self.support_labels_shape, name="support_labels")
+        self.support_set_loss = tf.Variable(0.0, name="support_set_loss")
 
     def get_config(self):
         config = super().get_config()
@@ -40,13 +43,35 @@ class Classification(Layer):
         if support_tensors.shape[0] != support_labels.shape[0]:
             raise AttributeError("Support tensors and support labels shape 0 should match")
 
-    @tf.function(input_signature=(support_tensors_spec, support_labels_spec))
-    def set_support_set(self, support_tensors, support_labels):
+    @tf.function(input_signature=(support_tensors_spec, support_labels_spec, tf.TensorSpec(None, tf.bool, name="overwrite")))
+    def set_support_set(self, support_tensors, support_labels, overwrite):
         self._validate_support_set_shape(support_tensors, support_labels)
+        support_tensors = tf.cond(
+            overwrite, lambda: support_tensors, lambda: tf.concat([self.support_tensors, support_tensors], axis=0)
+        )
+        support_labels = tf.cond(
+            overwrite, lambda: support_labels, lambda: tf.concat([tf.math.ceil(self.support_labels), support_labels], axis=0)
+        )
+        support_set_size = tf.shape(support_tensors)[0]
+        pair_wise_scores = tf.reshape(
+            self.kernel(
+                [
+                    tf.repeat(support_tensors, tf.ones(support_set_size, dtype=tf.int32) * support_set_size, axis=0),
+                    tf.tile(support_tensors, [support_set_size, 1]),
+                ]
+            ),
+            [support_set_size, support_set_size],
+        )
+        self.support_set_loss.assign(class_consistency_loss(support_labels, pair_wise_scores))
+
         normalized_labels = tf.math.divide_no_nan(support_labels, tf.reduce_sum(support_labels, axis=0))
-        self.support_tensors.assign(support_tensors)
         self.support_labels.assign(normalized_labels)
-        return self.support_tensors, self.support_labels
+        self.support_tensors.assign(support_tensors)
+        return tf.expand_dims(self.support_set_loss, axis=0)
+
+    @tf.function(input_signature=())
+    def get_support_set(self):
+        return self.support_tensors, self.support_labels, self.support_set_loss
 
     def compute_output_shape(self, input_shape):
         return input_shape[0], tf.shape(self.support_labels)[1]

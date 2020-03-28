@@ -5,3 +5,4 @@ logs
 .polyaxon
 venv
 dist
+best_loss.h5

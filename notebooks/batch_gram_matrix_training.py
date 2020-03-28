@@ -151,7 +151,7 @@ def train(base_dir):
     #%% Export artifacts
     siamese_nets.save(str(base_dir / "siamese_nets_best_loss.h5"))
     classifier = Sequential([siamese_nets.get_layer("branch_model"), Classification(siamese_nets.get_layer("head_model"))])
-    tf.saved_model.save(classifier, "siamese_nets_classifier", signatures={"preprocessing": preprocessing})
+    tf.saved_model.save(classifier, "siamese_nets_classifier/1", signatures={"preprocessing": preprocessing})
 
 
 #%% Run command
