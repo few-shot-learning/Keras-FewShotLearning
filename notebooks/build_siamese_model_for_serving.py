@@ -59,7 +59,7 @@ def decode_and_serve(image_bytes):
 def set_support_set(image_bytes, crop_window, label, overwrite):
     support_tensors = classifier.layers[0](decode_and_crop(image_bytes=image_bytes, crop_window=crop_window))
     return classifier.layers[1].set_support_set(
-        support_tensors=support_tensors, support_labels=tf.cast(label, tf.float32), overwrite=overwrite
+        support_tensors=support_tensors, support_labels_one_hot=tf.cast(label, tf.float32), overwrite=overwrite
     )
 
 
