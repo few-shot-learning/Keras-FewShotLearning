@@ -13,15 +13,13 @@ requests.get("http://localhost:8501/v1/models/siamese_nets_classifier")
 
 #%% Create fake catalog
 support_set_size = 10
-image_bytes = tf.convert_to_tensor(
-    [
-        tf.io.encode_jpeg(tf.cast(tf.random.uniform((350, 250, 3), minval=0, maxval=255), dtype=tf.uint8))
-        for _ in range(support_set_size)
-    ]
-)
+image_bytes = [
+    tf.io.encode_base64(tf.io.encode_jpeg(tf.cast(tf.random.uniform((350, 250, 3), minval=0, maxval=255), dtype=tf.uint8)))
+    for _ in range(support_set_size)
+]
 
-label = tf.one_hot(np.random.choice(range(3), support_set_size), depth=3, dtype=tf.uint8)
-crop_window = tf.tile([[0, 0, 200, 224]], [support_set_size, 1])
+label = np.random.choice(["label_A", "label_B", "label_C"], support_set_size).tolist()
+crop_window = np.tile([0, 0, 200, 224], [support_set_size, 1]).tolist()
 
 #%% Set support set
 response = requests.post(
@@ -29,9 +27,9 @@ response = requests.post(
     json={
         "signature_name": "set_support_set",
         "inputs": {
-            "image_bytes": [image.decode("utf-8") for image in image_bytes.numpy().tolist()],
-            "crop_window": crop_window.numpy().tolist(),
-            "label": label.numpy().tolist(),
+            "image_bytes": [image.numpy().decode("utf-8") for image in image_bytes],
+            "crop_window": crop_window,
+            "label": label,
             "overwrite": True,
         },
     },
@@ -42,10 +40,34 @@ json.loads(response.content)
 response = requests.post(
     "http://localhost:8501/v1/models/siamese_nets_classifier:predict",
     json={
+        "inputs": {"image_bytes": [image.numpy().decode("utf-8") for image in image_bytes][:2], "crop_window": crop_window[:2]},
+    },
+)
+pd.DataFrame(
+    np.array(json.loads(response.content)["outputs"]["scores"]), columns=json.loads(response.content)["outputs"]["classes"]
+)
+
+#%% Update support set with new label
+response = requests.post(
+    "http://localhost:8501/v1/models/siamese_nets_classifier:predict",
+    json={
+        "signature_name": "set_support_set",
         "inputs": {
-            "image_bytes": [image.decode("utf-8") for image in image_bytes.numpy().tolist()][:2],
-            "crop_window": crop_window.numpy().tolist()[:2],
+            "image_bytes": [image.numpy().decode("utf-8") for image in image_bytes][:1],
+            "crop_window": crop_window[:1],
+            "label": ["label_other"],
+            "overwrite": False,
         },
     },
 )
-pd.DataFrame(np.array(json.loads(response.content)["outputs"]))
+
+#%% Make new prediction, label is available for prediction
+response = requests.post(
+    "http://localhost:8501/v1/models/siamese_nets_classifier:predict",
+    json={
+        "inputs": {"image_bytes": [image.numpy().decode("utf-8") for image in image_bytes][:2], "crop_window": crop_window[:2]},
+    },
+)
+pd.DataFrame(
+    np.array(json.loads(response.content)["outputs"]["scores"]), columns=json.loads(response.content)["outputs"]["classes"]
+)

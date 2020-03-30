@@ -12,7 +12,8 @@ from tensorflow.keras.layers import Lambda
 from tensorflow.keras.utils import to_categorical
 
 from keras_fsl.models.branch_models import BasicCNN
-from keras_fsl.losses import binary_crossentropy, mean_score_classification_loss, min_eigenvalue
+from keras_fsl.losses import binary_crossentropy, mean_score_classification_loss
+from keras_fsl.metrics import min_eigenvalue
 from keras_fsl.models.layers import GramMatrix, Classification
 
 #%% Init data

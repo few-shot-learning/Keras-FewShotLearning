@@ -11,9 +11,11 @@ class Classification(Layer):
     """
 
     support_tensors_shape = tf.TensorShape([None, None])
-    support_labels_shape = tf.TensorShape([None, None])
+    support_labels_one_hot_shape = tf.TensorShape([None, None])
+    support_labels_name_shape = tf.TensorShape([None])
     support_tensors_spec = tf.TensorSpec(support_tensors_shape, tf.float32, name="support_tensors")
-    support_labels_spec = tf.TensorSpec(support_labels_shape, tf.float32, name="support_labels")
+    support_labels_one_hot_spec = tf.TensorSpec(support_labels_one_hot_shape, tf.float32, name="support_labels_one_hot")
+    support_labels_name_spec = tf.TensorSpec(support_labels_name_shape, tf.string, name="support_labels_name")
 
     def __init__(self, kernel, **kwargs):
         """
@@ -24,7 +26,17 @@ class Classification(Layer):
         super().__init__(**kwargs)
         self.kernel = kernel
         self.support_tensors = tf.Variable([[]], validate_shape=False, shape=self.support_tensors_shape, name="support_tensors")
-        self.support_labels = tf.Variable([[]], validate_shape=False, shape=self.support_labels_shape, name="support_labels")
+        self.support_labels_name = tf.Variable(
+            [],
+            validate_shape=False,
+            shape=self.support_labels_name_shape,
+            name="support_labels_name",
+            dtype=self.support_labels_name_spec.dtype,
+        )
+        self.support_labels_one_hot = tf.Variable(
+            [[]], validate_shape=False, shape=self.support_labels_one_hot_shape, name="support_labels_one_hot"
+        )
+        self.columns = tf.Variable([], validate_shape=False, shape=[None], dtype=tf.string, name="columns")
         self.support_set_loss = tf.Variable(0.0, name="support_set_loss")
 
     def get_config(self):
@@ -43,15 +55,17 @@ class Classification(Layer):
         if support_tensors.shape[0] != support_labels.shape[0]:
             raise AttributeError("Support tensors and support labels shape 0 should match")
 
-    @tf.function(input_signature=(support_tensors_spec, support_labels_spec, tf.TensorSpec(None, tf.bool, name="overwrite")))
-    def set_support_set(self, support_tensors, support_labels, overwrite):
-        self._validate_support_set_shape(support_tensors, support_labels)
+    @tf.function(input_signature=(support_tensors_spec, support_labels_name_spec, tf.TensorSpec(None, tf.bool, name="overwrite")))
+    def set_support_set(self, support_tensors, support_labels_name, overwrite):
+        self._validate_support_set_shape(support_tensors, support_labels_name)
         support_tensors = tf.cond(
             overwrite, lambda: support_tensors, lambda: tf.concat([self.support_tensors, support_tensors], axis=0)
         )
-        support_labels = tf.cond(
-            overwrite, lambda: support_labels, lambda: tf.concat([tf.math.ceil(self.support_labels), support_labels], axis=0)
+        support_labels_name = tf.cond(
+            overwrite, lambda: support_labels_name, lambda: tf.concat([self.support_labels_name, support_labels_name], axis=0),
         )
+        columns, codes = tf.unique(support_labels_name)
+        support_labels_one_hot = tf.one_hot(codes, depth=tf.size(columns))
         support_set_size = tf.shape(support_tensors)[0]
         pair_wise_scores = tf.reshape(
             self.kernel(
@@ -62,19 +76,21 @@ class Classification(Layer):
             ),
             [support_set_size, support_set_size],
         )
-        self.support_set_loss.assign(class_consistency_loss(support_labels, pair_wise_scores))
+        self.support_set_loss.assign(class_consistency_loss(support_labels_one_hot, pair_wise_scores))
 
-        normalized_labels = tf.math.divide_no_nan(support_labels, tf.reduce_sum(support_labels, axis=0))
-        self.support_labels.assign(normalized_labels)
+        normalized_labels = tf.math.divide_no_nan(support_labels_one_hot, tf.reduce_sum(support_labels_one_hot, axis=0))
         self.support_tensors.assign(support_tensors)
+        self.support_labels_name.assign(support_labels_name)
+        self.support_labels_one_hot.assign(normalized_labels)
+        self.columns.assign(columns)
         return tf.expand_dims(self.support_set_loss, axis=0)
 
     @tf.function(input_signature=())
     def get_support_set(self):
-        return self.support_tensors, self.support_labels, self.support_set_loss
+        return self.support_tensors, self.support_labels_one_hot, self.support_set_loss
 
     def compute_output_shape(self, input_shape):
-        return input_shape[0], tf.shape(self.support_labels)[1]
+        return input_shape[0], tf.shape(self.support_labels_one_hot)[1]
 
     @tf.function
     def call(self, inputs, **kwargs):
@@ -93,4 +109,4 @@ class Classification(Layer):
             ),
             [batch_size, support_set_size],
         )
-        return tf.linalg.normalize(tf.linalg.matmul(pair_wise_scores, self.support_labels), ord=1, axis=1,)[0]
+        return tf.linalg.normalize(tf.linalg.matmul(pair_wise_scores, self.support_labels_one_hot), ord=1, axis=1)[0]
