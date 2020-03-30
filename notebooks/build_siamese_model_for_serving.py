@@ -40,27 +40,31 @@ def decode(image_bytes):
 
 @tf.function(input_signature=(tf.TensorSpec(shape=[None], dtype=tf.string), tf.TensorSpec(shape=[None, 4], dtype=tf.int32)))
 def decode_and_crop_and_serve(image_bytes, crop_window):
-    return classifier(decode_and_crop(image_bytes=image_bytes, crop_window=crop_window))
+    return {
+        tf.saved_model.CLASSIFY_OUTPUT_SCORES: classifier(decode_and_crop(image_bytes=image_bytes, crop_window=crop_window)),
+        tf.saved_model.CLASSIFY_OUTPUT_CLASSES: classifier.layers[1].columns,
+    }
 
 
 @tf.function(input_signature=(tf.TensorSpec(shape=[None], dtype=tf.string),))
 def decode_and_serve(image_bytes):
-    return classifier(decode(image_bytes=image_bytes))
+    return {
+        tf.saved_model.CLASSIFY_OUTPUT_SCORES: classifier(decode(image_bytes=image_bytes)),
+        tf.saved_model.CLASSIFY_OUTPUT_CLASSES: classifier.layers[1].columns,
+    }
 
 
 @tf.function(
     input_signature=(
         tf.TensorSpec(shape=[None], dtype=tf.string, name="image_bytes"),
         tf.TensorSpec(shape=[None, 4], dtype=tf.int32, name="crop_window"),
-        tf.TensorSpec(shape=[None, None], dtype=tf.uint8, name="label"),
+        tf.TensorSpec(shape=[None], dtype=tf.string, name="label"),
         tf.TensorSpec(shape=None, dtype=tf.bool, name="overwrite"),
     )
 )
 def set_support_set(image_bytes, crop_window, label, overwrite):
     support_tensors = classifier.layers[0](decode_and_crop(image_bytes=image_bytes, crop_window=crop_window))
-    return classifier.layers[1].set_support_set(
-        support_tensors=support_tensors, support_labels_one_hot=tf.cast(label, tf.float32), overwrite=overwrite
-    )
+    return classifier.layers[1].set_support_set(support_tensors=support_tensors, support_labels_name=label, overwrite=overwrite)
 
 
 tf.saved_model.save(

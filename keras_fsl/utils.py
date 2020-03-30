@@ -1,5 +1,5 @@
 import os
-from functools import wraps, reduce
+from functools import reduce, wraps
 from unittest.mock import patch
 
 
