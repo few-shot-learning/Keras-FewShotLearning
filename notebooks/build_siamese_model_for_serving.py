@@ -69,7 +69,7 @@ def set_support_set(image_bytes, crop_window, label, overwrite):
 
 tf.saved_model.save(
     classifier,
-    export_dir="siamese_nets_classifier/2",
+    export_dir="siamese_nets_classifier/1",
     signatures={
         "serving_default": decode_and_crop_and_serve,
         "from_crop": decode_and_serve,

@@ -47,6 +47,18 @@ pd.DataFrame(
     np.array(json.loads(response.content)["outputs"]["scores"]), columns=json.loads(response.content)["outputs"]["classes"]
 )
 
+#%% Use Siamese as usual classifier over random images with no bounding boxes
+response = requests.post(
+    "http://localhost:8501/v1/models/siamese_nets_classifier:predict",
+    json={
+        "signature_name": "from_crop",
+        "inputs": {"image_bytes": [image.numpy().decode("utf-8") for image in image_bytes][:2]},
+    },
+)
+pd.DataFrame(
+    np.array(json.loads(response.content)["outputs"]["scores"]), columns=json.loads(response.content)["outputs"]["classes"]
+)
+
 #%% Update support set with new label
 response = requests.post(
     "http://localhost:8501/v1/models/siamese_nets_classifier:predict",
@@ -65,7 +77,8 @@ response = requests.post(
 response = requests.post(
     "http://localhost:8501/v1/models/siamese_nets_classifier:predict",
     json={
-        "inputs": {"image_bytes": [image.numpy().decode("utf-8") for image in image_bytes][:2], "crop_window": crop_window[:2]},
+        "signature_name": "from_crop",
+        "inputs": {"image_bytes": [image.numpy().decode("utf-8") for image in image_bytes][:2]},
     },
 )
 pd.DataFrame(
