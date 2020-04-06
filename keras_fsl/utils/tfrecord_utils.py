@@ -63,6 +63,7 @@ def decoder_factory_from_dict(feature_map: Mapping[str, FEATURE_DESCRIPTOR], dty
 
 
 def infer_tfrecord_encoder_decoder_from_sample(sample: TENSOR_MAP) -> Tuple[ENCODER_TYPE, DECODER_TYPE]:
+    # TODO : support variable length arrays
     encode_function_map = {}
     decode_feature_map = {}
     dtype_map = {}
@@ -70,6 +71,14 @@ def infer_tfrecord_encoder_decoder_from_sample(sample: TENSOR_MAP) -> Tuple[ENCO
     for key, tensor in sample.items():
         dtype = tensor.dtype
         shape = tensor.shape.as_list()
+
+        if len(shape) > 1:
+            # TODO : support dimensions non 1d or scalar tensors
+            raise TypeError(f"infer_tfrecord_encoder_decoder_from_sample does not support {len(shape)}d tensors")
+        if len(shape) == 1 and dtype is tf.string:
+            # TODO : support 1d arrays of string (currently converted to bytes)
+            raise TypeError(f"infer_tfrecord_encoder_decoder_from_sample only support scalar strings")
+
         proto_dtype = DTYPE_TO_PROTO_DTYPE[dtype]
         encode = PROTO_DTYPE_TO_FEATURE[proto_dtype]
         if not shape:
