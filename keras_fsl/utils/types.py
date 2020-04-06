@@ -1,7 +1,7 @@
-from typing import Mapping, Type, List
+from typing import Mapping, List
 import tensorflow as tf
 
-TF_TENSOR = Type[tf.Tensor]
+TF_TENSOR = tf.Tensor
 TENSOR_DTYPE_STR = str
 TENSOR_SHAPE = List[int]
 TENSOR_NDIM = int
