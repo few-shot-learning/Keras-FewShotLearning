@@ -29,23 +29,13 @@ def transform_field(transform: Callable[[TF_TENSOR], TF_TENSOR], key: str) -> Ca
 #
 ####
 
-def load_crop_as_ndarray(annotation: TENSOR_MAP) -> TF_TENSOR:
+def load_crop_as_uint8_array(annotation: TENSOR_MAP) -> TF_TENSOR:
     """
     Args:
         annotation (TENSOR_MAP): with keys 'image_name': path to the image and 'crop_window' to be passed to tf.io.decode_and_crop_jpeg
     Returns:
-        TF_TENSOR: the crop described by annotations
+        TF_TENSOR: the crop described by annotations as a uint8 array
     """
     return tf.io.decode_and_crop_jpeg(
         tf.io.read_file(annotation["image_name"]), crop_window=annotation["crop_window"], channels=3
     )
-
-
-def load_raw_crop(annotation: TENSOR_MAP) -> TF_TENSOR:
-    """Decode the base64 jpeg image in the `image` field"""
-    return tf.image.encode_jpeg(load_crop_as_ndarray(annotation))
-
-
-def raw_image_to_numpy_array(annotation: TENSOR_MAP) -> TF_TENSOR:
-    """Decode the base64 jpeg image in the `image` field"""
-    return tf.image.decode_jpeg(annotation["image"])

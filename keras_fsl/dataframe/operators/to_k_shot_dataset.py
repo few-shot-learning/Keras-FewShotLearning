@@ -66,7 +66,7 @@ class ToKShotDataset(AbstractOperator):
         Transform a pd.DataFrame into a tf.data.Dataset and load images
         """
         return tf.data.Dataset.from_tensor_slices(group.to_dict("list")).map(
-            ip.add_field(ip.load_crop_as_ndarray, "image"), num_parallel_calls=tf.data.experimental.AUTOTUNE
+            ip.add_field(ip.load_crop_as_uint8_array, "image"), num_parallel_calls=tf.data.experimental.AUTOTUNE
         )
 
     def to_dataset_with_cache(self, group):
@@ -81,8 +81,8 @@ class ToKShotDataset(AbstractOperator):
         """
         filename = self.cache / group.name
         original_dataset = (
-            tf.data.Dataset.from_tensor_slices(group.to_dict("list"))
-            .map(ip.add_field(ip.load_raw_crop, "image"), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+            self.to_dataset_direct(group)
+            .map(ip.transform_field(tf.image.encode_jpeg, "image"), num_parallel_calls=tf.data.experimental.AUTOTUNE)
             .prefetch(tf.data.experimental.AUTOTUNE)
         )
         first_sample = next(iter(original_dataset))
@@ -96,7 +96,7 @@ class ToKShotDataset(AbstractOperator):
         return (
             tf.data.TFRecordDataset(str(filename), num_parallel_reads=tf.data.experimental.AUTOTUNE)
             .map(decoder, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-            .map(ip.add_field(ip.raw_image_to_numpy_array, "image"), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+            .map(ip.transform_field(tf.io.decode_jpeg, "image"), num_parallel_calls=tf.data.experimental.AUTOTUNE)
         )
 
     def __call__(self, input_dataframe):
