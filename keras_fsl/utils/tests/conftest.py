@@ -7,7 +7,7 @@ from keras_fsl.utils.types import TENSOR_DTYPE_STR, TENSOR_SHAPE, TF_TENSOR
 
 @pytest.fixture
 def make_tensor_for_number_dtype_shape():
-    def _make_tensor(dtype: TENSOR_DTYPE_STR, shape: TENSOR_SHAPE) -> TF_TENSOR:
+    def _make_tensor(shape: TENSOR_SHAPE, dtype: TENSOR_DTYPE_STR) -> TF_TENSOR:
         return tf.constant(np.random.randint(0, 500, shape), dtype=dtype)
 
     return _make_tensor
@@ -25,9 +25,9 @@ def make_tensor_for_string_shape():
 
 @pytest.fixture
 def make_tensor_for_dtype_shape(make_tensor_for_number_dtype_shape, make_tensor_for_string_shape):
-    def _make_tensor(dtype: TENSOR_DTYPE_STR, shape: TENSOR_SHAPE) -> TF_TENSOR:
+    def _make_tensor(shape: TENSOR_SHAPE, dtype: TENSOR_DTYPE_STR) -> TF_TENSOR:
         if dtype is "string":
             return make_tensor_for_string_shape(shape)
-        return make_tensor_for_number_dtype_shape(dtype, shape)
+        return make_tensor_for_number_dtype_shape(shape, dtype)
 
     return _make_tensor
