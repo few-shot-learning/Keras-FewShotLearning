@@ -29,7 +29,7 @@ def transform_field(transform: Callable[[TF_TENSOR], TF_TENSOR], key: str) -> Ca
 #
 ####
 
-def load_crop_as_uint8_array(annotation: TENSOR_MAP) -> TF_TENSOR:
+def load_crop_as_uint8_tensor(annotation: TENSOR_MAP) -> TF_TENSOR:
     """
     Args:
         annotation (TENSOR_MAP): with keys 'image_name': path to the image and 'crop_window' to be passed to tf.io.decode_and_crop_jpeg

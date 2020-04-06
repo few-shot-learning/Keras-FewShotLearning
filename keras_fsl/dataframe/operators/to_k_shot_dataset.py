@@ -67,7 +67,7 @@ class ToKShotDataset(AbstractOperator):
         Transform a pd.DataFrame into a tf.data.Dataset and load images
         """
         return tf.data.Dataset.from_tensor_slices(group.to_dict("list")).map(
-            ip.add_field(ip.load_crop_as_uint8_array, "image"), num_parallel_calls=tf.data.experimental.AUTOTUNE
+            ip.add_field(ip.load_crop_as_uint8_tensor, "image"), num_parallel_calls=tf.data.experimental.AUTOTUNE
         )
 
     def to_dataset_with_cache(self, group):
