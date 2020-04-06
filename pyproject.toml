@@ -8,6 +8,7 @@ authors = ["Clément Walter <clement0walter@gmail.com>"]
 python = "^3.6.5"
 tensorflow = { version = "^2", optional = true}
 tensorflow-gpu = { version = "^2", optional = true}
+tqdm = "^4.45.0"
 
 [tool.poetry.dev-dependencies]
 pandas = "^1.0.1"
