@@ -10,15 +10,14 @@ class TestTFRecordUtils:
     @staticmethod
     @pytest.fixture
     def dataframe():
-        return pd.DataFrame({
-            "image_name": [f'data/im_{i}.jpg' for i in range(5)],
-            "label": ['DOG', 'CAT', 'FISH', 'FISH', 'DOG'],
-            "split": "val",
-            **{
-                column: np.random.randint(100, 600, 5)
-                for column in ["crop_x", "crop_y", "crop_height", "crop_width"]
-            },
-        })
+        return pd.DataFrame(
+            {
+                "image_name": [f"data/im_{i}.jpg" for i in range(5)],
+                "label": ["DOG", "CAT", "FISH", "FISH", "DOG"],
+                "split": "val",
+                **{column: np.random.randint(100, 600, 5) for column in ["crop_x", "crop_y", "crop_height", "crop_width"]},
+            }
+        )
 
     @staticmethod
     @pytest.mark.parametrize("dtype", [dtype.name for dtype in DTYPE_TO_PROTO_DTYPE.keys()])
