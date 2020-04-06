@@ -15,14 +15,14 @@ class ToKShotDataset(AbstractOperator):
     """
 
     def __init__(
-            self,
-            k_shot,
-            preprocessing,
-            label_column="label_one_hot",
-            cache=None,
-            reset_cache=False,
-            max_shuffle_buffer_size=100,
-            dataset_mode="with_tf_record",
+        self,
+        k_shot,
+        preprocessing,
+        label_column="label_one_hot",
+        cache=None,
+        reset_cache=False,
+        max_shuffle_buffer_size=100,
+        dataset_mode="with_tf_record",
     ):
         """
 
@@ -65,9 +65,8 @@ class ToKShotDataset(AbstractOperator):
         """
         Transform a pd.DataFrame into a tf.data.Dataset and load images
         """
-        return (
-            tf.data.Dataset.from_tensor_slices(group.to_dict("list"))
-            .map(ip.add_field(ip.load_crop_as_ndarray, "image"), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        return tf.data.Dataset.from_tensor_slices(group.to_dict("list")).map(
+            ip.add_field(ip.load_crop_as_ndarray, "image"), num_parallel_calls=tf.data.experimental.AUTOTUNE
         )
 
     def to_dataset_with_cache(self, group):
@@ -93,9 +92,7 @@ class ToKShotDataset(AbstractOperator):
                 # TODO : use idiomatic writer.write(dataset) when Dataset.map(encoder) work in graph mode with tensors
                 writer.write(encoder(first_sample))
                 for sample in original_dataset:
-                    writer.write(
-                        encoder(sample)
-                    )
+                    writer.write(encoder(sample))
         return (
             tf.data.TFRecordDataset(str(filename), num_parallel_reads=tf.data.experimental.AUTOTUNE)
             .map(decoder, num_parallel_calls=tf.data.experimental.AUTOTUNE)
@@ -106,8 +103,7 @@ class ToKShotDataset(AbstractOperator):
         tqdm.pandas(desc=f"Building {self.__class__.__name__} at {self.cache}")
         return tf.data.experimental.choose_from_datasets(
             datasets=(
-                input_dataframe
-                .assign(
+                input_dataframe.assign(
                     label_one_hot=lambda df: pd.get_dummies(df.label).values.tolist(),
                     crop_window=lambda df: df[["crop_y", "crop_x", "crop_height", "crop_width"]].values.tolist(),
                 )
@@ -120,9 +116,6 @@ class ToKShotDataset(AbstractOperator):
                 .flat_map(self.repeat_k_shot)
             ),
         ).map(
-            lambda annotation: (
-                self.preprocessing(annotation["image"]),
-                tf.cast(annotation[self.label_column], tf.float32),
-            ),
+            lambda annotation: (self.preprocessing(annotation["image"]), tf.cast(annotation[self.label_column], tf.float32)),
             num_parallel_calls=tf.data.experimental.AUTOTUNE,
         )

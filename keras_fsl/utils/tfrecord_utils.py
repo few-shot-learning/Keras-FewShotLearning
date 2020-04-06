@@ -49,14 +49,14 @@ def encoder_factory_from_dict(map: Mapping[str, Callable[[TF_TENSOR], tf.train.F
         return tf.train.Example(
             features=tf.train.Features(feature={key: make_feature(sample[key]) for key, make_feature in map.items()})
         ).SerializeToString()
+
     return _encoder
 
 
 def decoder_factory_from_dict(feature_map: Mapping[str, FEATURE_DESCRIPTOR], dtype_map: Mapping[str, Any]) -> DECODER_TYPE:
     def _decoder(sample: TF_TENSOR):
         return {
-            key: tf.cast(tensor, dtype=dtype_map[key])
-            for key, tensor in tf.io.parse_single_example(sample, feature_map).items()
+            key: tf.cast(tensor, dtype=dtype_map[key]) for key, tensor in tf.io.parse_single_example(sample, feature_map).items()
         }
 
     return _decoder
