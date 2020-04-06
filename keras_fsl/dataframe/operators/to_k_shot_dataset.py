@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -73,7 +74,10 @@ class ToKShotDataset(AbstractOperator):
         """
         Transform a pd.DataFrame into a tf.data.Dataset and load images
         """
-        return self.to_dataset_direct(group).cache(str(self.cache / group.name))
+        filename = self.cache / group.name
+        if self._reset_cache and filename.exists():
+            os.remove(filename)
+        return self.to_dataset_direct(group).cache(str(filename))
 
     def to_dataset_with_tf_record(self, group):
         """
