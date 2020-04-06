@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 
 from keras_fsl.utils.tfrecord_utils import infer_tfrecord_encoder_decoder_from_sample, DTYPE_TO_PROTO_DTYPE
@@ -47,12 +48,35 @@ class TestTFRecordUtils:
             np.testing.assert_array_equal(result[key].numpy(), tensor.numpy())
 
     @staticmethod
-    def test_infer_tfrecord_encoder_decoder_generalize_from_sample_to_sample(make_multi_features_sample):
-        encoder, decoder = infer_tfrecord_encoder_decoder_from_sample(make_multi_features_sample())
+    @pytest.fixture
+    def dataframe():
+        return pd.DataFrame({
+            "image_name": [f'data/im_{i}.jpg' for i in range(5)],
+            "label": ['DOG', 'CAT', 'FISH', 'FISH', 'DOG'],
+            "split": "val",
+            **{
+                column: np.random.randint(100, 600, 5)
+                for column in ["crop_x", "crop_y", "crop_height", "crop_width"]
+            },
+        }).assign(crop_window=lambda df: df[["crop_y", "crop_x", "crop_height", "crop_width"]].values.tolist())
 
-        another_sample = make_multi_features_sample()
-        result = decoder(encoder(another_sample))
+    @staticmethod
+    def test_infer_tfrecord_encoder_decoder_generalize_from_sample_to_sample(dataframe, tmp_path):
+        filename = tmp_path / "example.tfrecord"
+        original_dataset = tf.data.Dataset.from_tensor_slices(dataframe.to_dict("list"))
 
-        assert result.keys() == another_sample.keys()
-        for key, tensor in another_sample.items():
-            np.testing.assert_array_equal(result[key].numpy(), tensor.numpy())
+        first_sample = next(iter(original_dataset))
+        encoder, decoder = infer_tfrecord_encoder_decoder_from_sample(first_sample)
+        with tf.io.TFRecordWriter(str(filename)) as writer:
+            for sample in original_dataset:
+                writer.write(encoder(sample))
+
+        parsed_dataset = (
+            tf.data.TFRecordDataset(str(filename), num_parallel_reads=tf.data.experimental.AUTOTUNE)
+            .map(decoder, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        )
+
+        for i, (original_sample, parsed_sample) in enumerate(zip(original_dataset, parsed_dataset)):
+            assert parsed_sample.keys() == original_sample.keys()
+            for key in original_sample:
+                np.testing.assert_array_equal(parsed_sample[key].numpy(), original_sample[key].numpy())
