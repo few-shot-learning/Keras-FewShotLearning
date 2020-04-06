@@ -16,6 +16,7 @@ imgaug = "^0.4.0"
 numpy = "^1.18.1"
 pyyaml = "^5.3"
 black = "^19.10b0"
+pytest = "^5.4.1"
 
 [tool.black]
 line-length = 130
