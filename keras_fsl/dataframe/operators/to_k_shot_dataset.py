@@ -94,7 +94,6 @@ class ToKShotDataset(AbstractOperator):
         if not filename.exists() or self._reset_cache:
             with tf.io.TFRecordWriter(str(filename)) as writer:
                 # TODO : use idiomatic writer.write(dataset) when Dataset.map(encoder) work in graph mode with tensors
-                writer.write(encoder(first_sample))
                 for sample in original_dataset:
                     writer.write(encoder(sample))
         return (
