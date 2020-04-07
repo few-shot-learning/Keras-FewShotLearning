@@ -1,5 +1,3 @@
-import shutil
-from functools import partial
 from pathlib import Path
 
 import click
@@ -10,7 +8,7 @@ from keras_fsl.losses import binary_crossentropy, max_crossentropy, std_crossent
 from keras_fsl.metrics import accuracy, same_image_score, top_score_classification_accuracy
 from keras_fsl.models import SiameseNets
 from keras_fsl.models.layers import GramMatrix, Classification
-from keras_fsl.utils import compose
+from keras_fsl.utils.training import compose
 from tensorflow.keras import applications as keras_applications
 from tensorflow.keras.callbacks import (
     ModelCheckpoint,
@@ -29,9 +27,7 @@ from tensorflow.keras.optimizers import Adam
 
 
 #%% CLI args
-@click.option(
-    "--base_dir", help="Base directory for the training", type=Path,
-)
+@click.option("--base_dir", help="Base directory for the training", type=Path, default="")
 @click.command()
 def train(base_dir):
     #%% Init model
@@ -63,15 +59,18 @@ def train(base_dir):
     #%% Init data
     @tf.function(input_signature=(tf.TensorSpec(shape=[None, None, 3], dtype=tf.uint8),))
     def preprocessing(input_tensor):
-        return compose(
-            partial(tf.cast, dtype=tf.float32),
-            partial(tf.image.resize_with_pad, target_height=224, target_width=224),
-            partial(keras_applications.mobilenet.preprocess_input, data_format="channels_last"),
-        )(input_tensor)
+        output_tensor = tf.cast(input_tensor, dtype=tf.float32)
+        output_tensor = tf.image.resize_with_pad(output_tensor, target_height=224, target_width=224)
+        output_tensor = keras_applications.mobilenet.preprocess_input(output_tensor, data_format="channels_last")
+        return output_tensor
 
-    data_augmentation = compose(
-        tf.image.random_flip_left_right, tf.image.random_flip_up_down, partial(tf.image.random_brightness, max_delta=0.25),
-    )
+    @tf.function(input_signature=(tf.TensorSpec(shape=[None, None, 3], dtype=tf.float32),))
+    def data_augmentation(input_tensor):
+        output_tensor = tf.image.random_flip_left_right(input_tensor)
+        output_tensor = tf.image.random_flip_up_down(output_tensor)
+        output_tensor = tf.image.random_brightness(output_tensor, max_delta=0.25)
+        return output_tensor
+
     all_annotations = pd.read_csv(base_dir / "annotations" / "all_annotations.csv")
     class_count = all_annotations.groupby("split").apply(lambda group: group.label.value_counts())
 
@@ -79,15 +78,16 @@ def train(base_dir):
     margin = 0.05
     k_shot = 4
     cache = base_dir / "cache"
-    shutil.rmtree(cache, ignore_errors=True)
-    cache.mkdir()
     datasets = all_annotations.groupby("split").apply(
         lambda group: (
             group.pipe(
                 ToKShotDataset(
                     k_shot=k_shot,
-                    preprocessing=compose(preprocessing, data_augmentation)
-                    # k_shot=k_shot, preprocessing=compose(preprocessing, data_augmentation), cache=str(cache / group.name)
+                    preprocessing=compose(preprocessing, data_augmentation),
+                    cache=str(cache / group.name),
+                    reset_cache=True,
+                    dataset_mode="with_cache",
+                    # max_shuffle_buffer_size=max(class_count),  # can slow down a lot if classes are big
                 )
             )
         )
@@ -138,13 +138,13 @@ def train(base_dir):
         validation_data=datasets["val"].batch(batch_size).repeat(),
         validation_steps=max(len(class_count["val"]) * k_shot // batch_size, 100),
         initial_epoch=3,
-        epochs=5,
+        epochs=30,
         callbacks=callbacks,
     )
 
     siamese_nets.save(base_dir / "final_model.h5")
 
-    #%% Evaluate on test set
+    #%% Evaluate on test set. Each batch is a k_shot, n_way=batch_size / k_shot task
     model.load_weights(str(base_dir / "best_loss.h5"))
     model.evaluate(datasets["test"].batch(batch_size).repeat(), steps=max(len(class_count["test"]) * k_shot // batch_size, 100))
 
