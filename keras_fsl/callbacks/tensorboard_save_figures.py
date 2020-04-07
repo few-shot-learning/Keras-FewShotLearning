@@ -1,5 +1,8 @@
+import io
 from typing import Mapping, Callable
 
+from matplotlib import pyplot as plt
+import tensorflow as tf
 
 class TensorBoardSaveFigures(tf.keras.callbacks.Callback):
     def __init__(self, logdir, figure_producers: Mapping[str, Callable[[tf.keras.Model, int], plt.Figure]]):
@@ -17,10 +20,10 @@ class TensorBoardSaveFigures(tf.keras.callbacks.Callback):
     def plot_to_image(figure: plt.Figure) -> tf.Tensor:
         """Converts the matplotlib plot specified by 'figure' to a uint8 tensor image and
         returns it. The supplied figure is closed and inaccessible after this call."""
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png')
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format='png')
         plt.close(figure)
-        buf.seek(0)
-        image = tf.image.decode_png(buf.getvalue(), channels=4)
+        buffer.seek(0)
+        image = tf.image.decode_png(buffer.getvalue(), channels=4)
         return tf.expand_dims(image, 0)
 
