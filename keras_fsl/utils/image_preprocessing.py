@@ -6,6 +6,7 @@ from keras_fsl.utils.types import TENSOR_MAP, TF_TENSOR
 
 def add_field(produce: Callable[[TENSOR_MAP], TF_TENSOR], key: str) -> Callable[[TENSOR_MAP], TENSOR_MAP]:
     """Wrap a tensor produce function to create a new field in the TENSOR_MAP"""
+
     def annotations_mapper(annotations: TENSOR_MAP) -> TENSOR_MAP:
         return {
             **annotations,
@@ -17,6 +18,7 @@ def add_field(produce: Callable[[TENSOR_MAP], TF_TENSOR], key: str) -> Callable[
 
 def transform_field(transform: Callable[[TF_TENSOR], TF_TENSOR], key: str) -> Callable[[TENSOR_MAP], TENSOR_MAP]:
     """Wrap a tensor transform function to apply it on a specific field of a TENSOR_MAP"""
+
     def annotations_mapper(annotations: TENSOR_MAP) -> TF_TENSOR:
         return transform(annotations[key])
 
@@ -28,6 +30,7 @@ def transform_field(transform: Callable[[TF_TENSOR], TF_TENSOR], key: str) -> Ca
 # produce functions
 #
 ####
+
 
 def load_crop_as_uint8_tensor(annotation: TENSOR_MAP) -> TF_TENSOR:
     """

@@ -50,15 +50,14 @@ class TestTFRecordUtils:
     @staticmethod
     @pytest.fixture
     def dataframe():
-        return pd.DataFrame({
-            "image_name": [f'data/im_{i}.jpg' for i in range(5)],
-            "label": ['DOG', 'CAT', 'FISH', 'FISH', 'DOG'],
-            "split": "val",
-            **{
-                column: np.random.randint(100, 600, 5)
-                for column in ["crop_x", "crop_y", "crop_height", "crop_width"]
-            },
-        }).assign(crop_window=lambda df: df[["crop_y", "crop_x", "crop_height", "crop_width"]].values.tolist())
+        return pd.DataFrame(
+            {
+                "image_name": [f"data/im_{i}.jpg" for i in range(5)],
+                "label": ["DOG", "CAT", "FISH", "FISH", "DOG"],
+                "split": "val",
+                **{column: np.random.randint(100, 600, 5) for column in ["crop_x", "crop_y", "crop_height", "crop_width"]},
+            }
+        ).assign(crop_window=lambda df: df[["crop_y", "crop_x", "crop_height", "crop_width"]].values.tolist())
 
     @staticmethod
     def test_infer_tfrecord_encoder_decoder_generalize_from_sample_to_sample(dataframe, tmp_path):
@@ -71,9 +70,8 @@ class TestTFRecordUtils:
             for sample in original_dataset:
                 writer.write(encoder(sample))
 
-        parsed_dataset = (
-            tf.data.TFRecordDataset(str(filename), num_parallel_reads=tf.data.experimental.AUTOTUNE)
-            .map(decoder, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        parsed_dataset = tf.data.TFRecordDataset(str(filename), num_parallel_reads=tf.data.experimental.AUTOTUNE).map(
+            decoder, num_parallel_calls=tf.data.experimental.AUTOTUNE
         )
 
         for i, (original_sample, parsed_sample) in enumerate(zip(original_dataset, parsed_dataset)):

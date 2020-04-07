@@ -49,7 +49,7 @@ class ToKShotDataset(AbstractOperator):
         self._transform_group_to_dataset = _transforms[dataset_mode]
         if cache is not None:
             self.cache = Path(cache)
-            self.cache.mkdir(exist_ok=True)
+            self.cache.mkdir(exist_ok=True, parents=True)
 
     def repeat_k_shot(self, index):
         return tf.data.Dataset.from_tensors(index).repeat(self.k_shot)
@@ -76,8 +76,11 @@ class ToKShotDataset(AbstractOperator):
         """
         filename = self.cache / group.name
         if self._reset_cache and filename.exists():
-            os.remove(filename)
-        return self.to_dataset_direct(group).cache(str(filename))
+            filename.unlink()
+        dataset = self.to_dataset_direct(group).cache(str(filename))
+        for _ in dataset:
+            continue
+        return dataset
 
     def to_dataset_with_tf_record(self, group):
         """
