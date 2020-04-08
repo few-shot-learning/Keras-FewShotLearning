@@ -15,6 +15,17 @@ def top_score_classification_accuracy(y_true, y_pred):
     return tf.reduce_mean(tf.reduce_sum(y_true * y_pred, axis=1))
 
 
+def mean_score_classification_accuracy(y_true, y_pred):
+    """
+    Use the mean score of an image against all the samples from the same class to get a score per class for each image.
+    """
+    y_pred = tf.linalg.normalize(
+        tf.linalg.matmul(y_pred, tf.math.divide_no_nan(y_true, tf.reduce_sum(y_true, axis=0))), ord=1, axis=1
+    )[0]
+    y_pred = tf.map_fn(lambda x: y_true[x], tf.math.argmax(y_pred, axis=1), dtype=y_pred.dtype)
+    return tf.reduce_mean(tf.reduce_sum(y_true * y_pred, axis=1))
+
+
 def same_image_score(_, y_pred):
     """
     Same image score may not be always zero especially when bias is used in the head_model

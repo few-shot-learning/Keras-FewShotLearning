@@ -54,6 +54,16 @@ def decode_and_serve(image_bytes):
     }
 
 
+@tf.function(input_signature=(preprocessing.structured_input_signature[1]["input_tensor"],))
+def serve(input_tensor):
+    return {
+        tf.saved_model.CLASSIFY_OUTPUT_SCORES: classifier(
+            tf.expand_dims(preprocessing(input_tensor=input_tensor)["output_0"], axis=0)
+        ),
+        tf.saved_model.CLASSIFY_OUTPUT_CLASSES: classifier.layers[1].columns,
+    }
+
+
 @tf.function(
     input_signature=(
         tf.TensorSpec(shape=[None], dtype=tf.string, name="image_bytes"),
@@ -71,8 +81,9 @@ tf.saved_model.save(
     classifier,
     export_dir="siamese_nets_classifier/1",
     signatures={
-        "serving_default": decode_and_crop_and_serve,
-        "from_crop": decode_and_serve,
+        "serving_default": serve,
+        "decode_and_crop_and_serve": decode_and_crop_and_serve,
+        "decode_and_serve": decode_and_serve,
         "preprocessing": preprocessing,
         "set_support_set": set_support_set,
         "get_support_set": classifier.layers[1].get_support_set,

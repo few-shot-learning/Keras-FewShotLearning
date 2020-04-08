@@ -40,6 +40,7 @@ json.loads(response.content)
 response = requests.post(
     "http://localhost:8501/v1/models/siamese_nets_classifier:predict",
     json={
+        "signature_name": "decode_and_crop_and_serve",
         "inputs": {"image_bytes": [image.numpy().decode("utf-8") for image in image_bytes][:2], "crop_window": crop_window[:2]},
     },
 )
@@ -51,9 +52,18 @@ pd.DataFrame(
 response = requests.post(
     "http://localhost:8501/v1/models/siamese_nets_classifier:predict",
     json={
-        "signature_name": "from_crop",
+        "signature_name": "decode_and_serve",
         "inputs": {"image_bytes": [image.numpy().decode("utf-8") for image in image_bytes][:2]},
     },
+)
+pd.DataFrame(
+    np.array(json.loads(response.content)["outputs"]["scores"]), columns=json.loads(response.content)["outputs"]["classes"]
+)
+
+#%% Use Siamese as usual classifier with tensor input
+random_image = np.floor(np.random.rand(100, 200, 3) * 255).astype(int)
+response = requests.post(
+    "http://localhost:8501/v1/models/siamese_nets_classifier:predict", json={"inputs": {"input_tensor": random_image.tolist()}},
 )
 pd.DataFrame(
     np.array(json.loads(response.content)["outputs"]["scores"]), columns=json.loads(response.content)["outputs"]["classes"]
@@ -77,7 +87,7 @@ response = requests.post(
 response = requests.post(
     "http://localhost:8501/v1/models/siamese_nets_classifier:predict",
     json={
-        "signature_name": "from_crop",
+        "signature_name": "decode_and_serve",
         "inputs": {"image_bytes": [image.numpy().decode("utf-8") for image in image_bytes][:2]},
     },
 )
