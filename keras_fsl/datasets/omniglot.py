@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 import pandas as pd
-from tensorflow.keras.utils.data_utils import get_file
+from tensorflow.keras.utils import get_file
 
 BASE_PATH = "https://raw.githubusercontent.com/brendenlake/omniglot/master/python"
 

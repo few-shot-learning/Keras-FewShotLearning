@@ -87,5 +87,5 @@ test_set = test_set.assign(label=lambda df: df.alphabet + '_' + df.label)
 model = SiameseNets()
 train_sequence = RandomPairsSequence(train_set, batch_size=16)
 model.compile(optimizer='Adam', loss='binary_crossentropy')
-model.fit_generator(train_sequence)
+model.fit(train_sequence)
 ```

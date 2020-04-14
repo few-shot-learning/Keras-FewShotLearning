@@ -109,4 +109,4 @@ class Classification(Layer):
             ),
             [batch_size, support_set_size],
         )
-        return tf.linalg.normalize(tf.linalg.matmul(pair_wise_scores, self.support_labels_one_hot), ord=1, axis=1)[0]
+        return tf.linalg.matmul(pair_wise_scores, self.support_labels_one_hot)

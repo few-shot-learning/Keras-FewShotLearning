@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from keras_fsl.sequences.abstract_sequence import AbstractSequence
@@ -29,10 +30,8 @@ class AbstractPairsSequence(AbstractSequence):
         start_index = index * self.batch_size
         end_index = (index + 1) * self.batch_size
         query_images = self.query_preprocessing(images=self.load_img(self.query_samples.iloc[start_index:end_index]),)
-        support_images = self.support_preprocessing(
-            images=self.load_img(self.support_samples.iloc[start_index:end_index])
-        )
-        return [query_images, support_images], self.targets[start_index:end_index].astype(int)
+        support_images = self.support_preprocessing(images=self.load_img(self.support_samples.iloc[start_index:end_index]))
+        return [np.stack(query_images), np.stack(support_images)], self.targets[start_index:end_index].astype(int)
 
     @property
     def targets(self):
