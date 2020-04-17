@@ -1,5 +1,7 @@
+from pathlib import Path
+from typing import Any, Callable, Mapping, Tuple, Union
+
 import tensorflow as tf
-from typing import Mapping, Tuple, Callable, Union, Any
 
 from keras_fsl.utils.types import TENSOR_MAP, TF_TENSOR
 
@@ -88,3 +90,19 @@ def infer_tfrecord_encoder_decoder_from_sample(sample: TENSOR_MAP) -> Tuple[ENCO
         dtype_map[key] = dtype
 
     return encoder_factory_from_dict(encode_function_map), decoder_factory_from_dict(decode_feature_map, dtype_map)
+
+
+def clear_cache(filename):
+    """
+    Clear cache created with tfrecord given the name used for cache creation:
+        e.g. dataset.cache(filename) will produce filename.index and filename.data-xxx files
+    Args:
+        filename (Union[str, pathlib.Path]): filename used during cache creation
+
+    Returns:
+        List[pathlib.Path]: list of deleted items
+    """
+    filename = Path(filename)
+    files = list(filename.parent.glob(f"{filename.name}.*"))
+    [file.unlink() for file in files]
+    return files

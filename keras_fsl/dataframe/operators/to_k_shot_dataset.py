@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 from keras_fsl.dataframe.operators.abstract_operator import AbstractOperator
 from keras_fsl.utils import image_preprocessing as ip
-from keras_fsl.utils.tfrecord_utils import infer_tfrecord_encoder_decoder_from_sample
+from keras_fsl.utils.tfrecord_utils import infer_tfrecord_encoder_decoder_from_sample, clear_cache
 
 
 class ToKShotDataset(AbstractOperator):
@@ -75,8 +75,8 @@ class ToKShotDataset(AbstractOperator):
         Transform a pd.DataFrame into a tf.data.Dataset and load images
         """
         filename = self.cache / group.name
-        if self._reset_cache and filename.exists():
-            filename.unlink()
+        if self._reset_cache:
+            clear_cache(filename)
         dataset = self.to_dataset_direct(group).cache(str(filename))
         for _ in dataset:
             continue
@@ -94,7 +94,8 @@ class ToKShotDataset(AbstractOperator):
         )
         first_sample = next(iter(original_dataset))
         encoder, decoder = infer_tfrecord_encoder_decoder_from_sample(first_sample)
-        if not filename.exists() or self._reset_cache:
+        if self._reset_cache:
+            clear_cache(filename)
             with tf.io.TFRecordWriter(str(filename)) as writer:
                 # TODO : use idiomatic writer.write(dataset) when Dataset.map(encoder) work in graph mode with tensors
                 for sample in original_dataset:
