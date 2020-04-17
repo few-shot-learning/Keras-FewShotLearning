@@ -29,11 +29,11 @@ class GramMatrix(Layer):
             if len(inputs) > 1:
                 raise AttributeError("Layer should be called on a single tensor")
             inputs = inputs[0]
-        batch_size = tf.shape(inputs)[0]
+        batch_size, embedding_dimension = tf.shape(inputs)
         return tf.reshape(
             self.kernel(
                 [
-                    tf.reshape(tf.tile(inputs, [1, batch_size]), [-1, inputs.shape[1]], name="tf.repeat"),
+                    tf.reshape(tf.tile(inputs, [1, batch_size]), [-1, embedding_dimension], name="tf.repeat"),
                     tf.tile(inputs, [batch_size, 1]),
                 ]
             ),
