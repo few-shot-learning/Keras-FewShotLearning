@@ -104,5 +104,6 @@ def clear_cache(filename):
     """
     filename = Path(filename)
     files = list(filename.parent.glob(f"{filename.name}.*"))
-    [file.unlink() for file in files]
+    for file in files:
+        file.unlink()
     return files
