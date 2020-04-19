@@ -74,6 +74,7 @@ def train(base_dir):
 
     #%% Train model
     k_shot = 4
+    batch_size = 64
     cache = base_dir / "cache"
     datasets = all_annotations.groupby("split").apply(
         lambda group: (
@@ -81,27 +82,25 @@ def train(base_dir):
                 k_shot=k_shot,
                 preprocessing=compose(preprocessing, data_augmentation),
                 cache=str(cache / group.name),
-                reset_cache=False,
+                reset_cache=True,
                 dataset_mode="with_cache",
                 # max_shuffle_buffer_size=max(class_count),  # can slow down a lot if classes are big
             )(group).map(lambda x, y: ((x, y), y), num_parallel_calls=tf.data.experimental.AUTOTUNE)
         )
     )
 
-    batch_size = 64
-    siamese_nets.get_layer("branch_model").trainable = False
-    optimizer = Adam(lr=1e-4)
-
-    y_true = Input((None,))
     encoder = siamese_nets.get_layer("branch_model")
     kernel = siamese_nets.get_layer("head_model")
+    y_true = Input((None,))
     output = CentroidsSimilarity(kernel=kernel, activation="softmax")([encoder.output, y_true])
     model = Model([encoder.inputs, y_true], output)
 
+    siamese_nets.get_layer("branch_model").trainable = False
+    optimizer = Adam(lr=1e-4)
     model.compile(optimizer=optimizer, loss="categorical_crossentropy", metrics=["categorical_accuracy"])
     model.fit(
         datasets["train"].batch(batch_size).repeat(),
-        steps_per_epoch=len(class_count["train"]) * k_shot // batch_size * 150,
+        steps_per_epoch=len(class_count["train"]) * k_shot // batch_size * 50,
         validation_data=datasets["val"].batch(batch_size).repeat(),
         validation_steps=max(len(class_count["val"]) * k_shot // batch_size, 100),
         initial_epoch=0,
@@ -110,15 +109,16 @@ def train(base_dir):
     )
 
     siamese_nets.get_layer("branch_model").trainable = True
+    batch_size = 32
     optimizer = Adam(lr=1e-5)
     model.compile(optimizer=optimizer, loss="categorical_crossentropy", metrics=["categorical_accuracy"])
     model.fit(
         datasets["train"].batch(batch_size).repeat(),
-        steps_per_epoch=len(class_count["train"]) * k_shot // batch_size * 150,
+        steps_per_epoch=len(class_count["train"]) * k_shot // batch_size * 50,
         validation_data=datasets["val"].batch(batch_size).repeat(),
         validation_steps=max(len(class_count["val"]) * k_shot // batch_size, 100),
         initial_epoch=3,
-        epochs=30,
+        epochs=5,
         callbacks=callbacks,
     )
 
