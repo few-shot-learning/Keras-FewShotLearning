@@ -114,7 +114,7 @@ siamese_nets.fit_generator(
     workers=10,
 )
 
-for layer in siamese_nets.get_layer("branch_model").layers[int(branch_depth * 0.5) :]:
+for layer in siamese_nets.get_layer("branch_model").layers[int(branch_depth * 0.5):]:
     layer.trainable = False
 
 optimizer = Adam(1e-5)

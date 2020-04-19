@@ -19,7 +19,7 @@ def ProtoNets(input_shape, k_shot=5, n_way=5, **kwargs):
     prototypes = [
         Flatten()(
             Lambda(lambda shots: tf.reduce_mean(tf.stack(shots, axis=-1), axis=-1), name=f"prototype_{n}")(
-                support[(n * k_shot) : ((n + 1) * k_shot)]
+                support[(n * k_shot): ((n + 1) * k_shot)]
             )
         )
         for n in range(n_way)
