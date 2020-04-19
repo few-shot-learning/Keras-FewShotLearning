@@ -30,16 +30,13 @@ jobs:
         poetry install
     - name: Lint with Black
       run: |
-        pip install black
-        black . --check --target-version py36 --line-length 127
+        poetry run black . --check --target-version py36 --line-length 127
     - name: Lint with flake8
       run: |
-        pip install flake8
         # stop the build if there are Python syntax errors or undefined names
-        python -m flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings.
-        python -m flake8 . --count --exit-zero --statistics
+        poetry run flake8 . --count --exit-zero --statistics
     - name: Test with pytest
       run: |
-        pip install pytest
-        python -m pytest
+        poetry run pytest
