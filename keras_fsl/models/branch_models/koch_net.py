@@ -10,7 +10,7 @@ def conv_2d(*args, **kwargs):
         **kwargs,
         kernel_initializer=RandomNormal(0.0, 0.01),
         bias_initializer=RandomNormal(0.5, 0.01),
-        kernel_regularizer=l2()
+        kernel_regularizer=l2(),
     )
 
 
