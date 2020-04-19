@@ -170,7 +170,8 @@ for _ in range(n_episode):
                 lambda group: (
                     group.sort_values("score", ascending=False)
                     .assign(
-                        average_precision=lambda df: df.target.expanding().mean(), good_prediction=lambda df: df.target.iloc[0],
+                        average_precision=lambda df: df.target.expanding().mean(),
+                        good_prediction=lambda df: df.target.iloc[0],
                     )
                     .loc[lambda df: df.target]
                     .agg("mean")

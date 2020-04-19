@@ -9,7 +9,10 @@ BASE_PATH = "https://raw.githubusercontent.com/brendenlake/omniglot/master/pytho
 
 def load_dataframe(dataset_name):
     dataset_path = get_file(
-        f"{dataset_name}.zip", origin=f"{BASE_PATH}/{dataset_name}.zip", extract=True, cache_subdir=Path("datasets") / "omniglot"
+        f"{dataset_name}.zip",
+        origin=f"{BASE_PATH}/{dataset_name}.zip",
+        extract=True,
+        cache_subdir=Path("datasets") / "omniglot",
     )
     dataset_dir = os.path.splitext(dataset_path)[0]
     dataset = pd.DataFrame(columns=["image_name", "alphabet", "label"])

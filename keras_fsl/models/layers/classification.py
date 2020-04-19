@@ -25,7 +25,9 @@ class Classification(Layer):
         """
         super().__init__(**kwargs)
         self.kernel = kernel
-        self.support_tensors = tf.Variable([[]], validate_shape=False, shape=self.support_tensors_shape, name="support_tensors")
+        self.support_tensors = tf.Variable(
+            [[]], validate_shape=False, shape=self.support_tensors_shape, name="support_tensors"
+        )
         self.support_labels_name = tf.Variable(
             [],
             validate_shape=False,
@@ -55,7 +57,9 @@ class Classification(Layer):
         if support_tensors.shape[0] != support_labels.shape[0]:
             raise AttributeError("Support tensors and support labels shape 0 should match")
 
-    @tf.function(input_signature=(support_tensors_spec, support_labels_name_spec, tf.TensorSpec(None, tf.bool, name="overwrite")))
+    @tf.function(
+        input_signature=(support_tensors_spec, support_labels_name_spec, tf.TensorSpec(None, tf.bool, name="overwrite"))
+    )
     def set_support_set(self, support_tensors, support_labels_name, overwrite):
         self._validate_support_set_shape(support_tensors, support_labels_name)
         support_tensors = tf.cond(

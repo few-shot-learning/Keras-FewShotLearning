@@ -19,7 +19,9 @@ from keras_fsl.sequences import (
 from keras_fsl.utils import patch_len, default_workers
 
 # prevent issue with multiprocessing and long sequences, see https://github.com/keras-team/keras/issues/13226
-patch_fit_generator = patch("tensorflow.keras.Model.fit_generator", side_effect=default_workers(patch_len(Model.fit_generator)))
+patch_fit_generator = patch(
+    "tensorflow.keras.Model.fit_generator", side_effect=default_workers(patch_len(Model.fit_generator))
+)
 patch_fit_generator.start()
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
 
@@ -33,7 +35,9 @@ test_set = test_set.assign(label=lambda df: df.alphabet + "_" + df.label)
 #%% Training ProtoNets
 k_shot = 5
 n_way = 5
-proto_nets = SiameseNets(branch_model="VinyalsNet", head_model={"name": "ProtoNets", "init": {"k_shot": k_shot, "n_way": n_way}})
+proto_nets = SiameseNets(
+    branch_model="VinyalsNet", head_model={"name": "ProtoNets", "init": {"k_shot": k_shot, "n_way": n_way}}
+)
 val_set = train_set.sample(frac=0.3, replace=False)
 train_set = train_set.loc[lambda df: ~df.index.isin(val_set.index)]
 callbacks = [TensorBoard(), ModelCheckpoint("logs/proto_nets/best_weights.h5")]
@@ -80,7 +84,9 @@ predictions = pd.concat(
                 [
                     embeddings[query.index],
                     *np.moveaxis(
-                        embeddings[np.tile(support.index, reps=len(query))].reshape((len(query.index), k_shot * n_way, -1)), 1, 0,
+                        embeddings[np.tile(support.index, reps=len(query))].reshape((len(query.index), k_shot * n_way, -1)),
+                        1,
+                        0,
                     ),
                 ]
             ),

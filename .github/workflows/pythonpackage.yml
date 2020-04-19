@@ -31,7 +31,7 @@ jobs:
     - name: Lint with Black
       run: |
         pip install black
-        black . --check --target-version py36
+        black . --check --target-version py36 --line-length 127
     - name: Lint with flake8
       run: |
         pip install flake8

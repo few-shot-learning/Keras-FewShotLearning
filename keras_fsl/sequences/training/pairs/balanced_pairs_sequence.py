@@ -34,7 +34,9 @@ class BalancedPairsSequence(AbstractPairsSequence):
         indexes = self.query_annotations.index.values
         pd.np.random.shuffle(indexes)
         self.query_samples = self.query_annotations.loc[indexes]
-        self.support_samples = pd.concat(self.query_samples.label.map(self.get_batch_for_sample).tolist()).reset_index(drop=True)
+        self.support_samples = pd.concat(self.query_samples.label.map(self.get_batch_for_sample).tolist()).reset_index(
+            drop=True
+        )
         self.query_samples = self.query_samples.loc[lambda df: df.index.repeat(self.pairs_per_query)].reset_index(drop=True)
 
     def get_batch_for_sample(self, anchor_label):

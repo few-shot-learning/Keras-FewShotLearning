@@ -146,7 +146,9 @@ def train(base_dir):
 
     #%% Evaluate on test set. Each batch is a k_shot, n_way=batch_size / k_shot task
     model.load_weights(str(base_dir / "best_loss.h5"))
-    model.evaluate(datasets["test"].batch(batch_size).repeat(), steps=max(len(class_count["test"]) * k_shot // batch_size, 100))
+    model.evaluate(
+        datasets["test"].batch(batch_size).repeat(), steps=max(len(class_count["test"]) * k_shot // batch_size, 100)
+    )
 
     #%% Export artifacts
     siamese_nets.save(str(base_dir / "siamese_nets_best_loss.h5"))
