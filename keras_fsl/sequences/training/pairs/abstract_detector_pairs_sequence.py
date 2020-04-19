@@ -1,7 +1,6 @@
 import pandas as pd
 
 from keras_fsl.sequences.abstract_sequence import AbstractSequence
-from imgaug.augmentables import KeypointsOnImage
 import imgaug.augmenters as iaa
 
 
