@@ -18,8 +18,8 @@ def mean_score_classification_loss(y_true, y_pred):
 
 def class_consistency_loss(y_true, y_pred):
     """
-    Use the mean score of an image against all the samples from the same class to get a score per class for each image. Then average again
-    over all the samples to get a class_wise confusion matrix
+    Use the mean score of an image against all the samples from the same class to get a score per class for each image.
+    Then average again over all the samples to get a class_wise confusion matrix
     """
     y_true = tf.math.divide_no_nan(y_true, tf.reduce_sum(y_true, axis=0))
     class_mask = tf.reduce_sum(y_true, axis=0) > 0
@@ -32,12 +32,13 @@ def class_consistency_loss(y_true, y_pred):
 
 def binary_crossentropy(lower_margin=0.0, upper_margin=1.0):
     """
-    Compute the binary crossentropy loss of each possible pair in the batch. The margins lets define a threshold against
-    which the difference is not taken into account, ie. only values with lower_margin < |y_true - y_pred| < upper_margin will be non-zero
+    Compute the binary crossentropy loss of each possible pair in the batch.
+    The margins lets define a threshold against which the difference is not taken into account,
+    ie. only values with lower_margin < |y_true - y_pred| < upper_margin will be non-zero
 
     Args:
-        lower_margin (float): ignore errors below this threshold. This can be useful to make the network focus on more significant errors
-        upper_margin (float): ignore errors above this threshold. This can be useful to prevent the network from focusing on errors due to
+        lower_margin (float): ignore errors below this threshold. Useful to make the network focus on more significant errors
+        upper_margin (float): ignore errors above this threshold. Useful to prevent the network from focusing on errors due to
             wrongs labels
     """
 
