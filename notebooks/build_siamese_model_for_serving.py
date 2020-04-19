@@ -26,7 +26,7 @@ def decode_and_crop(image_bytes, crop_window):
     return input_tensor
 
 
-@tf.function(input_signature=(tf.TensorSpec(shape=[None], dtype=tf.string, name="image_bytes"),))
+@tf.function(input_signature=(tf.TensorSpec(shape=[None], dtype=tf.string, name="image_bytes")))
 def decode(image_bytes):
     # currently not working on GPU, see https://github.com/tensorflow/tensorflow/issues/28007
     with tf.device("/cpu:0"):
@@ -46,7 +46,7 @@ def decode_and_crop_and_serve(image_bytes, crop_window):
     }
 
 
-@tf.function(input_signature=(tf.TensorSpec(shape=[None], dtype=tf.string),))
+@tf.function(input_signature=(tf.TensorSpec(shape=[None], dtype=tf.string)))
 def decode_and_serve(image_bytes):
     return {
         tf.saved_model.CLASSIFY_OUTPUT_SCORES: classifier(decode(image_bytes=image_bytes)),
@@ -54,7 +54,7 @@ def decode_and_serve(image_bytes):
     }
 
 
-@tf.function(input_signature=(preprocessing.structured_input_signature[1]["input_tensor"],))
+@tf.function(input_signature=(preprocessing.structured_input_signature[1]["input_tensor"]))
 def serve(input_tensor):
     return {
         tf.saved_model.CLASSIFY_OUTPUT_SCORES: classifier(

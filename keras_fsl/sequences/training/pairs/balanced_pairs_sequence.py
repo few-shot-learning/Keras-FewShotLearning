@@ -34,21 +34,15 @@ class BalancedPairsSequence(AbstractPairsSequence):
         indexes = self.query_annotations.index.values
         pd.np.random.shuffle(indexes)
         self.query_samples = self.query_annotations.loc[indexes]
-        self.support_samples = pd.concat(self.query_samples.label.map(self.get_batch_for_sample).tolist()).reset_index(
-            drop=True
-        )
-        self.query_samples = self.query_samples.loc[lambda df: df.index.repeat(self.pairs_per_query)].reset_index(
-            drop=True
-        )
+        self.support_samples = pd.concat(self.query_samples.label.map(self.get_batch_for_sample).tolist()).reset_index(drop=True)
+        self.query_samples = self.query_samples.loc[lambda df: df.index.repeat(self.pairs_per_query)].reset_index(drop=True)
 
     def get_batch_for_sample(self, anchor_label):
         replace = self.support_labels[anchor_label] < self.pairs_per_query
         positive_samples = self.support_annotations.loc[lambda df: df.label == anchor_label].sample(
             self.pairs_per_query // 2, replace=replace
         )
-        negative_samples = self.support_annotations.loc[lambda df: df.label != anchor_label].sample(
-            self.pairs_per_query // 2
-        )
+        negative_samples = self.support_annotations.loc[lambda df: df.label != anchor_label].sample(self.pairs_per_query // 2)
         return pd.concat([positive_samples, negative_samples])
 
     def __len__(self):

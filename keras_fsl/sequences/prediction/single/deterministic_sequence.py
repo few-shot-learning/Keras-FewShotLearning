@@ -13,7 +13,6 @@ class DeterministicSequence(AbstractSequence):
         end_index = (index + 1) * self.batch_size
         return [
             pd.np.stack(
-                self.preprocessings[0].augment_images(self.load_img(self.annotations[0].iloc[start_index:end_index])),
-                axis=0,
+                self.preprocessings[0].augment_images(self.load_img(self.annotations[0].iloc[start_index:end_index])), axis=0,
             )
         ]

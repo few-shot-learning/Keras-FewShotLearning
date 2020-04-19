@@ -30,12 +30,12 @@ val_set = train_set.sample(frac=0.3, replace=False)
 train_set = train_set.loc[lambda df: ~df.index.isin(val_set.index)]
 callbacks = [
     TensorBoard(output_path),
-    ModelCheckpoint(str(output_path / "best_model.h5"), save_best_only=True,),
+    ModelCheckpoint(str(output_path / "best_model.h5"), save_best_only=True),
     ReduceLROnPlateau(verbose=1),
     EarlyStopping(patience=10),
 ]
 preprocessing = iaa.Sequential(
-    [iaa.Affine(translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)}, rotate=(-10, 10), shear=(-0.8, 1.2),)]
+    [iaa.Affine(translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)}, rotate=(-10, 10), shear=(-0.8, 1.2))]
 )
 train_sequence = RandomBalancedPairsSequence(train_set, preprocessing=preprocessing, batch_size=128)
 val_sequence = RandomBalancedPairsSequence(val_set, preprocessing=preprocessing, batch_size=128)
@@ -85,9 +85,7 @@ confusion_matrix = (
     predictions.groupby(query.columns.to_list())
     .apply(lambda group: group.nlargest(1, columns="score").label_support)
     .reset_index()
-    .pivot_table(
-        values="image_name", index="label_support", columns="label", aggfunc="count", margins=True, fill_value=0,
-    )
+    .pivot_table(values="image_name", index="label_support", columns="label", aggfunc="count", margins=True, fill_value=0)
     .assign(precision=lambda df: pd.np.diag(df)[:-1] / df.All[:-1])
     .T.assign(recall=lambda df: pd.np.diag(df)[:-1] / df.All[:-2])
     .T.assign(f1=lambda df: 2 * df.precision * df.loc["recall"] / (df.precision + df.loc["recall"]))

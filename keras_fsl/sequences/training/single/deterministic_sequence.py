@@ -49,8 +49,7 @@ class DeterministicSequence(AbstractSequence):
         end_index = (index + 1) * self.batch_size
         inputs = [
             pd.np.stack(
-                self.preprocessings[0].augment_images(self.load_img(self.annotations[0].iloc[start_index:end_index])),
-                axis=0,
+                self.preprocessings[0].augment_images(self.load_img(self.annotations[0].iloc[start_index:end_index])), axis=0,
             )
         ]
         output = [self.targets.iloc[start_index:end_index].values.astype("float32")]

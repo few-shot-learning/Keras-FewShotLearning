@@ -85,7 +85,7 @@ siamese_nets = SiameseDetector(
 
 callbacks = [
     TensorBoard(output_path),
-    ModelCheckpoint(str(output_path / "best_model.h5"), save_best_only=True,),
+    ModelCheckpoint(str(output_path / "best_model.h5"), save_best_only=True),
     ReduceLROnPlateau(),
 ]
 

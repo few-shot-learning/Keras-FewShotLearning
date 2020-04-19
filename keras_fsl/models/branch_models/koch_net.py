@@ -31,12 +31,7 @@ def KochNet(input_shape=(105, 105, 3)):
     model.add(conv_2d(256, (4, 4), activation="relu"))
     model.add(Flatten())
     model.add(
-        Dense(
-            4096,
-            activation="sigmoid",
-            kernel_initializer=RandomNormal(0.0, 0.2),
-            bias_initializer=RandomNormal(0.5, 0.01),
-        )
+        Dense(4096, activation="sigmoid", kernel_initializer=RandomNormal(0.0, 0.2), bias_initializer=RandomNormal(0.5, 0.01))
     )
 
     return model
