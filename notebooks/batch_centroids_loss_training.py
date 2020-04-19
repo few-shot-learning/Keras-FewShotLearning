@@ -14,7 +14,6 @@ from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.optimizers import Adam
 
 from keras_fsl.dataframe.operators import ToKShotDataset
-from keras_fsl.losses import binary_crossentropy
 from keras_fsl.models import SiameseNets
 from keras_fsl.models.layers import CentroidsSimilarity, Classification
 from keras_fsl.utils.training import compose
@@ -74,23 +73,18 @@ def train(base_dir):
     class_count = all_annotations.groupby("split").apply(lambda group: group.label.value_counts())
 
     #%% Train model
-    margin = 0.05
     k_shot = 4
     cache = base_dir / "cache"
-    datasets = (
-        all_annotations.loc[lambda df: df.split != "test"]
-        .groupby("split")
-        .apply(
-            lambda group: (
-                ToKShotDataset(
-                    k_shot=k_shot,
-                    preprocessing=compose(preprocessing, data_augmentation),
-                    cache=str(cache / group.name),
-                    reset_cache=True,
-                    dataset_mode="with_cache",
-                    # max_shuffle_buffer_size=max(class_count),  # can slow down a lot if classes are big
-                )(group).map(lambda x, y: ((x, y), y), num_parallel_calls=tf.data.experimental.AUTOTUNE)
-            )
+    datasets = all_annotations.groupby("split").apply(
+        lambda group: (
+            ToKShotDataset(
+                k_shot=k_shot,
+                preprocessing=compose(preprocessing, data_augmentation),
+                cache=str(cache / group.name),
+                reset_cache=False,
+                dataset_mode="with_cache",
+                # max_shuffle_buffer_size=max(class_count),  # can slow down a lot if classes are big
+            )(group).map(lambda x, y: ((x, y), y), num_parallel_calls=tf.data.experimental.AUTOTUNE)
         )
     )
 

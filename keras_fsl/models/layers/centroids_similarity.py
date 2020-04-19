@@ -1,8 +1,10 @@
 import tensorflow as tf
-from tensorflow.keras.layers import Activation, Layer
+from tensorflow.keras.layers import Activation
+
+from keras_fsl.models.layers.support_layer import SupportLayer
 
 
-class CentroidsSimilarity(Layer):
+class CentroidsSimilarity(SupportLayer):
     """
     Compute the similarity (distance) between all items of the input batch and the centroid of each class found in the batch.
     """
@@ -16,20 +18,8 @@ class CentroidsSimilarity(Layer):
                 directly passed to tf.keras.layers.Activation layer.
             **kwargs:
         """
-        super().__init__(**kwargs)
-        self.kernel = kernel
+        super().__init__(kernel, **kwargs)
         self.activation = Activation(activation)
-
-    def get_config(self):
-        config = super().get_config()
-        config.update({"kernel": self.kernel.to_json()})
-        return config
-
-    @classmethod
-    def from_config(cls, config):
-        kernel = tf.keras.models.model_from_json(config["kernel"])
-        config["kernel"] = kernel
-        return cls(**config)
 
     @tf.function
     def call(self, inputs):
