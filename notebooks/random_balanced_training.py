@@ -107,7 +107,7 @@ siamese_nets.fit_generator(
 )
 siamese_nets = load_model(output_folder / "best_model.h5")
 
-for layer in siamese_nets.get_layer("branch_model").layers[int(branch_depth * 0.5):]:
+for layer in siamese_nets.get_layer("branch_model").layers[int(branch_depth * 0.5) :]:
     layer.trainable = True
 optimizer = Adam(1e-5)
 siamese_nets.compile(optimizer=optimizer, loss="binary_crossentropy")
