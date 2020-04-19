@@ -40,7 +40,7 @@ class AbstractPairsSequence(AbstractSequence):
             [
                 self.target_augmenter.augment_keypoints(kp).to_keypoint_image().clip(max=1).squeeze()
                 * self.targets[start_index:end_index].iloc[i].astype(int)
-                for i, kp in enumerate(query_keypoints)
+                for i, kp in enumerate(query_bounding_boxes)
             ]
         )
         return [query_images, support_images], targets
