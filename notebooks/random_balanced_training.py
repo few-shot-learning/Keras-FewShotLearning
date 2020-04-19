@@ -54,7 +54,7 @@ preprocessing = iaa.Sequential(
 )
 
 siamese_nets = SiameseNets(
-    branch_model={"name": branch_model_name, "init": {"include_top": False, "input_shape": (224, 224, 3), "pooling": "avg"},},
+    branch_model={"name": branch_model_name, "init": {"include_top": False, "input_shape": (224, 224, 3), "pooling": "avg"}},
     head_model={
         "name": "MixedNorms",
         "init": {

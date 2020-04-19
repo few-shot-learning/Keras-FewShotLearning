@@ -62,7 +62,7 @@ print(f"Accuracy: {scores[1]:.2%}")
 accuracies = []
 for i in range(1, 21):
     kernel = Lambda(lambda inputs: tf.reduce_sum(inputs[0] * inputs[1], axis=1))
-    model = Sequential([BasicCNN((32, 32, 3), i), GramMatrix(kernel),])
+    model = Sequential([BasicCNN((32, 32, 3), i), GramMatrix(kernel)])
     model.summary()
     model.compile(
         optimizer="adam", loss=binary_crossentropy(), metrics=[mean_score_classification_loss, min_eigenvalue],
@@ -70,7 +70,7 @@ for i in range(1, 21):
     model.fit(X_train, y_train, validation_split=0.2, epochs=20, batch_size=32)
 
     embeddings = model.layers[0].predict(X_train)
-    classifier = Sequential([model.layers[0], Classification(kernel),])
+    classifier = Sequential([model.layers[0], Classification(kernel)])
     classifier.layers[1].set_support_set(embeddings, y_train)
     classifier.compile(loss="binary_crossentropy", optimizer="adam")
     classifier.evaluate(X_test, y_test, verbose=1)
