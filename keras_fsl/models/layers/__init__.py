@@ -1,5 +1,5 @@
-from tensorflow.keras.layers import *
+from tensorflow.keras import *  # noqa
 
-from .classification import Classification
-from .gram_matrix import GramMatrix
-from .slicing import CenterSlicing2D
+from .classification import Classification  # noqa
+from .gram_matrix import GramMatrix  # noqa
+from .slicing import CenterSlicing2D  # noqa
