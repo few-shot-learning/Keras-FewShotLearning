@@ -1,4 +1,4 @@
-#%%
+# flake8: noqa: E265
 from pathlib import Path
 
 import imgaug.augmenters as iaa

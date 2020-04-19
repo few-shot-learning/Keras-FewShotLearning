@@ -1,4 +1,4 @@
-#%%
+# flake8: noqa: E265
 import os
 from pathlib import Path
 

@@ -1,3 +1,4 @@
+# flake8: noqa: E265
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 

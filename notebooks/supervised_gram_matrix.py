@@ -2,6 +2,7 @@
 Compare training with usual categorical crossentropy and with gram matrix and binary crossentropy on CIFAR-10
 We use a simple CNN in order to challenge only the training setting
 """
+# flake8: noqa: E265
 import numpy as np
 import pandas as pd
 import tensorflow as tf

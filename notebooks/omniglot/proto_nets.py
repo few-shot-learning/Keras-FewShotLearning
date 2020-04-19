@@ -1,4 +1,4 @@
-#%%
+# flake8: noqa: E265
 import logging
 from pathlib import Path
 from unittest.mock import patch

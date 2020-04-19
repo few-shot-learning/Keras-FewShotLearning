@@ -1,4 +1,4 @@
-#%%
+# flake8: noqa: E265
 import shutil
 from datetime import datetime
 from pathlib import Path
