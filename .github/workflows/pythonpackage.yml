@@ -30,7 +30,8 @@ jobs:
         python -m poetry install
     - name: Lint with Black
       run: |
-        python -m black . --check --py36
+        pip install black
+        black . --check --py36
     - name: Lint with flake8
       run: |
         pip install flake8
