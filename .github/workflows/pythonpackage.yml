@@ -31,11 +31,20 @@ jobs:
         poetry config virtualenvs.in-project false
         poetry config virtualenvs.path ~/.virtualenvs
         poetry run pip install --upgrade pip
+    - name: Cache Poetry virtualenv
+      uses: actions/cache@v1
+      id: cache
+      with:
+        path: ~/.virtualenvs
+        key: poetry-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: |
+          poetry-${{ hashFiles('**/poetry.lock') }}
     - name: Install dependencies
       run: |
         poetry install
         poetry run pip install tensorflow~=${{ matrix.tf-version }}
         poetry run pip freeze
+      if: steps.cache.outputs.cache-hit != 'true'
     - name: Lint with Black
       run: |
         poetry run black . --check --target-version py36 --line-length 127
