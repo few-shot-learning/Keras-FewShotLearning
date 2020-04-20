@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         python-version: [3.6, 3.7]
-        tf-version: [2.0.0, 2.1.0]
+        tf-version: [2.1.0]
 
     steps:
     - uses: actions/checkout@v2
@@ -33,7 +33,7 @@ jobs:
     - name: Install dependencies
       run: |
         poetry install
-        poetry run pip install -vv tensorflow~=${{ matrix.tf-version }}
+        poetry run pip install tensorflow~=${{ matrix.tf-version }}
         poetry run pip freeze
     - name: Lint with Black
       run: |
