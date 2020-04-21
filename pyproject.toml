@@ -6,8 +6,7 @@ authors = ["Clément Walter <clement0walter@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.6.5"
-tensorflow = { version = "^2", optional = true}
-tensorflow-gpu = { version = "^2", optional = true}
+tensorflow = { version = "^2.1", optional = true}
 tqdm = "^4.42.0"
 
 [tool.poetry.dev-dependencies]
