@@ -28,6 +28,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install poetry
+        poetry config virtualenvs.create true
         poetry config virtualenvs.in-project false
         poetry config virtualenvs.path ~/.virtualenvs
         poetry run pip install --upgrade pip
@@ -36,9 +37,9 @@ jobs:
       id: cache
       with:
         path: ~/.virtualenvs
-        key: poetry-${{ hashFiles('**/poetry.lock') }}
+        key: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.tf-version }}-poetry-${{ hashFiles('**/poetry.lock') }}
         restore-keys: |
-          poetry-${{ hashFiles('**/poetry.lock') }}
+          ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.tf-version }}-poetry-${{ hashFiles('**/poetry.lock') }}
     - name: Install dependencies
       run: |
         poetry install
