@@ -6,8 +6,9 @@ authors = ["Clément Walter <clement0walter@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.6.5"
-tensorflow = { version = "^2", optional = true}
-tensorflow-gpu = { version = "^2", optional = true}
+tensorflow = "^2.1.0"
+# TODO: remove when https://github.com/python-poetry/poetry/issues/2271
+tensorflow-estimator = "<2.2.0a0"
 tqdm = "^4.42.0"
 
 [tool.poetry.dev-dependencies]
@@ -17,9 +18,20 @@ numpy = "^1.18.1"
 pyyaml = "^5.3"
 black = "^19.10b0"
 pytest = "^5.4.1"
+flake8 = "^3.7.9"
+pytest-cov = "^2.8.1"
 
 [tool.black]
-line-length = 130
+line-length = 127
+target-version = ['py36', 'py37', 'py38']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \venv
+)/
+'''
 
 [build-system]
 requires = ["poetry>=0.12"]

@@ -41,12 +41,7 @@ def MixedNorms(input_shape, norms=None, use_bias=True):
     output = Reshape((len(norms), inputs[0].shape[1], 1), name="reshape1")(output)
 
     output = Conv2D(
-        filters=32,
-        kernel_size=(len(norms), 1),
-        activation="relu",
-        padding="valid",
-        name="norms_selection",
-        use_bias=use_bias,
+        filters=32, kernel_size=(len(norms), 1), activation="relu", padding="valid", name="norms_selection", use_bias=use_bias,
     )(output)
     output = Reshape((inputs[0].shape[1], 32, 1))(output)
     output = Conv2D(

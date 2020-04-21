@@ -1,7 +1,6 @@
 import pandas as pd
 
 from keras_fsl.sequences.abstract_sequence import AbstractSequence
-from imgaug.augmentables import KeypointsOnImage
 import imgaug.augmenters as iaa
 
 
@@ -35,14 +34,12 @@ class AbstractPairsSequence(AbstractSequence):
             images=self.load_img(self.query_samples.iloc[start_index:end_index]),
             bounding_boxes=self.query_samples.iloc[start_index:end_index].bounding_boxes,
         )
-        support_images = self.support_preprocessing(
-            images=self.load_img(self.support_samples.iloc[start_index:end_index])
-        )
+        support_images = self.support_preprocessing(images=self.load_img(self.support_samples.iloc[start_index:end_index]))
         targets = pd.np.stack(
             [
                 self.target_augmenter.augment_keypoints(kp).to_keypoint_image().clip(max=1).squeeze()
                 * self.targets[start_index:end_index].iloc[i].astype(int)
-                for i, kp in enumerate(query_keypoints)
+                for i, kp in enumerate(query_bounding_boxes)
             ]
         )
         return [query_images, support_images], targets

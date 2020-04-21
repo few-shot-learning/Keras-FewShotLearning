@@ -1,4 +1,4 @@
-#%%
+# flake8: noqa: E265
 import shutil
 from datetime import datetime
 from pathlib import Path
@@ -54,10 +54,7 @@ preprocessing = iaa.Sequential(
 )
 
 siamese_nets = SiameseNets(
-    branch_model={
-        "name": branch_model_name,
-        "init": {"include_top": False, "input_shape": (224, 224, 3), "pooling": "avg"},
-    },
+    branch_model={"name": branch_model_name, "init": {"include_top": False, "input_shape": (224, 224, 3), "pooling": "avg"}},
     head_model={
         "name": "MixedNorms",
         "init": {
@@ -75,7 +72,7 @@ branch_depth = len(siamese_nets.get_layer("branch_model").layers)
 #%% Train model with Sequences
 callbacks = [
     TensorBoard(output_folder),
-    ModelCheckpoint(str(output_folder / "best_model.h5"), save_best_only=True,),
+    ModelCheckpoint(str(output_folder / "best_model.h5"), save_best_only=True),
     ReduceLROnPlateau(),
 ]
 train_sequence = training.pairs.RandomBalancedPairsSequence(train_set, preprocessings=preprocessing, batch_size=16)
@@ -154,9 +151,7 @@ for _ in range(n_episode):
         .apply(lambda group: group.sample(k_shot))
         .reset_index("label", drop=True)
     )
-    query_set = test_set.loc[lambda df: df.label.isin(selected_labels)].loc[
-        lambda df: ~df.index.isin(support_set.index)
-    ]
+    query_set = test_set.loc[lambda df: df.label.isin(selected_labels)].loc[lambda df: ~df.index.isin(support_set.index)]
     support_set_embeddings = embeddings[support_set.index]
     query_set_embeddings = embeddings[query_set.index]
     test_sequence = prediction.pairs.ProductSequence(

@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import pandas as pd
@@ -31,8 +30,11 @@ class ToKShotDataset(AbstractOperator):
             k_shot (int): number of consecutive crops from the same class
             preprocessing (function): to be applied onto the image after opening
             label_column (str): either "label_one_hot" or "label" depending on the expected form of the network
-            cache (Union[str, pathlib.Path]): cache directory to be passed to tf.data.Dataset.cache: each dataset (one per label) will be
-                cached in Path(cache) / label. No cleaning is done, see https://www.tensorflow.org/api_docs/python/tf/data/Dataset#cache.
+            cache (Union[str, Path]): cache directory to be passed to tf.data.Dataset.cache.
+                Each dataset, one per label, will be cached in Path(cache) / label.
+            reset_cache (bool): should reset the cache
+            max_shuffle_buffer_size (int): maximum buffer size for shuffle
+            dataset_mode (str): one of {with_tf_record, with_cache, raw}
         """
         self.k_shot = k_shot
         self.preprocessing = preprocessing

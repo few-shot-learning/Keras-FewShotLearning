@@ -7,7 +7,7 @@ from tensorflow.keras.regularizers import l2
 
 @wraps(Conv2D)
 def conv_2d(*args, **kwargs):
-    return Conv2D(*args, **kwargs, kernel_regularizer=l2(5e-4), padding="valid" if kwargs.get("strides") == (2, 2) else "same",)
+    return Conv2D(*args, **kwargs, kernel_regularizer=l2(5e-4), padding="valid" if kwargs.get("strides") == (2, 2) else "same")
 
 
 def conv_block(*args, **kwargs):

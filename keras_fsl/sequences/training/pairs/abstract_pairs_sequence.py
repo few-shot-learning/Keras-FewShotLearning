@@ -29,7 +29,7 @@ class AbstractPairsSequence(AbstractSequence):
     def __getitem__(self, index):
         start_index = index * self.batch_size
         end_index = (index + 1) * self.batch_size
-        query_images = self.query_preprocessing(images=self.load_img(self.query_samples.iloc[start_index:end_index]),)
+        query_images = self.query_preprocessing(images=self.load_img(self.query_samples.iloc[start_index:end_index]))
         support_images = self.support_preprocessing(images=self.load_img(self.support_samples.iloc[start_index:end_index]))
         return [np.stack(query_images), np.stack(support_images)], self.targets[start_index:end_index].astype(int)
 

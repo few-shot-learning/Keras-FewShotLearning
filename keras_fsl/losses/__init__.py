@@ -1,1 +1,1 @@
-from .gram_matrix_losses import *
+from .gram_matrix_losses import *  # noqa

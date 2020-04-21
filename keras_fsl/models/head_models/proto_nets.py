@@ -27,9 +27,9 @@ def ProtoNets(input_shape, k_shot=5, n_way=5, **kwargs):
     query_flatten = Flatten()(query)
     distances = Concatenate(axis=1)(
         [
-            Lambda(
-                lambda inputs: -tf.norm(inputs[0] - inputs[1], axis=1, keepdims=True, **kwargs), name=f"distance_{n}"
-            )([prototype, query_flatten])
+            Lambda(lambda inputs: -tf.norm(inputs[0] - inputs[1], axis=1, keepdims=True, **kwargs), name=f"distance_{n}")(
+                [prototype, query_flatten]
+            )
             for n, prototype in enumerate(prototypes)
         ]
     )

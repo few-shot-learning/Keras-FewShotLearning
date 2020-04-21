@@ -32,9 +32,5 @@ def cosine_similarity(inputs):
     """
     axis = list(range(1, len(inputs[0].shape)))
     return tf.expand_dims(
-        1
-        - tf.reduce_sum(
-            tf.nn.l2_normalize(inputs[0], axis=axis) * tf.nn.l2_normalize(inputs[1], axis=axis), axis=axis,
-        ),
-        1,
+        1 - tf.reduce_sum(tf.nn.l2_normalize(inputs[0], axis=axis) * tf.nn.l2_normalize(inputs[1], axis=axis), axis=axis), 1,
     )

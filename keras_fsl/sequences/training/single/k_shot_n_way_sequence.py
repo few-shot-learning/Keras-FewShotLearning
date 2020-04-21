@@ -31,11 +31,7 @@ class KShotNWaySequence(DeterministicSequence):
         self.n_way = n_way
         super().__init__(annotations, batch_size, **kwargs)
         self.label_to_indexes = dict(
-            self.annotations[0]
-            .reset_index()
-            .groupby("label", as_index=False)
-            .agg({"index": list})[["label", "index"]]
-            .values
+            self.annotations[0].reset_index().groupby("label", as_index=False).agg({"index": list})[["label", "index"]].values
         )
 
     def on_epoch_end(self):

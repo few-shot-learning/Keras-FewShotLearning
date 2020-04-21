@@ -1,1 +1,1 @@
-from .gram_matrix_metrics import *
+from .gram_matrix_metrics import *  # noqa

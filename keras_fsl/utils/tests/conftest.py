@@ -26,7 +26,7 @@ def make_tensor_for_string_shape():
 @pytest.fixture
 def make_tensor_for_dtype_shape(make_tensor_for_number_dtype_shape, make_tensor_for_string_shape):
     def _make_tensor(shape: TENSOR_SHAPE, dtype: TENSOR_DTYPE_STR) -> TF_TENSOR:
-        if dtype is "string":
+        if dtype == "string":
             return make_tensor_for_string_shape(shape)
         return make_tensor_for_number_dtype_shape(shape, dtype)
 
