@@ -2,7 +2,7 @@
 category = "main"
 description = "Abseil Python Common Libraries, see https://github.com/abseil/abseil-py."
 name = "absl-py"
-optional = true
+optional = false
 python-versions = "*"
 version = "0.9.0"
 
@@ -21,7 +21,7 @@ version = "1.4.3"
 category = "main"
 description = "Read/rewrite/write Python ASTs"
 name = "astor"
-optional = true
+optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.7"
 version = "0.8.1"
 
@@ -72,7 +72,7 @@ d = ["aiohttp (>=3.3.2)", "aiohttp-cors"]
 category = "main"
 description = "Extensible memoizing collections and decorators"
 name = "cachetools"
-optional = true
+optional = false
 python-versions = "~=3.5"
 version = "4.1.0"
 
@@ -80,7 +80,7 @@ version = "4.1.0"
 category = "main"
 description = "Python package for providing Mozilla's CA Bundle."
 name = "certifi"
-optional = true
+optional = false
 python-versions = "*"
 version = "2020.4.5.1"
 
@@ -88,7 +88,7 @@ version = "2020.4.5.1"
 category = "main"
 description = "Universal encoding detector for Python 2 and 3"
 name = "chardet"
-optional = true
+optional = false
 python-versions = "*"
 version = "3.0.4"
 
@@ -165,7 +165,7 @@ pyflakes = ">=2.1.0,<2.2.0"
 category = "main"
 description = "Python AST that abstracts the underlying Python version"
 name = "gast"
-optional = true
+optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "0.2.2"
 
@@ -173,7 +173,7 @@ version = "0.2.2"
 category = "main"
 description = "Google Authentication Library"
 name = "google-auth"
-optional = true
+optional = false
 python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*"
 version = "1.14.0"
 
@@ -188,7 +188,7 @@ six = ">=1.9.0"
 category = "main"
 description = "Google Authentication Library"
 name = "google-auth-oauthlib"
-optional = true
+optional = false
 python-versions = "*"
 version = "0.4.1"
 
@@ -203,7 +203,7 @@ tool = ["click"]
 category = "main"
 description = "pasta is an AST-based Python refactoring library"
 name = "google-pasta"
-optional = true
+optional = false
 python-versions = "*"
 version = "0.2.0"
 
@@ -214,7 +214,7 @@ six = "*"
 category = "main"
 description = "HTTP/2-based RPC framework"
 name = "grpcio"
-optional = true
+optional = false
 python-versions = "*"
 version = "1.28.1"
 
@@ -225,7 +225,7 @@ six = ">=1.5.2"
 category = "main"
 description = "Read and write HDF5 files from Python"
 name = "h5py"
-optional = true
+optional = false
 python-versions = "*"
 version = "2.10.0"
 
@@ -237,7 +237,7 @@ six = "*"
 category = "main"
 description = "Internationalized Domain Names in Applications (IDNA)"
 name = "idna"
-optional = true
+optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "2.9"
 
@@ -299,7 +299,7 @@ testing = ["packaging", "importlib-resources"]
 category = "main"
 description = "Reference implementations of popular deep learning models"
 name = "keras-applications"
-optional = true
+optional = false
 python-versions = "*"
 version = "1.0.8"
 
@@ -314,7 +314,7 @@ tests = ["pytest", "pytest-pep8", "pytest-xdist", "pytest-cov"]
 category = "main"
 description = "Easy data preprocessing and data augmentation for deep learning models"
 name = "keras-preprocessing"
-optional = true
+optional = false
 python-versions = "*"
 version = "1.1.0"
 
@@ -339,7 +339,7 @@ version = "1.2.0"
 category = "main"
 description = "Python implementation of Markdown."
 name = "markdown"
-optional = true
+optional = false
 python-versions = ">=3.5"
 version = "3.2.1"
 
@@ -416,7 +416,7 @@ version = "1.18.3"
 category = "main"
 description = "A generic, spec-compliant, thorough implementation of the OAuth request-signing logic"
 name = "oauthlib"
-optional = true
+optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "3.1.0"
 
@@ -440,7 +440,7 @@ numpy = ">=1.11.1"
 category = "main"
 description = "Optimizing numpys einsum function"
 name = "opt-einsum"
-optional = true
+optional = false
 python-versions = ">=3.5"
 version = "3.2.1"
 
@@ -515,7 +515,7 @@ dev = ["pre-commit", "tox"]
 category = "main"
 description = "Protocol Buffers"
 name = "protobuf"
-optional = true
+optional = false
 python-versions = "*"
 version = "3.11.3"
 
@@ -535,7 +535,7 @@ version = "1.8.1"
 category = "main"
 description = "ASN.1 types and codecs"
 name = "pyasn1"
-optional = true
+optional = false
 python-versions = "*"
 version = "0.4.8"
 
@@ -543,7 +543,7 @@ version = "0.4.8"
 category = "main"
 description = "A collection of ASN.1-based protocols modules."
 name = "pyasn1-modules"
-optional = true
+optional = false
 python-versions = "*"
 version = "0.2.8"
 
@@ -665,7 +665,7 @@ version = "2020.4.4"
 category = "main"
 description = "Python HTTP for Humans."
 name = "requests"
-optional = true
+optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 version = "2.23.0"
 
@@ -683,7 +683,7 @@ socks = ["PySocks (>=1.5.6,<1.5.7 || >1.5.7)", "win-inet-pton"]
 category = "main"
 description = "OAuthlib authentication support for Requests."
 name = "requests-oauthlib"
-optional = true
+optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "1.3.0"
 
@@ -698,7 +698,7 @@ rsa = ["oauthlib (>=3.0.0)"]
 category = "main"
 description = "Pure-Python RSA implementation"
 name = "rsa"
-optional = true
+optional = false
 python-versions = "*"
 version = "4.0"
 
@@ -762,7 +762,7 @@ version = "1.14.0"
 category = "main"
 description = "TensorBoard lets you watch Tensors Flow"
 name = "tensorboard"
-optional = true
+optional = false
 python-versions = ">= 2.7, != 3.0.*, != 3.1.*"
 version = "2.1.1"
 
@@ -787,7 +787,7 @@ version = ">=0.26"
 category = "main"
 description = "TensorFlow is an open source machine learning framework for everyone."
 name = "tensorflow"
-optional = true
+optional = false
 python-versions = "*"
 version = "2.1.0"
 
@@ -820,15 +820,15 @@ version = ">=0.26"
 category = "main"
 description = "TensorFlow Estimator."
 name = "tensorflow-estimator"
-optional = true
+optional = false
 python-versions = "*"
-version = "2.2.0rc0"
+version = "2.1.0"
 
 [[package]]
 category = "main"
 description = "ANSII Color formatting for output in terminal."
 name = "termcolor"
-optional = true
+optional = false
 python-versions = "*"
 version = "1.1.0"
 
@@ -863,7 +863,7 @@ version = "1.4.1"
 category = "main"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 name = "urllib3"
-optional = true
+optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4"
 version = "1.25.9"
 
@@ -884,7 +884,7 @@ version = "0.1.9"
 category = "main"
 description = "The comprehensive WSGI web application library."
 name = "werkzeug"
-optional = true
+optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 version = "1.0.1"
 
@@ -897,7 +897,7 @@ category = "main"
 description = "A built-package format for Python"
 marker = "python_version >= \"3\""
 name = "wheel"
-optional = true
+optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 version = "0.34.2"
 
@@ -908,7 +908,7 @@ test = ["pytest (>=3.0.0)", "pytest-cov"]
 category = "main"
 description = "Module for decorators, wrappers and monkey patching."
 name = "wrapt"
-optional = true
+optional = false
 python-versions = "*"
 version = "1.12.1"
 
@@ -926,7 +926,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "276aa1ee778719fcecaf70997ddb858d6ce82e41f25bacee79fc895fa9f2cc76"
+content-hash = "9dfa410183cdbec7cec3b7df4581f62d2c5b0eb133158305d2f50bd7ca32c9b8"
 python-versions = "^3.6.5"
 
 [metadata.files]
@@ -1521,7 +1521,7 @@ tensorflow = [
     {file = "tensorflow-2.1.0-cp37-cp37m-win_amd64.whl", hash = "sha256:7bad8ea686a1f33d9dac13eb578c4597346789d4f826980c8bbcfbd08e7dc921"},
 ]
 tensorflow-estimator = [
-    {file = "tensorflow_estimator-2.2.0rc0-py2.py3-none-any.whl", hash = "sha256:c24aba63b33de5db089e66585399e1abefad75038c4aacca8d8d1328ab3e8282"},
+    {file = "tensorflow_estimator-2.1.0-py2.py3-none-any.whl", hash = "sha256:e5c5f648a636f18d1be4cf7ed46132b108a2f0f3fd9f1c850eba924263dc6972"},
 ]
 termcolor = [
     {file = "termcolor-1.1.0.tar.gz", hash = "sha256:1d6d69ce66211143803fbc56652b41d73b4a400a2891d7bf7a1cdf4c02de613b"},

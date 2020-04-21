@@ -6,7 +6,9 @@ authors = ["Clément Walter <clement0walter@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.6.5"
-tensorflow = { version = "^2.1.0", optional = true}
+tensorflow = "^2.1.0"
+# TODO: remove when https://github.com/python-poetry/poetry/issues/2271
+tensorflow-estimator = "<2.2.0a0"
 tqdm = "^4.42.0"
 
 [tool.poetry.dev-dependencies]
