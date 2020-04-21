@@ -48,7 +48,7 @@ jobs:
       if: steps.cache.outputs.cache-hit != 'true'
     - name: Lint with Black
       run: |
-        poetry run black . --check --target-version py36 --line-length 127
+        poetry run black . --check
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
