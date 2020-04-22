@@ -14,15 +14,15 @@ jobs:
       matrix:
         python-version: [3.6, 3.7]
 
-      steps:
-        - name: Set up Python ${{ matrix.python-version }}
-          uses: actions/setup-python@v1
-          with:
-            python-version: ${{ matrix.python-version }}
-        - name: Install keras-fsl as dependency
-          run: |
-            python -m pip install --upgrade pip
-            python -m pip install git+ssh://git@github.com/few-shot-learning/Keras-FewShotLearning@${{ GITHUB_SHA }}
-        - name: Import keras_fsl.models
-          run: |
-            python -c "from keras_fsl import models"
+    steps:
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install keras-fsl as dependency
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install git+ssh://git@github.com/few-shot-learning/Keras-FewShotLearning@${{ GITHUB_SHA }}
+      - name: Import keras_fsl.models
+        run: |
+          python -c "from keras_fsl import models"
