@@ -5,24 +5,28 @@ import tensorflow as tf
 from ..gram_matrix_metrics import top_score_classification_accuracy
 
 
+def perfect_prediction_from_classes(classes, n):
+    y_true = tf.one_hot(classes, n)
+    return y_true @ tf.transpose(y_true)
+
+
 class TestMetrics:
     class TestTopScoreClassificationAccuracy:
         @staticmethod
-        @pytest.fixture
-        def y_true():
-            n_classes = 5
+        def test_on_perfect_prediction():
             classes = [0, 0, 2, 2, 1, 1]
-            return tf.one_hot(classes, n_classes)
-
-        @staticmethod
-        def test_on_perfect_prediction(y_true):
-            y_pred = y_true @ tf.transpose(y_true)
+            y_true = tf.one_hot(classes, 5)
+            y_pred = perfect_prediction_from_classes(classes, 5)
             np.testing.assert_almost_equal(top_score_classification_accuracy(y_true, y_pred), 1)
 
         @staticmethod
-        def test_on_normal_prediction(y_true):
-            n_classes = 5
-            predicted_classes = [0, 0, 2, 1, 2, 1]
-            one_hot_prediction = tf.one_hot(predicted_classes, n_classes)
-            y_pred = one_hot_prediction @ tf.transpose(one_hot_prediction)
+        def test_on_normal_prediction():
+            y_true = tf.one_hot([0, 0, 2, 2, 1, 1], 5)
+            y_pred = perfect_prediction_from_classes([0, 0, 2, 1, 2, 1], 5)
             np.testing.assert_almost_equal(top_score_classification_accuracy(y_true, y_pred), 1 / 3)
+
+        @staticmethod
+        def test_on_bad_predictions():
+            y_true = tf.one_hot([0, 0, 2, 2, 1, 1], 5)
+            y_pred = perfect_prediction_from_classes([0, 1, 0, 1, 0, 1], 5)
+            np.testing.assert_almost_equal(top_score_classification_accuracy(y_true, y_pred), 0)
