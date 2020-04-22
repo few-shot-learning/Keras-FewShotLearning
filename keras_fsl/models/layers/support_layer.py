@@ -49,6 +49,9 @@ class SupportLayer(Layer):
         else:
             self.support_tensors = inputs
 
+    def get_support_set(self):
+        return self.support_tensors, self.support_labels
+
     @property
     def _state_size(self):
         return tf.shape(self.support_tensors)[0]
