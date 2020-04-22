@@ -57,7 +57,7 @@ class SupportLayer(Layer):
         return tf.shape(self.support_tensors)[0]
 
     def call(self, inputs, training=None):
-        if training:
+        if training or isinstance(inputs, list) and len(inputs) == 2:
             self.set_support_set(inputs)
         if isinstance(inputs, list):
             embeddings = inputs[0]

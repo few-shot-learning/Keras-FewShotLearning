@@ -110,7 +110,7 @@ def train(base_dir):
     model.compile(optimizer=optimizer, loss="categorical_crossentropy", metrics=["categorical_accuracy"])
     model.fit(
         batched_datasets["train"],
-        steps_per_epoch=len(class_count["train"]) * k_shot // batch_size * 50,
+        steps_per_epoch=len(class_count["train"]) * k_shot // batch_size * 10,
         validation_data=batched_datasets["val"],
         validation_steps=max(len(class_count["val"]) * k_shot // batch_size, 100),
         initial_epoch=0,
@@ -119,13 +119,12 @@ def train(base_dir):
     )
 
     encoder.trainable = True
-    batch_size = 32
     optimizer = Adam(lr=1e-5)
     model.compile(optimizer=optimizer, loss="categorical_crossentropy", metrics=["categorical_accuracy"])
     model.fit(
-        datasets["train"].batch(batch_size).repeat(),
-        steps_per_epoch=len(class_count["train"]) * k_shot // batch_size * 50,
-        validation_data=datasets["val"].batch(batch_size).repeat(),
+        batched_datasets["train"],
+        steps_per_epoch=len(class_count["train"]) * k_shot // batch_size * 10,
+        validation_data=batched_datasets["val"],
         validation_steps=max(len(class_count["val"]) * k_shot // batch_size, 100),
         initial_epoch=3,
         epochs=5,
@@ -134,9 +133,7 @@ def train(base_dir):
 
     #%% Evaluate on test set. Each batch is a k_shot, n_way=batch_size / k_shot task
     model.load_weights(str(base_dir / "best_loss.h5"))
-    model.evaluate(
-        datasets["test"].batch(batch_size).repeat(), steps=max(len(class_count["test"]) * k_shot // batch_size, 100)
-    )
+    model.evaluate(batched_datasets["test"], steps=max(len(class_count["test"]) * k_shot // batch_size, 100))
 
     #%% Export artifacts
     classifier = Sequential([encoder, support_layer])
