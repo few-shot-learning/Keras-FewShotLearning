@@ -1,44 +1,13 @@
-import abc
 import tensorflow as tf
 from tensorflow.keras.layers import Layer
 
 
-class SupportLayer(Layer, metaclass=abc.ABCMeta):
-    """
-    An abstract layer that stores internally a support set for inference
-    """
-
-    support_tensors_shape = tf.TensorShape([None, None])
-    support_labels_one_hot_shape = tf.TensorShape([None, None])
-    support_labels_name_shape = tf.TensorShape([None])
-    support_tensors_spec = tf.TensorSpec(support_tensors_shape, tf.float32, name="support_tensors")
-    support_labels_one_hot_spec = tf.TensorSpec(support_labels_one_hot_shape, tf.float32, name="support_labels_one_hot")
-    support_labels_name_spec = tf.TensorSpec(support_labels_name_shape, tf.string, name="support_labels_name")
-
+class SupportLayer(Layer):
     def __init__(self, kernel, **kwargs):
-        """
-        Args:
-            support_tensors (tf.Tensor): support set embeddings with shape (n, *embedding_shape)
-            support_labels (tf.Tensor): one-hot encoded support set labels with shape (n, n classes)
-        """
-        super().__init__(**kwargs)
+        super().__init__(dynamic=True, **kwargs)
+        self.support_tensors = tf.constant([])
+        self.support_labels = tf.constant([])
         self.kernel = kernel
-        self.support_tensors = tf.Variable(
-            [[]], validate_shape=False, shape=self.support_tensors_shape, name="support_tensors", trainable=False
-        )
-        self.support_labels_name = tf.Variable(
-            [],
-            validate_shape=False,
-            shape=self.support_labels_name_shape,
-            name="support_labels_name",
-            dtype=self.support_labels_name_spec.dtype,
-            trainable=False,
-        )
-        self.support_labels_one_hot = tf.Variable(
-            [[]], validate_shape=False, shape=self.support_labels_one_hot_shape, name="support_labels_one_hot", trainable=False
-        )
-        self.columns = tf.Variable([], validate_shape=False, shape=[None], dtype=tf.string, name="columns", trainable=False)
-        self.support_set_loss = tf.Variable(0.0, name="support_set_loss", trainable=False)
 
     def get_config(self):
         config = super().get_config()
@@ -51,29 +20,36 @@ class SupportLayer(Layer, metaclass=abc.ABCMeta):
         config["kernel"] = kernel
         return cls(**config)
 
-    @staticmethod
-    def _validate_support_set_shape(support_tensors, support_labels):
-        if support_tensors.shape[0] != support_labels.shape[0]:
-            raise AttributeError("Support tensors and support labels shape 0 should match")
+    def compute_output_shape(self, input_shape):
+        if isinstance(input_shape, list):
+            return tf.TensorShape([input_shape[0][0], None])
+        return tf.TensorShape([input_shape[0], None])
 
-    @tf.function(input_signature=())
-    def get_support_set(self):
-        return self.support_tensors, self.support_labels_one_hot, self.support_set_loss
+    def set_support_set(self, inputs):
+        if isinstance(inputs, list):
+            self.support_tensors = inputs[0]
+            if len(inputs) == 2:
+                self.support_labels = inputs[1]
+        else:
+            self.support_tensors = inputs
 
-    @tf.function(input_signature=(support_tensors_spec, support_labels_name_spec, tf.TensorSpec(None, tf.bool, name="overwrite")))
-    def set_support_set(self, support_tensors, support_labels_name, overwrite):
-        self._validate_support_set_shape(support_tensors, support_labels_name)
-        support_tensors = tf.cond(
-            overwrite, lambda: support_tensors, lambda: tf.concat([self.support_tensors, support_tensors], axis=0)
+    @property
+    def _state_size(self):
+        return tf.shape(self.support_tensors)[0]
+
+    def call(self, inputs, training=None):
+        if training:
+            self.set_support_set(inputs)
+        if isinstance(inputs, list):
+            embeddings = inputs[0]
+        else:
+            embeddings = inputs
+        return tf.reshape(
+            self.kernel(
+                [
+                    tf.reshape(tf.tile(embeddings, [1, self._state_size]), [-1, tf.shape(embeddings)[1]], name="tf.repeat"),
+                    tf.tile(self.support_tensors, [tf.shape(embeddings)[0], 1]),
+                ]
+            ),
+            [tf.shape(embeddings)[0], self._state_size],
         )
-        support_labels_name = tf.cond(
-            overwrite, lambda: support_labels_name, lambda: tf.concat([self.support_labels_name, support_labels_name], axis=0),
-        )
-        columns, codes = tf.unique(support_labels_name)
-        support_labels_one_hot = tf.one_hot(codes, depth=tf.size(columns))
-        normalized_labels_one_hot = tf.math.divide_no_nan(support_labels_one_hot, tf.reduce_sum(support_labels_one_hot, axis=0))
-        self.support_tensors.assign(support_tensors)
-        self.support_labels_name.assign(support_labels_name)
-        self.support_labels_one_hot.assign(normalized_labels_one_hot)
-        self.columns.assign(columns)
-        return tf.expand_dims(self.support_set_loss, axis=0)
