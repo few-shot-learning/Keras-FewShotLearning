@@ -7,7 +7,8 @@ import tensorflow as tf
 
 def top_score_classification_accuracy(y_true, y_pred):
     """
-    Use the top score of an image against all the samples from the same class to get a score per class for each image.
+    Use the top score of a sample against all the samples from the same class to get a score per class for each image.
+    Note: if there is no other sample of the same class, the sample will be counter as failure even if the top match is low.
     """
     y_true = tf.dtypes.cast(y_true, y_pred.dtype)
     y_pred = y_pred - tf.linalg.diag(tf.linalg.diag_part(y_pred))
