@@ -47,11 +47,10 @@ jobs:
           poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           # exit-zero treats all errors as warnings.
           poetry run flake8 . --count --exit-zero --statistics
-        if: always()
       - name: Test with pytest
         run: |
           poetry run pytest
-        if: always()
+
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -88,7 +87,6 @@ jobs:
       - name: Test with pytest
         run: |
           poetry run pytest
-        if: always()
 
   black:
     runs-on: ubuntu-latest
