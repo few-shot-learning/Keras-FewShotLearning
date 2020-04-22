@@ -14,10 +14,10 @@ from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.optimizers import Adam
 
 from keras_fsl.dataframe.operators import ToKShotDataset
-from keras_fsl.models.head_models import MixedNorms
 from keras_fsl.models.layers import CentroidsSimilarity
-from keras_fsl.utils.training import compose
 from keras_fsl.utils.tensors import get_dummies
+from keras_fsl.utils.training import compose
+
 
 #%% Toggle some config if required
 # tf.config.experimental_run_functions_eagerly(True)
@@ -32,17 +32,21 @@ from keras_fsl.utils.tensors import get_dummies
 def train(base_dir):
     #%% Init model
     encoder = keras_applications.MobileNet(input_shape=(224, 224, 3), include_top=False, pooling="avg")
-    kernel = MixedNorms(
-        input_shape=encoder.output_shape[1:],
-        norms=[
-            lambda x: 1 - tf.nn.l2_normalize(x[0]) * tf.nn.l2_normalize(x[1]),
-            lambda x: tf.math.abs(x[0] - x[1]),
-            lambda x: tf.nn.softmax(tf.math.abs(x[0] - x[1])),
-            lambda x: tf.square(x[0] - x[1]),
-        ],
-        use_bias=True,
+    support_layer = CentroidsSimilarity(
+        kernel={
+            "name": "MixedNorms",
+            "init": {
+                "norms": [
+                    lambda x: 1 - tf.nn.l2_normalize(x[0]) * tf.nn.l2_normalize(x[1]),
+                    lambda x: tf.math.abs(x[0] - x[1]),
+                    lambda x: tf.nn.softmax(tf.math.abs(x[0] - x[1])),
+                    lambda x: tf.square(x[0] - x[1]),
+                ],
+                "use_bias": True,
+            },
+        },
+        activation="linear",
     )
-    support_layer = CentroidsSimilarity(kernel=kernel, activation="softmax")
 
     #%% Init training
     callbacks = [

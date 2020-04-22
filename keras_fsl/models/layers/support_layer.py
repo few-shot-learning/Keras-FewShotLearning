@@ -1,5 +1,8 @@
 import tensorflow as tf
+from tensorflow.keras import Model
 from tensorflow.keras.layers import Layer
+
+from keras_fsl.models import head_models
 
 
 class SupportLayer(Layer):
@@ -8,6 +11,19 @@ class SupportLayer(Layer):
         self.support_tensors = tf.constant([])
         self.support_labels = tf.constant([])
         self.kernel = kernel
+
+    def build(self, input_shape):
+        if not isinstance(self.kernel, Layer):
+            kernel_config = self.kernel
+            if isinstance(kernel_config, str):
+                kernel_config = {"name": kernel_config}
+            if isinstance(input_shape, list):
+                input_shape = input_shape[0]
+            kernel_config["init"] = {
+                **kernel_config.get("init", {}),
+                "input_shape": input_shape[1:],
+            }
+            self.kernel = getattr(head_models, kernel_config["name"])(**kernel_config["init"])
 
     def get_config(self):
         config = super().get_config()
