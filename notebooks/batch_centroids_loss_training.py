@@ -95,8 +95,12 @@ def train(base_dir):
 
     batch_size = 64
     batched_datasets = datasets.map(
-        lambda dataset: dataset.batch(batch_size).map(lambda x, y: (x, get_dummies(y)[0])).map(lambda x, y: ((x, y), y)).repeat()
+        lambda dataset: dataset.batch(batch_size, drop_remainder=True)
+        .map(lambda x, y: (x, get_dummies(y)[0]), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        .map(lambda x, y: ((x, y), y), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        .repeat()
     )
+
     encoder.trainable = False
     optimizer = Adam(lr=1e-4)
     model.compile(optimizer=optimizer, loss="categorical_crossentropy", metrics=["categorical_accuracy"])
