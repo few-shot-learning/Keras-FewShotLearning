@@ -13,20 +13,10 @@ def perfect_prediction_from_classes(classes, n):
 class TestMetrics:
     class TestTopScoreClassificationAccuracy:
         @staticmethod
-        def test_on_perfect_prediction():
-            classes = [0, 0, 2, 2, 1, 1]
-            y_true = tf.one_hot(classes, 5)
-            y_pred = perfect_prediction_from_classes(classes, 5)
-            np.testing.assert_almost_equal(top_score_classification_accuracy(y_true, y_pred), 1)
-
-        @staticmethod
-        def test_on_normal_prediction():
+        @pytest.mark.parametrize(
+            "predicted_classes,accuracy", [([0, 0, 2, 2, 1, 1], 1), ([0, 0, 2, 1, 2, 1], 1 / 3), ([0, 1, 0, 1, 0, 1], 0)]
+        )
+        def test_return_proper_result(predicted_classes, accuracy):
             y_true = tf.one_hot([0, 0, 2, 2, 1, 1], 5)
-            y_pred = perfect_prediction_from_classes([0, 0, 2, 1, 2, 1], 5)
-            np.testing.assert_almost_equal(top_score_classification_accuracy(y_true, y_pred), 1 / 3)
-
-        @staticmethod
-        def test_on_bad_predictions():
-            y_true = tf.one_hot([0, 0, 2, 2, 1, 1], 5)
-            y_pred = perfect_prediction_from_classes([0, 1, 0, 1, 0, 1], 5)
-            np.testing.assert_almost_equal(top_score_classification_accuracy(y_true, y_pred), 0)
+            y_pred = perfect_prediction_from_classes(predicted_classes, 5)
+            np.testing.assert_almost_equal(top_score_classification_accuracy(y_true, y_pred), accuracy)
