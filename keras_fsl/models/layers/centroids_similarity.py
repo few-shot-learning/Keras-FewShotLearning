@@ -19,7 +19,6 @@ class CentroidsSimilarity(SupportLayer):
         super().__init__(kernel, **kwargs)
         self.activation = activations.get(activation)
 
-    @tf.function
     def set_support_set(self, *args, **kwargs):
         super().set_support_set(*args, **kwargs)
         if tf.shape(self.support_labels)[1] == 1:
