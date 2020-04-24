@@ -107,12 +107,12 @@ def train(base_dir):
 
     encoder.trainable = False
     optimizer = Adam(lr=1e-4)
-    model.compile(optimizer=optimizer, loss="categorical_crossentropy", metrics=["categorical_accuracy"])
+    model.compile(optimizer=optimizer, loss="binary_crossentropy", metrics=["categorical_accuracy", "categorical_crossentropy"])
     model.fit(
         batched_datasets["train"],
         steps_per_epoch=len(class_count["train"]) * k_shot // batch_size * 10,
         validation_data=batched_datasets["val"],
-        validation_steps=max(len(class_count["val"]) * k_shot // batch_size, 100),
+        validation_steps=max(len(class_count["val"]) * k_shot // batch_size, 30),
         initial_epoch=0,
         epochs=3,
         callbacks=callbacks,
@@ -120,14 +120,14 @@ def train(base_dir):
 
     encoder.trainable = True
     optimizer = Adam(lr=1e-5)
-    model.compile(optimizer=optimizer, loss="categorical_crossentropy", metrics=["categorical_accuracy"])
+    model.compile(optimizer=optimizer, loss="binary_crossentropy", metrics=["categorical_accuracy", "categorical_crossentropy"])
     model.fit(
         batched_datasets["train"],
         steps_per_epoch=len(class_count["train"]) * k_shot // batch_size * 10,
         validation_data=batched_datasets["val"],
-        validation_steps=max(len(class_count["val"]) * k_shot // batch_size, 100),
+        validation_steps=max(len(class_count["val"]) * k_shot // batch_size, 30),
         initial_epoch=3,
-        epochs=5,
+        epochs=10,
         callbacks=callbacks,
     )
 

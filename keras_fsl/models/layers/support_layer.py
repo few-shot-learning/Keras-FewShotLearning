@@ -41,6 +41,7 @@ class SupportLayer(Layer):
             return tf.TensorShape([input_shape[0][0], None])
         return tf.TensorShape([input_shape[0], None])
 
+    @tf.function
     def set_support_set(self, inputs):
         if isinstance(inputs, list):
             self.support_tensors = inputs[0]
@@ -49,6 +50,7 @@ class SupportLayer(Layer):
         else:
             self.support_tensors = inputs
 
+    @tf.function(input_signature=())
     def get_support_set(self):
         return self.support_tensors, self.support_labels
 
@@ -56,6 +58,7 @@ class SupportLayer(Layer):
     def _state_size(self):
         return tf.shape(self.support_tensors)[0]
 
+    @tf.function
     def call(self, inputs, training=None):
         if training or isinstance(inputs, list) and len(inputs) == 2:
             self.set_support_set(inputs)
