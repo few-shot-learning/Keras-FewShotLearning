@@ -2,6 +2,7 @@ import tensorflow as tf
 from tensorflow.keras import activations
 
 from keras_fsl.models.layers.support_layer import SupportLayer
+from keras_fsl.utils.tensors import get_dummies
 
 
 class CentroidsSimilarity(SupportLayer):
@@ -21,14 +22,9 @@ class CentroidsSimilarity(SupportLayer):
 
     def set_support_set(self, *args, **kwargs):
         super().set_support_set(*args, **kwargs)
-        if tf.shape(self.support_labels)[1] == 1:
-            columns, codes = tf.unique(self.support_labels)
-            support_labels_one_hot = tf.one_hot(codes, depth=tf.size(columns))
-            self.support_labels = columns
-        else:
-            support_labels_one_hot = self.support_labels
-            self.support_labels = tf.range(tf.shape(self.support_labels)[1])
-
+        support_labels_one_hot = tf.cond(
+            tf.shape(self.support_labels)[1] == 1, lambda: get_dummies(self.support_labels)[0], lambda: self.support_labels
+        )
         self.support_tensors = tf.matmul(
             tf.math.divide_no_nan(support_labels_one_hot, tf.reduce_sum(support_labels_one_hot, axis=0)),
             self.support_tensors,

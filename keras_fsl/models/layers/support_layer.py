@@ -7,7 +7,8 @@ from keras_fsl.models import head_models
 
 class SupportLayer(Layer):
     def __init__(self, kernel, **kwargs):
-        super().__init__(dynamic=True, **kwargs)
+        kwargs["dynamic"] = True
+        super().__init__(**kwargs)
         self.support_tensors = tf.constant([])
         self.support_labels = tf.constant([])
         self.kernel = kernel
