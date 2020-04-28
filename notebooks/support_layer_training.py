@@ -10,7 +10,7 @@ from tensorflow.keras.callbacks import (
     TensorBoard,
 )
 from tensorflow.keras.layers import Input
-from tensorflow.keras.models import Model, Sequential
+from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 
 from keras_fsl.dataframe.operators import ToKShotDataset
@@ -85,10 +85,9 @@ def train(base_dir):
                 k_shot=k_shot,
                 preprocessing=compose(preprocessing, data_augmentation),
                 cache=str(cache / group.name),
-                reset_cache=False,
+                reset_cache=True,
                 dataset_mode="with_cache",
                 label_column="label_code",
-                # max_shuffle_buffer_size=max(class_count),  # can slow down a lot if classes are big
             )(group)
         )
     )
@@ -107,7 +106,9 @@ def train(base_dir):
 
     encoder.trainable = False
     optimizer = Adam(lr=1e-4)
-    model.compile(optimizer=optimizer, loss="binary_crossentropy", metrics=["categorical_accuracy", "categorical_crossentropy"])
+    model.compile(
+        optimizer=optimizer, loss="binary_crossentropy", metrics=["categorical_accuracy", "categorical_crossentropy"]
+    )
     model.fit(
         batched_datasets["train"],
         steps_per_epoch=len(class_count["train"]) * k_shot // batch_size * 10,
@@ -120,7 +121,9 @@ def train(base_dir):
 
     encoder.trainable = True
     optimizer = Adam(lr=1e-5)
-    model.compile(optimizer=optimizer, loss="binary_crossentropy", metrics=["categorical_accuracy", "categorical_crossentropy"])
+    model.compile(
+        optimizer=optimizer, loss="binary_crossentropy", metrics=["categorical_accuracy", "categorical_crossentropy"]
+    )
     model.fit(
         batched_datasets["train"],
         steps_per_epoch=len(class_count["train"]) * k_shot // batch_size * 10,
@@ -134,10 +137,6 @@ def train(base_dir):
     #%% Evaluate on test set. Each batch is a k_shot, n_way=batch_size / k_shot task
     model.load_weights(str(base_dir / "best_loss.h5"))
     model.evaluate(batched_datasets["test"], steps=max(len(class_count["test"]) * k_shot // batch_size, 100))
-
-    #%% Export artifacts
-    classifier = Sequential([encoder, support_layer])
-    tf.saved_model.save(classifier, "siamese_nets_classifier/1", signatures={"preprocessing": preprocessing})
 
 
 #%% Run command
