@@ -49,15 +49,12 @@ class SupportLayer(Layer):
         else:
             self.support_tensors = inputs
 
-    def get_support_set(self):
-        return self.support_tensors, self.support_labels
-
     @property
     def _state_size(self):
         return tf.shape(self.support_tensors)[0]
 
     def call(self, inputs, training=None):
-        if training or isinstance(inputs, list) and len(inputs) == 2:
+        if training:
             self.set_support_set(inputs)
         if isinstance(inputs, list):
             embeddings = inputs[0]
