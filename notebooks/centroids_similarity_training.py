@@ -78,7 +78,6 @@ def train(base_dir):
     #%% Train model
     k_shot = 4
     cache = base_dir / "cache"
-
     datasets = all_annotations.groupby("split").apply(
         lambda group: (
             ToKShotDataset(
@@ -110,10 +109,10 @@ def train(base_dir):
         optimizer=optimizer, loss="binary_crossentropy", metrics=["categorical_accuracy", "categorical_crossentropy"]
     )
     model.fit(
-        batched_datasets["train"],
-        steps_per_epoch=len(class_count["train"]) * k_shot // batch_size * 10,
-        validation_data=batched_datasets["val"],
-        validation_steps=max(len(class_count["val"]) * k_shot // batch_size, 30),
+        datasets["train"].batch(batch_size).repeat(),
+        steps_per_epoch=len(class_count["train"]) * k_shot // batch_size * 150,
+        validation_data=datasets["val"].batch(batch_size).repeat(),
+        validation_steps=max(len(class_count["val"]) * k_shot // batch_size, 100),
         initial_epoch=0,
         epochs=3,
         callbacks=callbacks,
@@ -125,10 +124,10 @@ def train(base_dir):
         optimizer=optimizer, loss="binary_crossentropy", metrics=["categorical_accuracy", "categorical_crossentropy"]
     )
     model.fit(
-        batched_datasets["train"],
-        steps_per_epoch=len(class_count["train"]) * k_shot // batch_size * 10,
-        validation_data=batched_datasets["val"],
-        validation_steps=max(len(class_count["val"]) * k_shot // batch_size, 30),
+        datasets["train"].batch(batch_size).repeat(),
+        steps_per_epoch=len(class_count["train"]) * k_shot // batch_size * 150,
+        validation_data=datasets["val"].batch(batch_size).repeat(),
+        validation_steps=max(len(class_count["val"]) * k_shot // batch_size, 100),
         initial_epoch=3,
         epochs=10,
         callbacks=callbacks,

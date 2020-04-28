@@ -4,12 +4,6 @@ from pathlib import Path
 import click
 import pandas as pd
 import tensorflow as tf
-from keras_fsl.dataframe.operators import ToKShotDataset
-from keras_fsl.losses import binary_crossentropy, max_crossentropy, std_crossentropy
-from keras_fsl.metrics import accuracy, same_image_score, top_score_classification_accuracy
-from keras_fsl.models import SiameseNets
-from keras_fsl.models.layers import GramMatrix, Classification
-from keras_fsl.utils.training import compose
 from tensorflow.keras import applications as keras_applications
 from tensorflow.keras.callbacks import (
     ModelCheckpoint,
@@ -18,6 +12,12 @@ from tensorflow.keras.callbacks import (
 )
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
+
+from keras_fsl.dataframe.operators import ToKShotDataset
+from keras_fsl.losses import binary_crossentropy, class_consistency_loss, max_crossentropy, std_crossentropy
+from keras_fsl.metrics import accuracy, same_image_score, top_score_classification_accuracy
+from keras_fsl.models.layers import Classification, GramMatrix
+from keras_fsl.utils.training import compose
 
 
 #%% Toggle some config if required
@@ -32,9 +32,9 @@ from tensorflow.keras.optimizers import Adam
 @click.command()
 def train(base_dir):
     #%% Init model
-    siamese_nets = SiameseNets(
-        branch_model={"name": "MobileNet", "init": {"include_top": False, "input_shape": (224, 224, 3), "pooling": "avg"}},
-        head_model={
+    encoder = keras_applications.MobileNet(input_shape=(224, 224, 3), include_top=False, pooling="avg")
+    support_layer = GramMatrix(
+        kernel={
             "name": "MixedNorms",
             "init": {
                 "norms": [
@@ -47,8 +47,7 @@ def train(base_dir):
             },
         },
     )
-
-    model = Sequential([siamese_nets.get_layer("branch_model"), GramMatrix(kernel=siamese_nets.get_layer("head_model"))])
+    model = Sequential([encoder, support_layer])
 
     #%% Init training
     callbacks = [
@@ -86,7 +85,7 @@ def train(base_dir):
                     k_shot=k_shot,
                     preprocessing=compose(preprocessing, data_augmentation),
                     cache=str(cache / group.name),
-                    reset_cache=True,
+                    reset_cache=False,
                     dataset_mode="with_cache",
                     # max_shuffle_buffer_size=max(class_count),  # can slow down a lot if classes are big
                 )
@@ -95,11 +94,11 @@ def train(base_dir):
     )
 
     batch_size = 64
-    siamese_nets.get_layer("branch_model").trainable = False
+    encoder.trainable = False
     optimizer = Adam(lr=1e-4)
     model.compile(
         optimizer=optimizer,
-        loss=binary_crossentropy(margin),
+        loss=class_consistency_loss,
         metrics=[
             accuracy(margin),
             binary_crossentropy(),
@@ -119,11 +118,11 @@ def train(base_dir):
         callbacks=callbacks,
     )
 
-    siamese_nets.get_layer("branch_model").trainable = True
+    encoder.trainable = True
     optimizer = Adam(lr=1e-5)
     model.compile(
         optimizer=optimizer,
-        loss=binary_crossentropy(margin),
+        loss=class_consistency_loss,
         metrics=[
             accuracy(margin),
             binary_crossentropy(),
@@ -143,8 +142,6 @@ def train(base_dir):
         callbacks=callbacks,
     )
 
-    siamese_nets.save(base_dir / "final_model.h5")
-
     #%% Evaluate on test set. Each batch is a k_shot, n_way=batch_size / k_shot task
     model.load_weights(str(base_dir / "best_loss.h5"))
     model.evaluate(
@@ -152,8 +149,7 @@ def train(base_dir):
     )
 
     #%% Export artifacts
-    siamese_nets.save(str(base_dir / "siamese_nets_best_loss.h5"))
-    classifier = Sequential([siamese_nets.get_layer("branch_model"), Classification(siamese_nets.get_layer("head_model"))])
+    classifier = Sequential([encoder, Classification(support_layer.kernel)])
     tf.saved_model.save(classifier, "siamese_nets_classifier/1", signatures={"preprocessing": preprocessing})
 
 
