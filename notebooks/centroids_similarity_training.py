@@ -14,7 +14,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 
 from keras_fsl.dataframe.operators import ToKShotDataset
-from keras_fsl.models.layers import CentroidsSimilarity
+from keras_fsl.models.layers import CentroidsMatrix
 from keras_fsl.utils.tensors import get_dummies
 from keras_fsl.utils.training import compose
 
@@ -32,7 +32,7 @@ from keras_fsl.utils.training import compose
 def train(base_dir):
     #%% Init model
     encoder = keras_applications.MobileNet(input_shape=(224, 224, 3), include_top=False, pooling="avg")
-    support_layer = CentroidsSimilarity(
+    support_layer = CentroidsMatrix(
         kernel={
             "name": "MixedNorms",
             "init": {

@@ -4,7 +4,7 @@ from tensorflow.keras import activations
 from keras_fsl.models.layers.support_layer import SupportLayer
 
 
-class CentroidsSimilarity(SupportLayer):
+class CentroidsMatrix(SupportLayer):
     """
     Compute the similarity (distance) between all items of the input batch and the centroid of each class found in the batch.
     """
