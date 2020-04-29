@@ -1,4 +1,3 @@
-# flake8: noqa: E265
 from pathlib import Path
 
 import click
@@ -10,13 +9,13 @@ from tensorflow.keras.callbacks import (
     ReduceLROnPlateau,
     TensorBoard,
 )
-from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Input
+from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 
 from keras_fsl.dataframe.operators import ToKShotDataset
-from keras_fsl.losses import binary_crossentropy, class_consistency_loss, max_crossentropy, std_crossentropy
-from keras_fsl.metrics import accuracy, same_image_score, top_score_classification_accuracy
-from keras_fsl.models.layers import Classification, GramMatrix
+from keras_fsl.models.layers import CentroidsMatrix
+from keras_fsl.utils.tensors import get_dummies
 from keras_fsl.utils.training import compose
 
 
@@ -33,7 +32,7 @@ from keras_fsl.utils.training import compose
 def train(base_dir):
     #%% Init model
     encoder = keras_applications.MobileNet(input_shape=(224, 224, 3), include_top=False, pooling="avg")
-    support_layer = GramMatrix(
+    support_layer = CentroidsMatrix(
         kernel={
             "name": "MixedNorms",
             "init": {
@@ -46,8 +45,8 @@ def train(base_dir):
                 "use_bias": True,
             },
         },
+        activation="linear",
     )
-    model = Sequential([encoder, support_layer])
 
     #%% Init training
     callbacks = [
@@ -57,56 +56,57 @@ def train(base_dir):
     ]
 
     #%% Init data
-    @tf.function(input_signature=(tf.TensorSpec(shape=[None, None, 3], dtype=tf.uint8)))
+    @tf.function(input_signature=(tf.TensorSpec(shape=[None, None, 3], dtype=tf.uint8),))
     def preprocessing(input_tensor):
         output_tensor = tf.cast(input_tensor, dtype=tf.float32)
         output_tensor = tf.image.resize_with_pad(output_tensor, target_height=224, target_width=224)
         output_tensor = keras_applications.mobilenet.preprocess_input(output_tensor, data_format="channels_last")
         return output_tensor
 
-    @tf.function(input_signature=(tf.TensorSpec(shape=[None, None, 3], dtype=tf.float32)))
+    @tf.function(input_signature=(tf.TensorSpec(shape=[None, None, 3], dtype=tf.float32),))
     def data_augmentation(input_tensor):
         output_tensor = tf.image.random_flip_left_right(input_tensor)
         output_tensor = tf.image.random_flip_up_down(output_tensor)
         output_tensor = tf.image.random_brightness(output_tensor, max_delta=0.25)
         return output_tensor
 
-    all_annotations = pd.read_csv(base_dir / "annotations" / "all_annotations.csv")
+    all_annotations = pd.read_csv(base_dir / "annotations" / "all_annotations.csv").assign(
+        label_code=lambda df: df.label.astype("category").cat.codes
+    )
     class_count = all_annotations.groupby("split").apply(lambda group: group.label.value_counts())
 
     #%% Train model
-    margin = 0.05
     k_shot = 4
     cache = base_dir / "cache"
     datasets = all_annotations.groupby("split").apply(
         lambda group: (
-            group.pipe(
-                ToKShotDataset(
-                    k_shot=k_shot,
-                    preprocessing=compose(preprocessing, data_augmentation),
-                    cache=str(cache / group.name),
-                    reset_cache=False,
-                    dataset_mode="with_cache",
-                    # max_shuffle_buffer_size=max(class_count),  # can slow down a lot if classes are big
-                )
-            )
+            ToKShotDataset(
+                k_shot=k_shot,
+                preprocessing=compose(preprocessing, data_augmentation),
+                cache=str(cache / group.name),
+                reset_cache=True,
+                dataset_mode="with_cache",
+                label_column="label_code",
+            )(group)
         )
     )
 
+    y_true = Input(shape=(None,), name="y_true")
+    output = support_layer([encoder.output, y_true])
+    model = Model([encoder.inputs, y_true], output)
+
     batch_size = 64
+    batched_datasets = datasets.map(
+        lambda dataset: dataset.batch(batch_size, drop_remainder=True)
+        .map(lambda x, y: (x, get_dummies(y)[0]), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        .map(lambda x, y: ((x, y), y), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        .repeat()
+    )
+
     encoder.trainable = False
     optimizer = Adam(lr=1e-4)
     model.compile(
-        optimizer=optimizer,
-        loss=class_consistency_loss,
-        metrics=[
-            accuracy(margin),
-            binary_crossentropy(),
-            max_crossentropy,
-            std_crossentropy,
-            same_image_score,
-            top_score_classification_accuracy,
-        ],
+        optimizer=optimizer, loss="binary_crossentropy", metrics=["categorical_accuracy", "categorical_crossentropy"]
     )
     model.fit(
         datasets["train"].batch(batch_size).repeat(),
@@ -121,16 +121,7 @@ def train(base_dir):
     encoder.trainable = True
     optimizer = Adam(lr=1e-5)
     model.compile(
-        optimizer=optimizer,
-        loss=class_consistency_loss,
-        metrics=[
-            accuracy(margin),
-            binary_crossentropy(),
-            max_crossentropy,
-            std_crossentropy,
-            same_image_score,
-            top_score_classification_accuracy,
-        ],
+        optimizer=optimizer, loss="binary_crossentropy", metrics=["categorical_accuracy", "categorical_crossentropy"]
     )
     model.fit(
         datasets["train"].batch(batch_size).repeat(),
@@ -138,19 +129,13 @@ def train(base_dir):
         validation_data=datasets["val"].batch(batch_size).repeat(),
         validation_steps=max(len(class_count["val"]) * k_shot // batch_size, 100),
         initial_epoch=3,
-        epochs=30,
+        epochs=10,
         callbacks=callbacks,
     )
 
     #%% Evaluate on test set. Each batch is a k_shot, n_way=batch_size / k_shot task
     model.load_weights(str(base_dir / "best_loss.h5"))
-    model.evaluate(
-        datasets["test"].batch(batch_size).repeat(), steps=max(len(class_count["test"]) * k_shot // batch_size, 100)
-    )
-
-    #%% Export artifacts
-    classifier = Sequential([encoder, Classification(support_layer.kernel)])
-    tf.saved_model.save(classifier, "siamese_nets_classifier/1", signatures={"preprocessing": preprocessing})
+    model.evaluate(batched_datasets["test"], steps=max(len(class_count["test"]) * k_shot // batch_size, 100))
 
 
 #%% Run command
