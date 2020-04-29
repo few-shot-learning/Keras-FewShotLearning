@@ -31,9 +31,7 @@ class SupportLayer(Layer):
             self.kernel = getattr(head_models, kernel_config["name"])(**kernel_config["init"])
 
     def get_config(self):
-        config = super().get_config()
-        config.update({"kernel": self.kernel.to_json()})
-        return config
+        return {**super().get_config(), "kernel": self.kernel.to_json()}
 
     @classmethod
     def from_config(cls, config):
