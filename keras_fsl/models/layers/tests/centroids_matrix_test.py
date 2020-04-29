@@ -14,13 +14,13 @@ class TestCentroidsMatrix:
         def test_should_raise_value_error_when_inputs_is_not_list():
             with pytest.raises(ValueError) as error:
                 CentroidsMatrix(kernel=sentinel.kernel).build_support_set(sentinel.inputs)
-            assert str(error.value) == f"CentroidsSimilarity should be called on a list of inputs [embeddings, labels_one_hot]"
+            assert str(error.value) == f"CentroidsMatrix should be called on a list of inputs [embeddings, labels_one_hot]"
 
         @staticmethod
         def test_should_raise_value_error_when_inputs_is_not_list_of_len_2():
             with pytest.raises(ValueError) as error:
                 CentroidsMatrix(kernel=sentinel.kernel).build_support_set([sentinel.inputs])
-            assert str(error.value) == f"CentroidsSimilarity should be called on a list of inputs [embeddings, labels_one_hot]"
+            assert str(error.value) == f"CentroidsMatrix should be called on a list of inputs [embeddings, labels_one_hot]"
 
         @staticmethod
         def test_should_return_centroids_of_input_tensors_according_to_their_class():
