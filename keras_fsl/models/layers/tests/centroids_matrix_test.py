@@ -8,7 +8,7 @@ from keras_fsl.models.layers import CentroidsMatrix
 from keras_fsl.utils.tensors import get_dummies
 
 
-class TestCentroidsSimilarity:
+class TestCentroidsMatrix:
     class TestBuildSupportSet:
         @staticmethod
         def test_should_raise_value_error_when_inputs_is_not_list():
