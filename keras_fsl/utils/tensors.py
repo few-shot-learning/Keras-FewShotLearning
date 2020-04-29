@@ -5,7 +5,7 @@ def get_dummies(x):
     """
     Pendant to pandas.get_dummies method but for tf.Tensor. Tensor is flatten first.
     Args:
-        x (tf.Tensor): 1-D input tensor with dtype supported by tf.unique
+        x (tf.Tensor): input tensor with dtype supported by tf.unique
 
     Returns:
         tf.Tensor, tf.Tensor: the one-hot encoded input as well as the column names
