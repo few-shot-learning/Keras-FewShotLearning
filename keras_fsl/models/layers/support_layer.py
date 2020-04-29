@@ -15,10 +15,7 @@ class SupportLayer(Layer):
         self.kernel = kernel
 
     def build(self, input_shape):
-        if isinstance(input_shape, list):
-            embedding_shape = input_shape[0]
-        else:
-            embedding_shape = input_shape
+        embedding_shape = self._normalize_input(input_shape)
 
         if not isinstance(self.kernel, Layer):
             kernel_config = self.kernel
@@ -30,6 +27,12 @@ class SupportLayer(Layer):
             }
             self.kernel = getattr(head_models, kernel_config["name"])(**kernel_config["init"])
 
+    @staticmethod
+    def _normalize_input(inputs):
+        if isinstance(inputs, list):
+            return inputs[0]
+        return inputs
+
     def get_config(self):
         return {**super().get_config(), "kernel": self.kernel.to_json()}
 
@@ -40,21 +43,16 @@ class SupportLayer(Layer):
         return cls(**config)
 
     def compute_output_shape(self, input_shape):
-        if isinstance(input_shape, list):
-            return tf.TensorShape([input_shape[0][0], None])
-        return tf.TensorShape([input_shape[0], None])
+        return tf.TensorShape([self._normalize_input(input_shape)[0], None])
 
     def build_support_set(self, inputs):
         raise NotImplementedError
 
     @tf.function
     def call(self, inputs, **kwargs):
+        embeddings = self._normalize_input(inputs)
         support_tensors = self.build_support_set(inputs)
         support_set_size = tf.shape(support_tensors)[0]
-        if isinstance(inputs, list):
-            embeddings = inputs[0]
-        else:
-            embeddings = inputs
         return tf.reshape(
             self.kernel(
                 [
