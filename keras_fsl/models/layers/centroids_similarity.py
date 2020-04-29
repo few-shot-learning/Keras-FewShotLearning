@@ -20,7 +20,7 @@ class CentroidsSimilarity(SupportLayer):
         self.activation = activations.get(activation)
 
     def build_support_set(self, inputs):
-        if not isinstance(inputs, list) or isinstance(inputs, list) and len(inputs) < 2:
+        if not isinstance(inputs, list) or isinstance(inputs, list) and len(inputs) != 2:
             raise ValueError(f"{self.__class__.__name__} should be called on a list of inputs [embeddings, labels_one_hot]")
         embeddings = inputs[0]
         labels_one_hot_normalized = tf.math.divide_no_nan(inputs[1], tf.reduce_sum(inputs[1], axis=0))
