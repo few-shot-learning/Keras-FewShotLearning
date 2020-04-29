@@ -24,7 +24,7 @@ class CentroidsSimilarity(SupportLayer):
             raise ValueError(f"{self.__class__.__name__} should be called on a list of inputs [embeddings, labels_one_hot]")
         embeddings = inputs[0]
         labels_one_hot_normalized = tf.math.divide_no_nan(inputs[1], tf.reduce_sum(inputs[1], axis=0))
-        return tf.matmul(labels_one_hot_normalized, embeddings, transpose_a=True,)
+        return tf.matmul(labels_one_hot_normalized, embeddings, transpose_a=True)
 
     def call(self, *args, **kwargs):
         return self.activation(super().call(*args, **kwargs))
