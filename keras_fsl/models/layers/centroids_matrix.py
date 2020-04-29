@@ -20,6 +20,10 @@ class CentroidsMatrix(SupportLayer):
         self.activation = activations.get(activation)
 
     def build_support_set(self, inputs):
+        """
+        Args:
+            inputs (List[tf.Tensor]): should be [embeddings, labels] in this order. Labels are assumed to be one-hot encoded
+        """
         if not isinstance(inputs, list) or isinstance(inputs, list) and len(inputs) != 2:
             raise ValueError(f"{self.__class__.__name__} should be called on a list of inputs [embeddings, labels_one_hot]")
         embeddings = inputs[0]

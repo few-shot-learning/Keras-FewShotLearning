@@ -5,6 +5,11 @@ from keras_fsl.models import head_models
 
 
 class SupportLayer(Layer):
+    """
+    Base class for defining a layer that build a support_set from the input batch and then compute all the pair-wise value of the given
+    _kernel_.
+    """
+
     def __init__(self, kernel, **kwargs):
         super().__init__(**kwargs)
         self.kernel = kernel
