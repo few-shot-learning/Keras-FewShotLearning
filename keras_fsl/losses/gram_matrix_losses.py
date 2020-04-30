@@ -75,8 +75,6 @@ def triplet_loss(margin=1.0):
     2) or it is the farthest negative sample
     It means that we somehow select the negative sample the closest to the margin, but give a preference to sample beyond the margin.
 
-    In this implementation, we directly pick the arg min negative of | d(A,P) - d(A,N) |, regardless of its position according to the margin
-
     Args:
         margin (float): margin for separating positive to negative pairs
 
