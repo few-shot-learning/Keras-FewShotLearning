@@ -10,10 +10,12 @@ import tensorflow_addons as tfa
 import tensorflow_datasets as tfds
 from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, Lambda, MaxPooling2D
 from tensorflow.keras.models import Sequential
+from tensorflow.keras.losses import cosine_similarity
 
 from keras_fsl.losses.gram_matrix_losses import triplet_loss
 from keras_fsl.models.layers import GramMatrix
 from keras_fsl.utils.tensors import get_dummies
+from keras_fsl.metrics.gram_matrix_metrics import classification_accuracy
 
 #%% Build model
 encoder = Sequential(
@@ -29,9 +31,9 @@ encoder = Sequential(
         Lambda(lambda x: tf.math.l2_normalize(x, axis=1)),  # L2 normalize embeddings
     ]
 )
+encoder.save_weights("initial_encoder.h5")
 support_layer = GramMatrix(kernel=Lambda(lambda inputs: tf.math.reduce_sum(tf.square(inputs[0] - inputs[1]), axis=1)))
 model = Sequential([encoder, support_layer])
-encoder.save_weights("initial_encoder.h5")
 
 
 #%% Build datasets
@@ -41,11 +43,19 @@ def preprocessing(input_tensor):
 
 train_dataset, test_dataset = tfds.load(name="mnist", split=["train", "test"], as_supervised=True)
 train_dataset = train_dataset.shuffle(1024).batch(32)
-test_dataset = test_dataset.shuffle(1024).batch(32)
+test_dataset = test_dataset.batch(32)
+
+#%% Save test labels for later visualization in projector https://projector.tensorflow.org/
+out_m = io.open("meta.tsv", "w", encoding="utf-8")
+for img, labels in tfds.as_numpy(test_dataset):
+    [out_m.write(str(x) + "\n") for x in labels]
+out_m.close()
 
 #%% Train with tfa triplet loss
 encoder.load_weights("initial_encoder.h5")
-encoder.compile(optimizer=tf.keras.optimizers.Adam(0.001), loss=tfa.losses.TripletSemiHardLoss())
+encoder.compile(
+    optimizer=tf.keras.optimizers.Adam(0.001), loss=tfa.losses.TripletSemiHardLoss(),
+)
 encoder.fit(train_dataset.map(lambda x, y: (preprocessing(x), y)), epochs=5)
 encoder.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), y)))
 results = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), y)))
@@ -53,14 +63,52 @@ np.savetxt("tfa_embeddings.tsv", results, delimiter="\t")
 
 #%% Train with keras_fsl triplet loss
 encoder.load_weights("initial_encoder.h5")
-model.compile(optimizer=tf.keras.optimizers.Adam(0.001), loss=triplet_loss())
+model.compile(
+    optimizer=tf.keras.optimizers.Adam(0.001), loss=triplet_loss(), metrics=[classification_accuracy(ascending=True)]
+)
 model.fit(train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), epochs=5)
 model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
 results = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
 np.savetxt("keras_fsl_embeddings.tsv", results, delimiter="\t")
 
-#%% Save test embeddings for visualization in projector https://projector.tensorflow.org/
-out_m = io.open("meta.tsv", "w", encoding="utf-8")
-for img, labels in tfds.as_numpy(test_dataset):
-    [out_m.write(str(x) + "\n") for x in labels]
-out_m.close()
+#%% Try with l1 norm
+support_layer.kernel = Lambda(lambda inputs: tf.math.reduce_sum(tf.abs(inputs[0] - inputs[1]), axis=1))
+encoder.load_weights("initial_encoder.h5")
+model.compile(
+    optimizer=tf.keras.optimizers.Adam(0.001), loss=triplet_loss(), metrics=[classification_accuracy(ascending=True)]
+)
+model.fit(train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), epochs=5)
+model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
+results = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
+
+#%% Try with cosine similarity
+support_layer.kernel = Lambda(lambda inputs: 1 - cosine_similarity(inputs[0], inputs[1], axis=1))
+encoder.load_weights("initial_encoder.h5")
+model.compile(
+    optimizer=tf.keras.optimizers.Adam(0.001), loss=triplet_loss(0.1), metrics=[classification_accuracy(ascending=True)]
+)
+model.fit(train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), epochs=5)
+model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
+results = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
+
+#%% Try with learnt norm
+support_layer = GramMatrix(kernel={"name": "MixedNorms", "init": {"activation": "relu"}})
+encoder.load_weights("initial_encoder.h5")
+model = Sequential([encoder, support_layer])
+model.compile(
+    optimizer=tf.keras.optimizers.Adam(0.001), loss=triplet_loss(), metrics=[classification_accuracy(ascending=True)]
+)
+model.fit(train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), epochs=5)
+model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
+results = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
+
+#%% Try with learnt similarity
+support_layer = GramMatrix(kernel={"name": "MixedNorms", "init": {"activation": "softmax"}})
+encoder.load_weights("initial_encoder.h5")
+model = Sequential([encoder, support_layer])
+model.compile(
+    optimizer=tf.keras.optimizers.Adam(0.001), loss=triplet_loss(0.1), metrics=[classification_accuracy(ascending=True)]
+)
+model.fit(train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), epochs=5)
+model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
+results = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
