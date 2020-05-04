@@ -3,20 +3,33 @@ All these metrics functions assume y_pred is a gram matrix computed on the batch
 instance). y_true should be one-hot encoded
 """
 import tensorflow as tf
+from tensorflow.keras import backend as K
 
 
-def top_score_classification_accuracy(y_true, y_pred):
+def classification_accuracy(ascending=False):
     """
     Use the top score of a sample against all the other sample to get a predicted label for each sample.
     Then mean accuracy is returned.
 
+    "Top" is defined according to the ascending arg: like in pandas.sort, ascending=True means that the top score is the smallest while
+    ascending=False means that the top score is the greatest. Hence if a distance is used, ascending=True (pick closest sample) while
+    if a similarity is used, ascending=False (pick the greatest similarity).
+
     Note: if there is no other sample of the same class, the sample will always be counted as failure
     since it is not possible to find the right class in the other samples.
     """
-    y_true = tf.dtypes.cast(y_true, y_pred.dtype)
-    y_pred = y_pred - tf.linalg.diag(tf.linalg.diag_part(y_pred))
-    y_pred = tf.map_fn(lambda x: y_true[x], tf.math.argmax(y_pred, axis=1), dtype=y_pred.dtype)
-    return tf.reduce_mean(tf.reduce_sum(y_true * y_pred, axis=1))
+
+    def top_score_classification_accuracy(y_true, y_pred):
+        y_true = tf.dtypes.cast(y_true, y_pred.dtype)
+        if ascending:
+            y_pred = y_pred + tf.linalg.diag(tf.reduce_max(y_pred, axis=1) + K.epsilon())
+            y_pred = tf.map_fn(lambda x: y_true[x], tf.argmin(y_pred, axis=1), dtype=y_pred.dtype)
+        else:
+            y_pred = y_pred - tf.linalg.diag(tf.reduce_max(y_pred, axis=1) + K.epsilon())
+            y_pred = tf.map_fn(lambda x: y_true[x], tf.argmax(y_pred, axis=1), dtype=y_pred.dtype)
+        return tf.reduce_mean(tf.reduce_sum(y_true * y_pred, axis=1))
+
+    return top_score_classification_accuracy
 
 
 def mean_score_classification_accuracy(y_true, y_pred):

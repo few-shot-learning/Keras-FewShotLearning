@@ -8,4 +8,4 @@ class GramMatrix(SupportLayer):
     """
 
     def build_support_set(self, inputs):
-        return inputs
+        return self._normalize_input(inputs)
