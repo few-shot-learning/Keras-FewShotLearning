@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import tensorflow as tf
 
-from ..gram_matrix_metrics import top_score_classification_accuracy
+from ..gram_matrix_metrics import classification_accuracy
 
 
 def perfect_prediction_from_classes(classes, n):
@@ -19,4 +19,4 @@ class TestMetrics:
         def test_return_proper_result(predicted_classes, accuracy):
             y_true = tf.one_hot([0, 0, 2, 2, 1, 1], 5)
             y_pred = perfect_prediction_from_classes(predicted_classes, 5)
-            np.testing.assert_almost_equal(top_score_classification_accuracy(y_true, y_pred), accuracy)
+            np.testing.assert_almost_equal(classification_accuracy()(y_true, y_pred), accuracy)
