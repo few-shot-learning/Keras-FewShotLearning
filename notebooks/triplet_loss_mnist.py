@@ -87,6 +87,7 @@ model.fit(
 )
 model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
 results = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
+np.savetxt("keras_fsl_l1_embeddings.tsv", results, delimiter="\t")
 
 #%% Try with cosine similarity
 support_layer.kernel = Lambda(lambda inputs: 1 - cosine_similarity(inputs[0], inputs[1], axis=1))
@@ -101,6 +102,7 @@ model.fit(
 )
 model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
 results = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
+np.savetxt("keras_fsl_cosine_similarity_embeddings.tsv", results, delimiter="\t")
 
 #%% Try with learnt norm
 support_layer = GramMatrix(kernel={"name": "MixedNorms", "init": {"activation": "relu"}})
@@ -116,6 +118,7 @@ model.fit(
 )
 model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
 results = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
+np.savetxt("keras_fsl_learnt_norm_embeddings.tsv", results, delimiter="\t")
 
 #%% Try with learnt similarity
 support_layer = GramMatrix(kernel={"name": "MixedNorms", "init": {"activation": "softmax"}})
@@ -131,3 +134,4 @@ model.fit(
 )
 model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
 results = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
+np.savetxt("keras_fsl_learnt_similarity_embeddings.tsv", results, delimiter="\t")
