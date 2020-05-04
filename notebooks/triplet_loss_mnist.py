@@ -11,6 +11,7 @@ import tensorflow_datasets as tfds
 from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, Lambda, MaxPooling2D
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.losses import cosine_similarity
+from tensorflow.keras.callbacks import TensorBoard
 
 from keras_fsl.losses.gram_matrix_losses import triplet_loss
 from keras_fsl.models.layers import GramMatrix
@@ -56,7 +57,7 @@ encoder.load_weights("initial_encoder.h5")
 encoder.compile(
     optimizer=tf.keras.optimizers.Adam(0.001), loss=tfa.losses.TripletSemiHardLoss(),
 )
-encoder.fit(train_dataset.map(lambda x, y: (preprocessing(x), y)), epochs=5)
+encoder.fit(train_dataset.map(lambda x, y: (preprocessing(x), y)), epochs=5, callbacks=[TensorBoard("tfa_loss")])
 encoder.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), y)))
 results = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), y)))
 np.savetxt("tfa_embeddings.tsv", results, delimiter="\t")
@@ -66,7 +67,9 @@ encoder.load_weights("initial_encoder.h5")
 model.compile(
     optimizer=tf.keras.optimizers.Adam(0.001), loss=triplet_loss(), metrics=[classification_accuracy(ascending=True)]
 )
-model.fit(train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), epochs=5)
+model.fit(
+    train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), epochs=5, callbacks=[TensorBoard("keras_fsl_loss")]
+)
 model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
 results = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
 np.savetxt("keras_fsl_embeddings.tsv", results, delimiter="\t")
@@ -77,7 +80,11 @@ encoder.load_weights("initial_encoder.h5")
 model.compile(
     optimizer=tf.keras.optimizers.Adam(0.001), loss=triplet_loss(), metrics=[classification_accuracy(ascending=True)]
 )
-model.fit(train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), epochs=5)
+model.fit(
+    train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])),
+    epochs=5,
+    callbacks=[TensorBoard("keras_fsl_l1_loss")],
+)
 model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
 results = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
 
@@ -87,7 +94,11 @@ encoder.load_weights("initial_encoder.h5")
 model.compile(
     optimizer=tf.keras.optimizers.Adam(0.001), loss=triplet_loss(0.1), metrics=[classification_accuracy(ascending=True)]
 )
-model.fit(train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), epochs=5)
+model.fit(
+    train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])),
+    epochs=5,
+    callbacks=[TensorBoard("keras_fsl_cosine_similarity")],
+)
 model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
 results = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
 
@@ -98,7 +109,11 @@ model = Sequential([encoder, support_layer])
 model.compile(
     optimizer=tf.keras.optimizers.Adam(0.001), loss=triplet_loss(), metrics=[classification_accuracy(ascending=True)]
 )
-model.fit(train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), epochs=5)
+model.fit(
+    train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])),
+    epochs=5,
+    callbacks=[TensorBoard("keras_fsl_learnt_norm")],
+)
 model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
 results = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
 
@@ -109,6 +124,10 @@ model = Sequential([encoder, support_layer])
 model.compile(
     optimizer=tf.keras.optimizers.Adam(0.001), loss=triplet_loss(0.1), metrics=[classification_accuracy(ascending=True)]
 )
-model.fit(train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), epochs=5)
+model.fit(
+    train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])),
+    epochs=5,
+    callbacks=[TensorBoard("keras_fsl_learnt_similarity")],
+)
 model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
 results = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])))
