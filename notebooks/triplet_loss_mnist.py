@@ -105,7 +105,12 @@ results = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_d
 np.savetxt("keras_fsl_cosine_similarity_embeddings.tsv", results, delimiter="\t")
 
 #%% Try with learnt norm
-support_layer = GramMatrix(kernel={"name": "MixedNorms", "init": {"activation": "relu"}})
+support_layer = GramMatrix(
+    kernel={
+        "name": "MixedNorms",
+        "init": {"activation": "relu", "norms": [lambda x: tf.math.abs(x[0] - x[1]), lambda x: tf.math.square(x[0] - x[1])]},
+    }
+)
 encoder.load_weights("initial_encoder.h5")
 model = Sequential([encoder, support_layer])
 model.compile(
@@ -121,7 +126,15 @@ results = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_d
 np.savetxt("keras_fsl_learnt_norm_embeddings.tsv", results, delimiter="\t")
 
 #%% Try with learnt similarity
-support_layer = GramMatrix(kernel={"name": "MixedNorms", "init": {"activation": "softmax"}})
+support_layer = GramMatrix(
+    kernel={
+        "name": "MixedNorms",
+        "init": {
+            "activation": "sigmoid",
+            "norms": [lambda x: tf.math.abs(x[0] - x[1]), lambda x: tf.math.square(x[0] - x[1])],
+        },
+    }
+)
 encoder.load_weights("initial_encoder.h5")
 model = Sequential([encoder, support_layer])
 model.compile(
