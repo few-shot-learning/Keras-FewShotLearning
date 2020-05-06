@@ -31,7 +31,7 @@ class TestCentroidsMatrix:
 
     class TestCall:
         @staticmethod
-        @patch("keras_fsl.models.layers.centroids_matrix.SupportLayer.call")
+        @patch("keras_fsl.layers.centroids_matrix.SupportLayer.call")
         def test_should_call_activation_on_super_call(mock_super_call):
             layer = CentroidsMatrix(kernel=sentinel.kernel, activation=MagicMock(name="activation"))
             mock_super_call.return_value = sentinel.super_return
