@@ -15,7 +15,7 @@ from tensorflow.keras.utils import to_categorical
 from keras_fsl.models.encoders import BasicCNN
 from keras_fsl.losses import binary_crossentropy, mean_score_classification_loss
 from keras_fsl.metrics import min_eigenvalue
-from keras_fsl.models.layers import GramMatrix, Classification
+from keras_fsl.layers import GramMatrix, Classification
 
 #%% Init data
 (X_train, y_train), (X_test, y_test) = cifar10.load_data()

@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import tensorflow as tf
 
-from keras_fsl.models.layers import CentroidsMatrix
+from keras_fsl.layers import CentroidsMatrix
 from keras_fsl.utils.tensors import get_dummies
 
 

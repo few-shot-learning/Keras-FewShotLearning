@@ -55,10 +55,10 @@ own tweaks seamlessly:
  - use `tf.data.Dataset.map` to apply data augmentation
  - define a `tf.Keras.Sequential` model for your encoder
  - define a `kernel`, ie a `tf.keras.Layer` with two inputs and a real-valued output (see [head models](keras_fsl/models/head_models))
- - use any [`support_layers`](keras_fsl/models/layers/support_layer.py) to wrap the kernel and compute similarities in
+ - use any [`support_layers`](keras_fsl/layers/support_layer.py) to wrap the kernel and compute similarities in
  a `tf.keras.Sequential` manner (see notebooks for instance).
- - use any loss chosen accordingly to the output of the `tf.keras.Sequential` model ([GramMatrix](keras_fsl/models/layers/gram_matrix.py) or
- [CentroidsMatrix](keras_fsl/models/layers/centroids_matrix.py) for instance)
+ - use any loss chosen accordingly to the output of the `tf.keras.Sequential` model ([GramMatrix](keras_fsl/layers/gram_matrix.py) or
+ [CentroidsMatrix](keras_fsl/layers/centroids_matrix.py) for instance)
  
 As an example, the TripletLoss algorithm uses indeed:
  - data augmentation: whatever you want
@@ -92,7 +92,7 @@ import tensorflow_datasets as tfds
 from tensorflow.keras.models import Sequential
 
 from keras_fsl.models.encoders import BasicCNN
-from keras_fsl.models.layers import GramMatrix
+from keras_fsl.layers import GramMatrix
 from keras_fsl.losses.gram_matrix_losses import binary_crossentropy
 from keras_fsl.metrics.gram_matrix_metrics import classification_accuracy, min_eigenvalue
 from keras_fsl.utils.tensors import get_dummies

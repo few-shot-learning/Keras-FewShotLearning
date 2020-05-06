@@ -36,7 +36,7 @@ def MixedNorms(input_shape, norms=None, use_bias=True, activation="sigmoid"):
     query = Input(input_shape)
     support = Input(input_shape)
     inputs = [query, support]
-    if len(input_shape) == 4:
+    if len(input_shape) == 3:
         inputs = [GlobalAveragePooling2D()(input_) for input_ in inputs]
 
     output = Concatenate()([Lambda(norm)(inputs) for norm in norms])

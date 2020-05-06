@@ -14,7 +14,7 @@ from tensorflow.keras.losses import cosine_similarity
 from tensorflow.keras.callbacks import TensorBoard
 
 from keras_fsl.losses.gram_matrix_losses import triplet_loss
-from keras_fsl.models.layers import GramMatrix
+from keras_fsl.layers import GramMatrix
 from keras_fsl.utils.tensors import get_dummies
 from keras_fsl.metrics.gram_matrix_metrics import classification_accuracy
 

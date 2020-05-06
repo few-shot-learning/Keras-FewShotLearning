@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras import activations
 
-from keras_fsl.models.layers.support_layer import SupportLayer
+from keras_fsl.layers.support_layer import SupportLayer
 
 
 class CentroidsMatrix(SupportLayer):

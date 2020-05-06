@@ -1,6 +1,6 @@
 from unittest.mock import sentinel
 
-from keras_fsl.models.layers.gram_matrix import GramMatrix
+from keras_fsl.layers.gram_matrix import GramMatrix
 
 
 class TestGramMatrix:
