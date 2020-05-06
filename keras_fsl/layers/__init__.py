@@ -1,4 +1,7 @@
-from .classification import Classification  # noqa
-from .gram_matrix import GramMatrix  # noqa
-from .slicing import CenterSlicing2D  # noqa
-from .centroids_matrix import CentroidsMatrix  # noqa
+from .centroids_matrix import CentroidsMatrix
+from .classification import Classification
+from .gram_matrix import GramMatrix
+from .slicing import CenterSlicing2D
+
+
+__all__ = ["Classification", "GramMatrix", "CenterSlicing2D", "CentroidsMatrix"]
