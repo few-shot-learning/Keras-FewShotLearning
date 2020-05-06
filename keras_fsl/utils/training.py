@@ -49,5 +49,8 @@ def default_workers(fit_generator):
     return fit_generator_with_default_cpu_count_worker
 
 
-def compose(*funcs):
-    return reduce(lambda f, g: lambda *a, **kw: g(f(*a, **kw)), funcs)
+def compose(*functions):
+    """
+    Returns a function that apply each function of functions from left to right recursively
+    """
+    return reduce(lambda f, g: lambda *args, **kwargs: g(f(*args, **kwargs)), functions)

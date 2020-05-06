@@ -11,9 +11,9 @@ from tensorflow.keras.layers import (
 from tensorflow.keras.models import Model
 
 
-def StackedHead(input_shape, use_bias=True, activation="sigmoid"):
+def LearntNorms(input_shape, use_bias=True, activation="sigmoid"):
     """
-    Learn the linear coordinate wise linear combination
+    Learn the coordinate-wise comparison as opposed to MixedNorms where they are provided as input
     Args:
         input_shape (tuple): arg to be passed to keras.layer.Input
         use_bias (bool), whether to use bias in layers or not

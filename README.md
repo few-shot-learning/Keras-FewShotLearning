@@ -1,7 +1,7 @@
 # Welcome to keras-fsl!
 
-As years go by, Few Shot Learning (FSL) is becoming a hot topic not only in academic papers but also in production
-applications.
+As years go by, Few Shot Learning (FSL) and especially Metric Learning is becoming a hot topic not only in academic
+papers but also in production applications.
 
 While a lot of researcher nowadays tend to publish their code on github, there is still no easy framework to get
 started with FSL. Especially when it comes to benchmarking existing models on personal datasets it is not always easy
@@ -29,24 +29,45 @@ base images into a feature space onto which a _distance_ or _similarity_ is lear
 This similarity is meant to be used to later classify samples according to their relative distance, either in a pair-wise
 manner where the nearest support set samples is used to classify the query sample ([Voronoi diagram](https://en.wikipedia.org/wiki/Voronoi_diagram))
 or in a more advanced classifier. Indeed, this philosophy is most commonly known as [the kernel trick](https://en.wikipedia.org/wiki/Kernel_method)
-where the kernel is indeed the similarity learnt during training. Hence any kind of usual kernel based Machine Learning
-could potentially be plugged onto this learnt similarity.
+where the kernel is actually the similarity learnt during training. Hence any kind of usual kernel based Machine Learning
+could potentially be plugged onto this learnt similarity (see the [min_eigenvalue](keras_fsl/metrics/gram_matrix_metrics.py) metric
+to track eigenvalues of the learnt similarity to see if it as actually a kernel).
 
 There is no easy answer to the optimal choice of such a classifier in the feature space. This may depend on performance
-as well as one complexity and real application parameters. For instance if the support set is strongly imbalanced, you
+as well as on complexity and real application parameters. For instance if the support set is strongly imbalanced, you
 may not want to fit an advanced classifier onto it but rather use a raw nearest neighbor approach.
 
 All these considerations lead to the need of a code architecture that will let you play with these parameters with your
 own data in order to take the best from them.
 
-Amongst other, the Siamese Nets is usually known as the network from [Koch et al.](https://www.cs.cmu.edu/~rsalakhu/papers/oneshot1.pdf)
+Amongst other, the original Siamese Nets is usually known as the network from [Koch et al.](https://www.cs.cmu.edu/~rsalakhu/papers/oneshot1.pdf)
 This algorithm learns a pair-wise similarity between images. More precisely it uses a densely connected layers on top
-of the difference between the two embeddings to predict 0 (different) or 1 (same).
+of the absolute difference between the two embeddings to predict 0 (different) or 1 (same).
 
-In this repo we have called Siamese nets all the algorithms built within the same framework, i.e. choosing a backbone
-and a _similarity_ to evaluate the embeddings. In this context the well known [Protypical networks](https://arxiv.org/pdf/1703.05175.pdf)
-falls into the Siamese Nets frameworks and is available here as `SiameseNets(head_model="ProtoNets")`.
+Actually, and as it is now expressed in recent papers, the [representation learning framework](https://arxiv.org/pdf/2002.05709.pdf) is as follows:
+ - a data augmentation module A
+ - an encoder network E
+ - a projection network P
+ - a loss L
 
+This repo mimics this framework by proving model builders and notebooks to implement current SOTA algorithms and your
+own tweaks seamlessly:
+ - use `tf.data.Dataset.map` to apply data augmentation
+ - define a `tf.Keras.Sequential` model for your encoder
+ - define a `kernel`, ie a `tf.keras.Layer` with two inputs and a real-valued output (see [head models](keras_fsl/models/head_models))
+ - use any [`support_layers`](keras_fsl/models/layers/support_layer.py) to wrap the kernel and compute similarities in
+ a `tf.keras.Sequential` manner (see notebooks for instance).
+ - use any loss chosen accordingly to the output of the `tf.keras.Sequential` model ([GramMatrix](keras_fsl/models/layers/gram_matrix.py) or
+ [CentroidsMatrix](keras_fsl/models/layers/centroids_matrix.py) for instance)
+ 
+As an example, the TripletLoss algorithm uses indeed:
+ - data augmentation: whatever you want
+ - encoder: any backbone like ResNet50 or MobileNet
+ - kernel: the l2 norm: `k(x, x') = ||x - x'||^2 = tf.keras.layers.Lambda(lambda inputs: tf.reduce_sum(tf.square(inputs[0] - inputs[1]), axis=1))`
+ - support_layer: triplet loss uses all the pair-wises distances, hence it is the GramMatrix
+ - loss: `k(a, p) + margin - k(a, n)` with semi-hard mining (see [triplet_loss](keras_fsl/losses/gram_matrix_losses.py))
+
+ 
 ## Overview
 
 This repos provides several tools for few-shot learning:
@@ -59,12 +80,6 @@ All these tools can be used all together or separately. One may want to stick wi
 numpy arrays, with or without callbacks. When designing more advanced `keras.Sequence` or `tf.data.Dataset` for
 training, it is advised (and some examples are provided) to use Pandas though it is not necessary at all.
 
-We think that fast experimentation requires the good level of modularity. Modularity means that the flow of operations
-should be described as a sequence of operations with well defined interfaces. Furthermore you should be able to change
-or update any of these single operations without changing anything else. For these reasons we think that stacked Layers
-as well as stacked (chained) Pandas or tf.data operations are the right way of building ML pipelines. In this context we
-also rely on ImgAug for preprocessing the data.
-
 Feel free to experiment and share your thought on this repo by contributing to it! 
 
 ## Getting started
@@ -72,20 +87,32 @@ Feel free to experiment and share your thought on this repo by contributing to i
 The [notebooks](notebooks) section provides some examples. For instance, just run:
 
 ```python
-from keras_fsl.models import SiameseNets
-from keras_fsl.datasets import omniglot
-from keras_fsl.sequences.training.pairs import RandomPairsSequence
+import tensorflow as tf
+import tensorflow_datasets as tfds
+from tensorflow.keras.models import Sequential
 
-# %% Get data
-train_set, test_set = omniglot.load_data()
+from keras_fsl.models.encoders import BasicCNN
+from keras_fsl.models.layers import GramMatrix
+from keras_fsl.losses.gram_matrix_losses import binary_crossentropy
+from keras_fsl.metrics.gram_matrix_metrics import classification_accuracy, min_eigenvalue
+from keras_fsl.utils.tensors import get_dummies
 
-# %% Update label columns to be able to mix alphabet during training
-train_set = train_set.assign(label=lambda df: df.alphabet + '_' + df.label)
-test_set = test_set.assign(label=lambda df: df.alphabet + '_' + df.label)
 
-# %% Training
-model = SiameseNets()
-train_sequence = RandomPairsSequence(train_set, batch_size=16)
-model.compile(optimizer='Adam', loss='binary_crossentropy')
-model.fit(train_sequence)
+#%% Get data
+def preprocessing(input_tensor):
+    return tf.cast(input_tensor, tf.float32) / 255
+
+
+train_dataset, val_dataset, test_dataset = [
+    dataset.shuffle(1024).batch(64).map(lambda x, y: (preprocessing(x), get_dummies(y)[0]))
+    for dataset in tfds.load(name="omniglot", split=["train[:90%]", "train[90%:]", "test"], as_supervised=True)
+]
+input_shape = next(tfds.as_numpy(train_dataset.take(1)))[0].shape[1:]  # first shape is batch_size
+
+#%% Training
+encoder = BasicCNN(input_shape=input_shape)
+support_layer = GramMatrix(kernel="DenseSigmoid")
+model = Sequential([encoder, support_layer])
+model.compile(optimizer="Adam", loss=binary_crossentropy(), metrics=[classification_accuracy(), min_eigenvalue])
+model.fit(train_dataset, validation_data=val_dataset, epochs=5)
 ```

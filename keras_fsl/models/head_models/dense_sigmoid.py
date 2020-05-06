@@ -10,6 +10,6 @@ def DenseSigmoid(input_shape, use_bias=True):
     """
     query = Input(input_shape)
     support = Input(input_shape)
-    abs_difference = Lambda(lambda tensors: tf.abs(tensors[0] - tensors[1]))([query, support])
-    prediction = Dense(1, activation="sigmoid", use_bias=use_bias)(abs_difference)
-    return Model(inputs=[query, support], outputs=prediction)
+    output = Lambda(lambda tensors: tf.abs(tensors[0] - tensors[1]))([query, support])
+    output = Dense(1, activation="sigmoid", use_bias=use_bias)(output)
+    return Model(inputs=[query, support], outputs=output)
