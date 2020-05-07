@@ -197,7 +197,7 @@ for experiment in experiments:
         steps_per_epoch=train_steps,
         validation_data=val_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])).repeat(),
         validation_steps=val_steps,
-        callbacks=[TensorBoard(experiment["name"]), EarlyStopping()],
+        callbacks=[TensorBoard(experiment["name"]), EarlyStopping(patience=10)],
     )
     results += [
         {
