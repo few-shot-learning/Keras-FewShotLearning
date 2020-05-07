@@ -1,4 +1,4 @@
-from keras_fsl.models.layers.support_layer import SupportLayer
+from keras_fsl.layers.support_layer import SupportLayer
 
 
 class GramMatrix(SupportLayer):

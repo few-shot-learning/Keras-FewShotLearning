@@ -42,4 +42,4 @@ class TestGramMatrixLoss:
             y_true = get_dummies(labels)[0]
             y_pred = tf.convert_to_tensor(distance_matrix, dtype=tf.float32)
             tf_loss = triplet_loss(margin)(y_true, y_pred)
-            np.testing.assert_almost_equal(np_loss, tf_loss)
+            np.testing.assert_almost_equal(np_loss, tf_loss, decimal=5)

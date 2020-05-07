@@ -14,7 +14,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 
 from keras_fsl.dataframe.operators import ToKShotDataset
-from keras_fsl.models.layers import CentroidsMatrix
+from keras_fsl.layers import CentroidsMatrix
 from keras_fsl.utils.tensors import get_dummies
 from keras_fsl.utils.training import compose
 

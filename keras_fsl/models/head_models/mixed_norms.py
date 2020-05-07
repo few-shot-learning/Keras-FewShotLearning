@@ -36,19 +36,16 @@ def MixedNorms(input_shape, norms=None, use_bias=True, activation="sigmoid"):
     query = Input(input_shape)
     support = Input(input_shape)
     inputs = [query, support]
-    if len(input_shape) == 4:
+    if len(input_shape) == 3:
         inputs = [GlobalAveragePooling2D()(input_) for input_ in inputs]
 
     output = Concatenate()([Lambda(norm)(inputs) for norm in norms])
-    output = Reshape((len(norms), inputs[0].shape[1], 1), name="reshape1")(output)
+    output = Reshape((len(norms), input_shape[-1], 1), name="stack")(output)
 
-    output = Conv2D(
-        filters=32, kernel_size=(len(norms), 1), activation="relu", padding="valid", name="norms_selection", use_bias=use_bias,
-    )(output)
-    output = Reshape((inputs[0].shape[1], 32, 1))(output)
-    output = Conv2D(
-        filters=1, kernel_size=(1, 32), activation="linear", padding="valid", name="norms_average", use_bias=use_bias,
-    )(output)
+    output = Conv2D(filters=32, kernel_size=(len(norms), 1), activation="relu", name="norms_selection", use_bias=use_bias)(
+        output
+    )
+    output = Conv2D(filters=1, kernel_size=(1, 1), activation="linear", name="norms_average", use_bias=use_bias)(output)
     output = Flatten()(output)
 
     output = Dense(1, activation=activations.get(activation), name="output", use_bias=use_bias)(output)

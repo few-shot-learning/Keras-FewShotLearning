@@ -16,7 +16,7 @@ from tensorflow.keras.optimizers import Adam
 from keras_fsl.dataframe.operators import ToKShotDataset
 from keras_fsl.losses import binary_crossentropy, class_consistency_loss, max_crossentropy, std_crossentropy
 from keras_fsl.metrics import accuracy, same_image_score, top_score_classification_accuracy
-from keras_fsl.models.layers import Classification, GramMatrix
+from keras_fsl.layers import Classification, GramMatrix
 from keras_fsl.utils.training import compose
 
 

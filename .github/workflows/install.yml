@@ -22,7 +22,7 @@ jobs:
       - name: Install keras-fsl as dependency
         run: |
           python -m pip install --upgrade pip
-          python -m pip install git+https://github.com/few-shot-learning/Keras-FewShotLearning.git@${{ github.sha }}
+          python -m pip install git+https://github.com/few-shot-learning/Keras-FewShotLearning.git@${{ github.ref }}
       - name: Import keras_fsl.models
         run: |
           python -c "from keras_fsl import models"
