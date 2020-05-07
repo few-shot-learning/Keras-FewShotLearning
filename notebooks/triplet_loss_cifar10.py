@@ -2,18 +2,20 @@
 This notebooks borrows from https://www.tensorflow.org/addons/tutorials/losses_triplet and is intended to compare tf.addons triplet loss
 implementation against this one. It is also aimed at benchmarking the impact of the distance function.
 """
+from pprint import pprint
+
 import io
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 import tensorflow_datasets as tfds
-from tensorflow.keras.callbacks import TensorBoard
+from tensorflow.keras.callbacks import EarlyStopping, TensorBoard
 from tensorflow.keras.layers import Conv2D, Dense, Dropout, GlobalMaxPooling2D, Input, Lambda, MaxPooling2D
 from tensorflow.keras.losses import cosine_similarity
 from tensorflow.keras.models import Sequential
 
 from keras_fsl.layers import GramMatrix
-from keras_fsl.losses.gram_matrix_losses import binary_crossentropy, triplet_loss
+from keras_fsl.losses.gram_matrix_losses import binary_crossentropy, class_consistency_loss, triplet_loss
 from keras_fsl.metrics.gram_matrix_metrics import classification_accuracy
 from keras_fsl.utils.tensors import get_dummies
 
@@ -101,30 +103,105 @@ results += [{"name": "classifier", "loss": loss, "accuracy": accuracy}]
 embeddings = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), y)), steps=test_steps)
 np.savetxt("classifier_embeddings.tsv", embeddings, delimiter="\t")
 
-#%% Train with triplet loss
-norms = {
-    "l2": lambda inputs: tf.math.reduce_sum(tf.square(inputs[0] - inputs[1]), axis=1),
-    "l1": lambda inputs: tf.math.reduce_sum(tf.abs(inputs[0] - inputs[1]), axis=1),
-    "cosine_similarity": lambda inputs: 1 - cosine_similarity(inputs[0], inputs[1], axis=1),
-    "softmax_abs": lambda x: tf.nn.softmax(tf.math.abs(x[0] - x[1])),
-}
-for name, norm in norms.items():
+#%% Train
+experiments = [
+    {
+        "name": "l2_triplet_loss",
+        "kernel": Lambda(lambda x: tf.reduce_sum(tf.square(x[0] - x[1]), axis=1)),
+        "loss": triplet_loss(1),
+        "metrics": [classification_accuracy(ascending=True)],
+    },
+    {
+        "name": "l1_triplet_loss",
+        "kernel": Lambda(lambda x: tf.reduce_sum(tf.abs(x[0] - x[1]), axis=1)),
+        "loss": triplet_loss(1),
+        "metrics": [classification_accuracy(ascending=True)],
+    },
+    {
+        "name": "mixed_norms_triplet_loss",
+        "kernel": {
+            "name": "MixedNorms",
+            "init": {"activation": "relu", "norms": [lambda x: tf.square(x[0] - x[1]), lambda x: tf.abs(x[0] - x[1])]},
+        },
+        "loss": triplet_loss(1),
+        "metrics": [classification_accuracy(ascending=True)],
+    },
+    {
+        "name": "learnt_norms_triplet_loss",
+        "kernel": {"name": "LearntNorms", "init": {"activation": "relu"}},
+        "loss": triplet_loss(1),
+        "metrics": [classification_accuracy(ascending=True)],
+    },
+    {
+        "name": "cosine_similarity_triplet_loss",
+        "kernel": Lambda(lambda x: 1 - cosine_similarity(x[0], x[1], axis=1)),
+        "loss": triplet_loss(0.1),
+        "metrics": [classification_accuracy(ascending=True)],
+    },
+    {
+        "name": "mixed_similarity_triplet_loss",
+        "kernel": {
+            "name": "MixedNorms",
+            "init": {"activation": "sigmoid", "norms": [lambda x: tf.square(x[0] - x[1]), lambda x: tf.abs(x[0] - x[1])]},
+        },
+        "loss": triplet_loss(0.1),
+        "metrics": [classification_accuracy(ascending=True)],
+    },
+    {
+        "name": "learnt_similarity_triplet_loss",
+        "kernel": {"name": "LearntNorms", "init": {"activation": "sigmoid"}},
+        "loss": triplet_loss(0.1),
+        "metrics": [classification_accuracy(ascending=True)],
+    },
+    {
+        "name": "mixed_crossentropy",
+        "kernel": {
+            "name": "MixedNorms",
+            "init": {"activation": "sigmoid", "norms": [lambda x: tf.square(x[0] - x[1]), lambda x: tf.abs(x[0] - x[1])]},
+        },
+        "loss": binary_crossentropy(),
+        "metrics": [classification_accuracy(ascending=False), class_consistency_loss, binary_crossentropy()],
+    },
+    {
+        "name": "learnt_crossentropy",
+        "kernel": {"name": "LearntNorms", "init": {"activation": "sigmoid"}},
+        "loss": binary_crossentropy(),
+        "metrics": [classification_accuracy(ascending=False), class_consistency_loss, binary_crossentropy()],
+    },
+    {
+        "name": "mixed_consistency",
+        "kernel": {
+            "name": "MixedNorms",
+            "init": {"activation": "sigmoid", "norms": [lambda x: tf.square(x[0] - x[1]), lambda x: tf.abs(x[0] - x[1])]},
+        },
+        "loss": class_consistency_loss,
+        "metrics": [classification_accuracy(ascending=False), class_consistency_loss, binary_crossentropy()],
+    },
+    {
+        "name": "learnt_consistency",
+        "kernel": {"name": "LearntNorms", "init": {"activation": "sigmoid"}},
+        "loss": class_consistency_loss,
+        "metrics": [classification_accuracy(ascending=False), class_consistency_loss, binary_crossentropy()],
+    },
+]
+for experiment in experiments:
+    pprint(experiment)
     encoder.load_weights("initial_encoder.h5")
-    model = Sequential([encoder, GramMatrix(kernel=Lambda(norm))])
+    model = Sequential([encoder, GramMatrix(kernel=experiment["kernel"])])
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(0.001), loss=triplet_loss(), metrics=[classification_accuracy(ascending=True)],
+        optimizer=tf.keras.optimizers.Adam(0.001), loss=experiment["loss"], metrics=experiment["metrics"],
     )
     model.fit(
         train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])).repeat(),
-        epochs=50,
+        epochs=100,
         steps_per_epoch=train_steps,
         validation_data=val_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])).repeat(),
         validation_steps=val_steps,
-        callbacks=[TensorBoard(f"{name}_triplet_loss")],
+        callbacks=[TensorBoard(experiment["name"]), EarlyStopping()],
     )
     results += [
         {
-            "name": name,
+            "name": experiment["name"],
             **dict(
                 zip(
                     model.metrics_names,
@@ -134,124 +211,7 @@ for name, norm in norms.items():
         }
     ]
     embeddings = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), steps=test_steps)
-    np.savetxt(f"{name}_embeddings.tsv", embeddings, delimiter="\t")
-
-#%% Try with mixed norm
-encoder.load_weights("initial_encoder.h5")
-model = Sequential(
-    [encoder, GramMatrix(kernel={"name": "MixedNorms", "init": {"activation": "relu", "norms": list(norms.values())}})]
-)
-model.compile(
-    optimizer=tf.keras.optimizers.Adam(0.001), loss=triplet_loss(), metrics=[classification_accuracy(ascending=True)],
-)
-model.fit(
-    train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])).repeat(),
-    epochs=50,
-    steps_per_epoch=train_steps,
-    validation_data=val_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])).repeat(),
-    validation_steps=val_steps,
-    callbacks=[TensorBoard("mixed_triplet_loss")],
-)
-results += [
-    {
-        "name": "mixed_norms",
-        **dict(
-            zip(
-                model.metrics_names,
-                model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), steps=test_steps),
-            )
-        ),
-    }
-]
-
-embeddings = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), steps=test_steps)
-np.savetxt(f"mixed_norms_embeddings.tsv", embeddings, delimiter="\t")
-
-#%% Try with mixed similarity
-encoder.load_weights("initial_encoder.h5")
-model = Sequential(
-    [encoder, GramMatrix(kernel={"name": "MixedNorms", "init": {"activation": "sigmoid", "norms": list(norms.values())}})]
-)
-model.compile(
-    optimizer=tf.keras.optimizers.Adam(0.001), loss=binary_crossentropy(), metrics=[classification_accuracy(ascending=False)],
-)
-model.fit(
-    train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])).repeat(),
-    epochs=50,
-    steps_per_epoch=train_steps,
-    validation_data=val_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])).repeat(),
-    validation_steps=val_steps,
-    callbacks=[TensorBoard("mixed_triplet_loss")],
-)
-results += [
-    {
-        "name": "mixed_similarity",
-        **dict(
-            zip(
-                model.metrics_names,
-                model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), steps=test_steps),
-            )
-        ),
-    }
-]
-embeddings = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), steps=test_steps)
-np.savetxt(f"mixed_similarity_embeddings.tsv", embeddings, delimiter="\t")
-
-#%% Try with learnt norm
-encoder.load_weights("initial_encoder.h5")
-model = Sequential([encoder, GramMatrix(kernel={"name": "LearntNorms", "init": {"activation": "relu"}})])
-model.compile(
-    optimizer=tf.keras.optimizers.Adam(0.001), loss=triplet_loss(), metrics=[classification_accuracy(ascending=True)],
-)
-model.fit(
-    train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])).repeat(),
-    epochs=100,
-    steps_per_epoch=train_steps,
-    validation_data=val_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])).repeat(),
-    validation_steps=val_steps,
-    callbacks=[TensorBoard("learnt_triplet_loss")],
-)
-results += [
-    {
-        "name": "learnt_norms",
-        **dict(
-            zip(
-                model.metrics_names,
-                model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), steps=test_steps),
-            )
-        ),
-    }
-]
-embeddings = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), steps=test_steps)
-np.savetxt(f"learnt_norms_embeddings.tsv", embeddings, delimiter="\t")
-
-#%% Try with learnt similarity
-encoder.load_weights("initial_encoder.h5")
-model = Sequential([encoder, GramMatrix(kernel={"name": "LearntNorms", "init": {"activation": "sigmoid"}})])
-model.compile(
-    optimizer=tf.keras.optimizers.Adam(0.001), loss=binary_crossentropy(), metrics=[classification_accuracy(ascending=True)],
-)
-model.fit(
-    train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])).repeat(),
-    epochs=100,
-    steps_per_epoch=train_steps,
-    validation_data=val_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])).repeat(),
-    validation_steps=val_steps,
-    callbacks=[TensorBoard("learnt_triplet_loss")],
-)
-results += [
-    {
-        "name": "learnt_similarity",
-        **dict(
-            zip(
-                model.metrics_names,
-                model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), steps=test_steps),
-            )
-        ),
-    }
-]
-embeddings = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), steps=test_steps)
-np.savetxt(f"learnt_similarity_embeddings.tsv", embeddings, delimiter="\t")
+    np.savetxt(f"{experiment['name']}.tsv", embeddings, delimiter="\t")
 
 #%% Export final stats
-pd.concat(results).to_csv("results.csv", index=False)
+pd.DataFrame(results).to_csv("results.csv", index=False)
