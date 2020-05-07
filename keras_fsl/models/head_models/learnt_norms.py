@@ -23,8 +23,7 @@ def LearntNorms(input_shape, use_bias=True, activation="sigmoid"):
     query = Input(input_shape)
     support = Input(input_shape)
     inputs = [query, support]
-    output = [Flatten()(_input) for _input in inputs]
-    output = Concatenate()(output)
+    output = Concatenate(axis=1)(inputs)
     output = Reshape((len(inputs), embedding_dimension, 1), name="stack")(output)
 
     output = Conv2D(filters=32, kernel_size=(len(inputs), 1), activation="relu", name="norms_creation", use_bias=use_bias)(
