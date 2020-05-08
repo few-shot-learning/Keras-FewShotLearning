@@ -11,7 +11,7 @@ import pandas as pd
 import tensorflow as tf
 import tensorflow_datasets as tfds
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard
-from tensorflow.keras.layers import Conv2D, Dense, Dropout, GlobalMaxPooling2D, Input, Lambda, MaxPooling2D
+from tensorflow.keras.layers import Conv2D, Dense, Dropout, GlobalMaxPooling2D, Input, Flatten, Lambda, MaxPooling2D, Lambda
 from tensorflow.keras.models import Sequential
 
 from keras_fsl.layers import GramMatrix
@@ -53,7 +53,7 @@ print(
     .apply(lambda group: pd.get_dummies(group.label).agg("sum"))
 )
 
-output_dir = Path("logs") / "triplet_loss_cifar10"
+output_dir = Path("logs") / "triplet_loss_cifar10_normalized_embeddings"
 results = []
 
 #%% Save test labels for later visualization in projector https://projector.tensorflow.org/
@@ -79,6 +79,8 @@ encoder = Sequential(
         MaxPooling2D(pool_size=2),
         Dropout(0.3),
         GlobalMaxPooling2D(),
+        Flatten(),
+        Lambda(lambda x: tf.math.l2_normalize(x, axis=1)),
     ]
 )
 encoder.save_weights(str(output_dir / "initial_encoder.h5"))
