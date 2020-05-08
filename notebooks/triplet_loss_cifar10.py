@@ -54,7 +54,7 @@ print(
     .apply(lambda group: pd.get_dummies(group.label).agg("sum"))
 )
 
-output_dir = Path("logs") / "triplet_loss_cifar10_normalized_embeddings"
+output_dir = Path("logs") / "triplet_loss_cifar10"
 output_dir.mkdir(exist_ok=True, parents=True)
 results = []
 
