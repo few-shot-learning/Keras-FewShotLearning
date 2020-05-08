@@ -94,7 +94,7 @@ classifier.compile(
 )
 classifier.fit(
     train_dataset.map(lambda x, y: (preprocessing(x), y), num_parallel_calls=tf.data.experimental.AUTOTUNE).repeat(),
-    epochs=50,
+    epochs=150,
     steps_per_epoch=train_steps,
     validation_data=val_dataset.map(
         lambda x, y: (preprocessing(x), y), num_parallel_calls=tf.data.experimental.AUTOTUNE

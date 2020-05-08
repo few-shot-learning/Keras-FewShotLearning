@@ -5,13 +5,14 @@ implementation against this one. It is also aimed at benchmarking the impact of 
 from pathlib import Path
 from pprint import pprint
 
+import itertools
 import io
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 import tensorflow_datasets as tfds
-from tensorflow.keras.callbacks import EarlyStopping, TensorBoard
-from tensorflow.keras.layers import Conv2D, Dense, Dropout, GlobalMaxPooling2D, Input, Flatten, Lambda, MaxPooling2D, Lambda
+from tensorflow.keras.callbacks import TensorBoard
+from tensorflow.keras.layers import Conv2D, Dense, Dropout, GlobalMaxPooling2D, Input, Flatten, MaxPooling2D, Lambda
 from tensorflow.keras.models import Sequential
 
 from keras_fsl.layers import GramMatrix
@@ -81,7 +82,6 @@ encoder = Sequential(
         Dropout(0.3),
         GlobalMaxPooling2D(),
         Flatten(),
-        Lambda(lambda x: tf.math.l2_normalize(x, axis=1)),
     ]
 )
 encoder.save_weights(str(output_dir / "initial_encoder.h5"))
@@ -94,7 +94,7 @@ classifier.compile(
 )
 classifier.fit(
     train_dataset.map(lambda x, y: (preprocessing(x), y), num_parallel_calls=tf.data.experimental.AUTOTUNE).repeat(),
-    epochs=50,
+    epochs=100,
     steps_per_epoch=train_steps,
     validation_data=val_dataset.map(
         lambda x, y: (preprocessing(x), y), num_parallel_calls=tf.data.experimental.AUTOTUNE
@@ -122,6 +122,14 @@ experiments = [
         "metrics": [classification_accuracy(ascending=True)],
     },
     {
+        "name": "cosine_similarity_triplet_loss",
+        "kernel": Lambda(
+            lambda x: 1 - tf.reduce_sum(tf.nn.l2_normalize(x[0], axis=1) * tf.nn.l2_normalize(x[1], axis=1), axis=1)
+        ),
+        "loss": triplet_loss(0.1),
+        "metrics": [classification_accuracy(ascending=True)],
+    },
+    {
         "name": "mixed_norms_triplet_loss",
         "kernel": {
             "name": "MixedNorms",
@@ -134,14 +142,6 @@ experiments = [
         "name": "learnt_norms_triplet_loss",
         "kernel": {"name": "LearntNorms", "init": {"activation": "relu"}},
         "loss": triplet_loss(1),
-        "metrics": [classification_accuracy(ascending=True)],
-    },
-    {
-        "name": "cosine_similarity_triplet_loss",
-        "kernel": Lambda(
-            lambda x: 1 - tf.reduce_sum(tf.nn.l2_normalize(x[0], axis=1) * tf.nn.l2_normalize(x[1], axis=1), axis=1)
-        ),
-        "loss": triplet_loss(0.1),
         "metrics": [classification_accuracy(ascending=True)],
     },
     {
@@ -190,10 +190,17 @@ experiments = [
         "metrics": [classification_accuracy(ascending=False), class_consistency_loss, binary_crossentropy()],
     },
 ]
-for experiment in experiments:
+projectors = [
+    {"name": "", "projector": []},
+    {"name": "_l2_normalize", "projector": [Lambda(lambda x: tf.math.l2_normalize(x, axis=1))]},
+    {"name": "_dense_10", "projector": [Dense(10)]},
+    {"name": "_dense_128", "projector": [Dense(128)]},
+]
+for experiment, projector in itertools.product(experiments, projectors):
     pprint(experiment)
+    pprint(projector)
     encoder.load_weights(str(output_dir / "initial_encoder.h5"))
-    model = Sequential([encoder, GramMatrix(kernel=experiment["kernel"])])
+    model = Sequential([encoder, *projector["projector"], GramMatrix(kernel=experiment["kernel"])])
     model.compile(
         optimizer=tf.keras.optimizers.Adam(0.001), loss=experiment["loss"], metrics=experiment["metrics"],
     )
@@ -203,11 +210,12 @@ for experiment in experiments:
         steps_per_epoch=train_steps,
         validation_data=val_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])).repeat(),
         validation_steps=val_steps,
-        callbacks=[TensorBoard(str(output_dir / experiment["name"])), EarlyStopping(patience=10)],
+        callbacks=[TensorBoard(str(output_dir / f"{experiment['name']}{projector['name']}"))],
     )
     results += [
         {
-            "name": experiment["name"],
+            "experiment": experiment["name"],
+            "projector": projector["name"],
             **dict(
                 zip(
                     model.metrics_names,
@@ -217,7 +225,7 @@ for experiment in experiments:
         }
     ]
     embeddings = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), steps=test_steps)
-    np.savetxt(str(output_dir / f"{experiment['name']}.tsv"), embeddings, delimiter="\t")
+    np.savetxt(str(output_dir / f"{experiment['name']}{projector['name']}.tsv"), embeddings, delimiter="\t")
 
 #%% Export final stats
 pd.DataFrame(results).to_csv(output_dir / "results.csv", index=False)
