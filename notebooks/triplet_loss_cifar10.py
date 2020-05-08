@@ -54,6 +54,7 @@ print(
 )
 
 output_dir = Path("logs") / "triplet_loss_cifar10_normalized_embeddings"
+output_dir.mkdir(exist_ok=True, parents=True)
 results = []
 
 #%% Save test labels for later visualization in projector https://projector.tensorflow.org/
