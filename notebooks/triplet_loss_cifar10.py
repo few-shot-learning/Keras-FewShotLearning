@@ -2,6 +2,7 @@
 This notebooks borrows from https://www.tensorflow.org/addons/tutorials/losses_triplet and is intended to compare tf.addons triplet loss
 implementation against this one. It is also aimed at benchmarking the impact of the distance function.
 """
+from pathlib import Path
 from pprint import pprint
 
 import io
@@ -11,7 +12,6 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard
 from tensorflow.keras.layers import Conv2D, Dense, Dropout, GlobalMaxPooling2D, Input, Lambda, MaxPooling2D
-from tensorflow.keras.losses import cosine_similarity
 from tensorflow.keras.models import Sequential
 
 from keras_fsl.layers import GramMatrix
@@ -53,10 +53,11 @@ print(
     .apply(lambda group: pd.get_dummies(group.label).agg("sum"))
 )
 
+output_dir = Path("logs") / "triplet_loss_cifar10"
 results = []
 
 #%% Save test labels for later visualization in projector https://projector.tensorflow.org/
-out_m = io.open("meta.tsv", "w", encoding="utf-8")
+out_m = io.open(output_dir / "meta.tsv", "w", encoding="utf-8")
 for img, labels in tfds.as_numpy(test_dataset):
     [out_m.write(str(x) + "\n") for x in labels]
 out_m.close()
@@ -80,10 +81,10 @@ encoder = Sequential(
         GlobalMaxPooling2D(),
     ]
 )
-encoder.save_weights("initial_encoder.h5")
+encoder.save_weights(str(output_dir / "initial_encoder.h5"))
 
 #%% Train encoder with usual cross entropy
-encoder.load_weights("initial_encoder.h5")
+encoder.load_weights(str(output_dir / "initial_encoder.h5"))
 classifier = Sequential([encoder, Dense(10, activation="softmax")])
 classifier.compile(
     optimizer=tf.keras.optimizers.Adam(0.001), loss="sparse_categorical_crossentropy", metrics=["sparse_categorical_accuracy"]
@@ -96,12 +97,12 @@ classifier.fit(
         lambda x, y: (preprocessing(x), y), num_parallel_calls=tf.data.experimental.AUTOTUNE
     ).repeat(),
     validation_steps=val_steps,
-    callbacks=[TensorBoard("sparse_categorical_crossentropy")],
+    callbacks=[TensorBoard(str(output_dir / "sparse_categorical_crossentropy"))],
 )
 loss, accuracy = classifier.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), y)), steps=test_steps)
 results += [{"name": "classifier", "loss": loss, "accuracy": accuracy}]
 embeddings = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), y)), steps=test_steps)
-np.savetxt("classifier_embeddings.tsv", embeddings, delimiter="\t")
+np.savetxt(str(output_dir / "classifier_embeddings.tsv"), embeddings, delimiter="\t")
 
 #%% Train
 experiments = [
@@ -134,7 +135,9 @@ experiments = [
     },
     {
         "name": "cosine_similarity_triplet_loss",
-        "kernel": Lambda(lambda x: 1 - cosine_similarity(x[0], x[1], axis=1)),
+        "kernel": Lambda(
+            lambda x: 1 - tf.reduce_sum(tf.nn.l2_normalize(x[0], axis=1) * tf.nn.l2_normalize(x[1], axis=1), axis=1)
+        ),
         "loss": triplet_loss(0.1),
         "metrics": [classification_accuracy(ascending=True)],
     },
@@ -186,7 +189,7 @@ experiments = [
 ]
 for experiment in experiments:
     pprint(experiment)
-    encoder.load_weights("initial_encoder.h5")
+    encoder.load_weights(str(output_dir / "initial_encoder.h5"))
     model = Sequential([encoder, GramMatrix(kernel=experiment["kernel"])])
     model.compile(
         optimizer=tf.keras.optimizers.Adam(0.001), loss=experiment["loss"], metrics=experiment["metrics"],
@@ -197,7 +200,7 @@ for experiment in experiments:
         steps_per_epoch=train_steps,
         validation_data=val_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])).repeat(),
         validation_steps=val_steps,
-        callbacks=[TensorBoard(experiment["name"]), EarlyStopping(patience=10)],
+        callbacks=[TensorBoard(str(output_dir / experiment["name"])), EarlyStopping(patience=10)],
     )
     results += [
         {
@@ -211,7 +214,7 @@ for experiment in experiments:
         }
     ]
     embeddings = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), steps=test_steps)
-    np.savetxt(f"{experiment['name']}.tsv", embeddings, delimiter="\t")
+    np.savetxt(str(output_dir / f"{experiment['name']}.tsv"), embeddings, delimiter="\t")
 
 #%% Export final stats
-pd.DataFrame(results).to_csv("results.csv", index=False)
+pd.DataFrame(results).to_csv(output_dir / "results.csv", index=False)

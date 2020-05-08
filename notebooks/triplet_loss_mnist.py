@@ -10,7 +10,6 @@ import tensorflow_addons as tfa
 import tensorflow_datasets as tfds
 from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, Lambda, MaxPooling2D
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.losses import cosine_similarity
 from tensorflow.keras.callbacks import TensorBoard
 
 from keras_fsl.losses.gram_matrix_losses import triplet_loss
@@ -90,7 +89,9 @@ results = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_d
 np.savetxt("keras_fsl_l1_embeddings.tsv", results, delimiter="\t")
 
 #%% Try with cosine similarity
-support_layer.kernel = Lambda(lambda inputs: 1 - cosine_similarity(inputs[0], inputs[1], axis=1))
+support_layer.kernel = Lambda(
+    lambda inputs: tf.reduce_sum(1 - tf.nn.l2_normalize(inputs[0], axis=1) * tf.nn.l2_normalize(inputs[1], axis=1), axis=1)
+)
 encoder.load_weights("initial_encoder.h5")
 model.compile(
     optimizer=tf.keras.optimizers.Adam(0.001), loss=triplet_loss(0.1), metrics=[classification_accuracy(ascending=True)]
