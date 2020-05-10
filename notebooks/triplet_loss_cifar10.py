@@ -199,33 +199,35 @@ projectors = [
 for experiment, projector in itertools.product(experiments, projectors):
     pprint(experiment)
     pprint(projector)
-    encoder.load_weights(str(output_dir / "initial_encoder.h5"))
-    model = Sequential([encoder, *projector["projector"], GramMatrix(kernel=experiment["kernel"])])
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(0.001), loss=experiment["loss"], metrics=experiment["metrics"],
-    )
-    model.fit(
-        train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])).repeat(),
-        epochs=100,
-        steps_per_epoch=train_steps,
-        validation_data=val_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])).repeat(),
-        validation_steps=val_steps,
-        callbacks=[TensorBoard(str(output_dir / f"{experiment['name']}{projector['name']}"))],
-    )
-    results += [
-        {
-            "experiment": experiment["name"],
-            "projector": projector["name"],
-            **dict(
-                zip(
-                    model.metrics_names,
-                    model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), steps=test_steps),
-                )
-            ),
-        }
-    ]
-    embeddings = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), steps=test_steps)
-    np.savetxt(str(output_dir / f"{experiment['name']}{projector['name']}.tsv"), embeddings, delimiter="\t")
+    for i in range(10):
+        encoder.load_weights(str(output_dir / "initial_encoder.h5"))
+        model = Sequential([encoder, *projector["projector"], GramMatrix(kernel=experiment["kernel"])])
+        model.compile(
+            optimizer=tf.keras.optimizers.Adam(0.001), loss=experiment["loss"], metrics=experiment["metrics"],
+        )
+        model.fit(
+            train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])).repeat(),
+            epochs=100,
+            steps_per_epoch=train_steps,
+            validation_data=val_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])).repeat(),
+            validation_steps=val_steps,
+            callbacks=[TensorBoard(str(output_dir / f"{experiment['name']}{projector['name']}_{i}"))],
+        )
+        results += [
+            {
+                "experiment": experiment["name"],
+                "projector": projector["name"],
+                "iteration": i,
+                **dict(
+                    zip(
+                        model.metrics_names,
+                        model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), steps=test_steps),
+                    )
+                ),
+            }
+        ]
+        embeddings = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), steps=test_steps)
+        np.savetxt(str(output_dir / f"{experiment['name']}{projector['name']}_{i}.tsv"), embeddings, delimiter="\t")
 
 #%% Export final stats
 pd.DataFrame(results).to_csv(output_dir / "results.csv", index=False)
