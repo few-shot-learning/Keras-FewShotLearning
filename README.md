@@ -1,3 +1,9 @@
+![Install Package](https://github.com/few-shot-learning/Keras-FewShotLearning/workflows/Install%20Package/badge.svg)
+![Tests](https://github.com/few-shot-learning/Keras-FewShotLearning/workflows/Tests/badge.svg)
+[![codecov](https://codecov.io/gh/few-shot-learning/Keras-FewShotLearning/branch/master/graph/badge.svg)](https://codecov.io/gh/few-shot-learning/Keras-FewShotLearning)
+
+Currently supporting `python` `3.6`, `3.7` and `tensorflow ^2.1`.
+
 # Welcome to keras-fsl!
 
 As years go by, Few Shot Learning (FSL) and especially Metric Learning is becoming a hot topic not only in academic
