@@ -3,7 +3,12 @@ import pandas as pd
 import pytest
 import tensorflow as tf
 
-from keras_fsl.losses.gram_matrix_losses import ClassConsistencyLoss, MeanScoreClassificationLoss, TripletLoss
+from keras_fsl.losses.gram_matrix_losses import (
+    ClassConsistencyLoss,
+    MeanScoreClassificationLoss,
+    TripletLoss,
+    BinaryCrossentropy,
+)
 from keras_fsl.utils.tensors import get_dummies
 
 
@@ -100,6 +105,23 @@ class TestGramMatrixLoss:
                 np_loss += (1 - np.eye(3)) * np.log(1 - classes_scores)
             np_loss = -np.mean(np_loss)
             tf_loss = ClassConsistencyLoss(unsupervised)(
+                tf.convert_to_tensor(y_true, tf.float32), tf.convert_to_tensor(y_pred, tf.float32)
+            )
+            np.testing.assert_almost_equal(tf_loss, np_loss, decimal=5)
+
+    class TestBinaryCrossentropy:
+        @pytest.mark.parametrize("unsupervised", (True, False))
+        def test_loss_should_equal_literal_calculation(self, unsupervised):
+            batch_size = 16
+            labels = np.random.choice(["a", "b", "c"], batch_size)
+            y_true = pd.get_dummies(labels).values
+            y_pred = np.random.rand(batch_size, batch_size)
+            adjacency_matrix = y_true @ y_true.T
+            np_loss = adjacency_matrix * np.log(y_pred) + (1 - adjacency_matrix) * np.log(1 - y_pred)
+            if unsupervised:
+                np_loss *= adjacency_matrix
+            np_loss = -np.mean(np_loss)
+            tf_loss = BinaryCrossentropy(unsupervised=unsupervised)(
                 tf.convert_to_tensor(y_true, tf.float32), tf.convert_to_tensor(y_pred, tf.float32)
             )
             np.testing.assert_almost_equal(tf_loss, np_loss, decimal=5)
