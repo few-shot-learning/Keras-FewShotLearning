@@ -1,14 +1,16 @@
-import tensorflow as tf
 import numpy as np
+import pandas as pd
+import pytest
+import tensorflow as tf
 
-from keras_fsl.losses.gram_matrix_losses import triplet_loss
+from keras_fsl.losses.gram_matrix_losses import MeanScoreClassificationLoss, TripletLoss
 from keras_fsl.utils.tensors import get_dummies
 
 
 class TestGramMatrixLoss:
     class TestTripletLoss:
         @staticmethod
-        def test_loss_should_equals_literal_calculation_for_semi_hard_mining():
+        def test_loss_should_equal_literal_calculation_for_semi_hard_mining():
             margin = 1
             batch_size = 64
             distance_matrix = np.random.rand(batch_size, batch_size)
@@ -41,5 +43,35 @@ class TestGramMatrixLoss:
             # assert value is equal
             y_true = get_dummies(labels)[0]
             y_pred = tf.convert_to_tensor(distance_matrix, dtype=tf.float32)
-            tf_loss = triplet_loss(margin)(y_true, y_pred)
+            tf_loss = TripletLoss(margin)(y_true, y_pred)
             np.testing.assert_almost_equal(np_loss, tf_loss, decimal=5)
+
+    class TestMeanScoreClassificationLoss:
+        @pytest.mark.parametrize("unsupervised", (True, False))
+        def test_loss_should_equal_literal_calculation(self, unsupervised):
+            batch_size = 16
+            labels = np.random.choice(["a", "b", "c"], batch_size)
+            y_true = pd.get_dummies(labels).values
+            y_pred = np.random.rand(batch_size, batch_size)
+            np_loss = (
+                -np.sum(
+                    y_true
+                    * np.log(
+                        pd.melt(
+                            pd.DataFrame(y_pred, columns=pd.Index(labels, name="support_label")).reset_index(),
+                            id_vars=["index"],
+                        )
+                        .groupby(["index", "support_label"])
+                        .agg("mean")
+                        .groupby(level="index")
+                        .transform(lambda x: x if unsupervised else x / x.sum())
+                        .unstack("support_label")
+                        .values
+                    )
+                )
+                / batch_size
+            )
+            tf_loss = MeanScoreClassificationLoss(unsupervised)(
+                tf.convert_to_tensor(y_true, tf.float32), tf.convert_to_tensor(y_pred, tf.float32)
+            )
+            np.testing.assert_almost_equal(tf_loss, np_loss, decimal=5)
