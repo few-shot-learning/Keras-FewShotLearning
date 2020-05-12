@@ -38,7 +38,7 @@ def preprocessing(input_tensor):
 k_shot = 4
 n_way = 16
 train_dataset = (
-    tfds.load(name="cifar10", split="train[:90%]", shuffle_files=True)
+    tfds.load(name="cifar10", split="train[:90%]")
     .shuffle(50000 * 9 // 10)
     .batch(n_way, drop_remainder=True)
     .map(
@@ -48,26 +48,21 @@ train_dataset = (
         ),
         num_parallel_calls=tf.data.experimental.AUTOTUNE,
     )
+    .unbatch()
+    .map(lambda x, y: (preprocessing(data_augmentation(x)), y), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    .batch(k_shot * n_way)
 )
 
-val_dataset = (
-    tf.data.experimental.choose_from_datasets(
-        datasets=[
-            tfds.load(name="cifar100", split="train[90%:]").filter(lambda annotation: annotation["label"] == i)
-            for i in range(100)
-        ],
-        choice_dataset=(
-            tf.data.Dataset.range(100)
-            .shuffle(buffer_size=100, reshuffle_each_iteration=True)
-            .flat_map(lambda index: tf.data.Dataset.from_tensors(index).repeat(k_shot))
-        ),
-    )
-    .batch(k_shot * n_way)
-    .map(
-        lambda annotation: (annotation["image"], tf.cast(get_dummies(annotation["label"])[0], tf.float32)),
-        num_parallel_calls=tf.data.experimental.AUTOTUNE,
-    )
+val_dataset, test_dataset = (
+    dataset.map(
+        lambda x, y: (preprocessing(x), tf.one_hot(y, depth=10)), num_parallel_calls=tf.data.experimental.AUTOTUNE,
+    ).batch(128)
+    for dataset in tfds.load(name="cifar10", split=["train[90%:]", "test"], as_supervised=True)
 )
+
+train_steps = len([_ for _ in train_dataset])  # Fixme: tf.data.experimental returns UNKNOWN_CARDINALITY
+val_steps = len([_ for _ in val_dataset])  # Fixme: tf.data.experimental returns UNKNOWN_CARDINALITY
+test_steps = len([_ for _ in test_dataset])  # Fixme: tf.data.experimental returns UNKNOWN_CARDINALITY
 
 #%% Build model
 encoder = Sequential(
@@ -95,24 +90,20 @@ encoder.save_weights(str(output_dir / "initial_encoder.h5"))
 #%% Supervised baseline with usual cross entropy
 encoder.load_weights(str(output_dir / "initial_encoder.h5"))
 classifier = Sequential([encoder, Dense(10, activation="softmax")])
-classifier.compile(
-    optimizer=tf.keras.optimizers.Adam(0.001), loss="sparse_categorical_crossentropy", metrics=["sparse_categorical_accuracy"]
-)
+classifier.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["categorical_accuracy"])
 classifier.fit(
     (
-        tfds.load(name="cifar10", split="train[:90%]", shuffle_files=True, as_supervised=True)
-        .map(lambda x, y: (preprocessing(data_augmentation(x)), y), num_parallel_calls=tf.data.experimental.AUTOTUNE)
-        .batch(k_shot * n_way)
+        tfds.load(name="cifar10", split="train[:90%]", as_supervised=True)
+        .map(
+            lambda x, y: (preprocessing(data_augmentation(x)), tf.one_hot(y, depth=10)),
+            num_parallel_calls=tf.data.experimental.AUTOTUNE,
+        )
+        .batch(128)
         .repeat()
     ),
     epochs=10,
-    steps_per_epoch=train_steps,
-    validation_data=(
-        tfds.load(name="cifar10", split="train[90%:]", shuffle_files=True, as_supervised=True)
-        .map(lambda x, y: (preprocessing(data_augmentation(x)), y), num_parallel_calls=tf.data.experimental.AUTOTUNE)
-        .batch(k_shot * n_way)
-        .repeat()
-    ),
+    steps_per_epoch=train_steps * n_way // 128,
+    validation_data=val_dataset,
     validation_steps=val_steps,
     callbacks=[TensorBoard(str(output_dir / "sparse_categorical_crossentropy"))],
 )
@@ -130,9 +121,9 @@ results += [
                             num_parallel_calls=tf.data.experimental.AUTOTUNE,
                         )
                         .batch(k_shot * n_way)
-                        # .repeat()
+                        .repeat()
                     ),
-                    # steps=test_steps,
+                    steps=test_steps,
                 ),
             )
         ),
@@ -141,63 +132,30 @@ results += [
 
 #%% Train
 experiments = [
-    {
-        "name": "binary_supervised",
-        "kernel": Lambda(
-            lambda x: 1 - tf.reduce_sum(tf.nn.l2_normalize(x[0], axis=1) * tf.nn.l2_normalize(x[1], axis=1), axis=1)
-        ),
-        "loss": BinaryCrossentropy(unsupervised=False),
-        "metrics": [classification_accuracy(ascending=True)],
-    },
-    {
-        "name": "binary_unsupervised",
-        "kernel": Lambda(
-            lambda x: 1 - tf.reduce_sum(tf.nn.l2_normalize(x[0], axis=1) * tf.nn.l2_normalize(x[1], axis=1), axis=1)
-        ),
-        "loss": BinaryCrossentropy(unsupervised=True),
-        "metrics": [classification_accuracy(ascending=True)],
-    },
-    {
-        "name": "class_consistency_supervised",
-        "kernel": Lambda(
-            lambda x: 1 - tf.reduce_sum(tf.nn.l2_normalize(x[0], axis=1) * tf.nn.l2_normalize(x[1], axis=1), axis=1)
-        ),
-        "loss": ClassConsistencyLoss(unsupervised=False),
-        "metrics": [classification_accuracy(ascending=True)],
-    },
-    {
-        "name": "class_consistency_unsupervised",
-        "kernel": Lambda(
-            lambda x: 1 - tf.reduce_sum(tf.nn.l2_normalize(x[0], axis=1) * tf.nn.l2_normalize(x[1], axis=1), axis=1)
-        ),
-        "loss": ClassConsistencyLoss(unsupervised=True),
-        "metrics": [classification_accuracy(ascending=True)],
-    },
+    {"name": "binary_supervised", "loss": BinaryCrossentropy(unsupervised=False)},
+    {"name": "binary_unsupervised", "loss": BinaryCrossentropy(unsupervised=True)},
+    {"name": "class_consistency_supervised", "loss": ClassConsistencyLoss(unsupervised=False)},
+    {"name": "class_consistency_unsupervised", "loss": ClassConsistencyLoss(unsupervised=True)},
 ]
 for experiment in experiments:
     pprint(experiment)
     encoder.load_weights(str(output_dir / "initial_encoder.h5"))
-    model = Sequential([encoder, GramMatrix(kernel=experiment["kernel"])])
+    model = Sequential([encoder, GramMatrix(kernel="LearntNorms")])
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(0.001), loss=experiment["loss"], metrics=experiment["metrics"],
+        optimizer="adam", loss=experiment["loss"], metrics=[classification_accuracy(ascending=False)],
     )
     model.fit(
-        train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])).repeat(),
-        epochs=100,
+        train_dataset.repeat(),
+        epochs=5,
         steps_per_epoch=train_steps,
-        validation_data=val_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])).repeat(),
+        validation_data=val_dataset.repeat(),
         validation_steps=val_steps,
         callbacks=[TensorBoard(str(output_dir / experiment["name"])), EarlyStopping(patience=10)],
     )
     results += [
         {
             "name": experiment["name"],
-            **dict(
-                zip(
-                    model.metrics_names,
-                    model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), steps=test_steps),
-                )
-            ),
+            **dict(zip(model.metrics_names, model.evaluate(test_dataset.repeat(), steps=test_steps),)),
         }
     ]
     embeddings = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), steps=test_steps)
