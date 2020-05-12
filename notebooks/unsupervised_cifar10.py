@@ -159,7 +159,6 @@ for experiment in experiments:
         }
     ]
     embeddings = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), steps=test_steps)
-    np.savetxt(str(output_dir / f"{experiment['name']}.tsv"), embeddings, delimiter="\t")
 
 #%% Export final stats
 pd.DataFrame(results).to_csv(output_dir / "results.csv", index=False)
