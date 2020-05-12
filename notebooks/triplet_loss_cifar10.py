@@ -22,10 +22,6 @@ from keras_fsl.utils.tensors import get_dummies
 
 
 #%% Build datasets
-def preprocessing(input_tensor):
-    return tf.cast(input_tensor, tf.float32) / 255
-
-
 train_dataset, val_dataset, test_dataset = tfds.load(
     name="cifar10", split=["train[:90%]", "train[90%:]", "test"], as_supervised=True
 )
@@ -39,8 +35,6 @@ test_labels = [batch[1].numpy().tolist() for batch in test_dataset]
 train_steps = len(train_labels)
 val_steps = len(val_labels)
 test_steps = len(test_labels)
-
-input_shape = next(train_dataset.take(1).as_numpy_iterator())[0].shape
 
 print(
     pd.concat(
@@ -67,7 +61,7 @@ out_m.close()
 #%% Build model
 encoder = Sequential(
     [
-        Input(input_shape[1:]),
+        Input(train_dataset.element_spec[0].shape[1:]),
         Conv2D(filters=32, kernel_size=(3, 3), padding="same", activation="relu"),
         MaxPooling2D(pool_size=2),
         Dropout(0.3),
@@ -89,22 +83,24 @@ encoder.save_weights(str(output_dir / "initial_encoder.h5"))
 #%% Train encoder with usual cross entropy
 encoder.load_weights(str(output_dir / "initial_encoder.h5"))
 classifier = Sequential([encoder, Dense(10, activation="softmax")])
-classifier.compile(
-    optimizer=tf.keras.optimizers.Adam(0.001), loss="sparse_categorical_crossentropy", metrics=["sparse_categorical_accuracy"]
-)
+classifier.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["sparse_categorical_accuracy"])
 classifier.fit(
-    train_dataset.map(lambda x, y: (preprocessing(x), y), num_parallel_calls=tf.data.experimental.AUTOTUNE).repeat(),
+    train_dataset.map(
+        lambda x, y: (tf.image.convert_image_dtype(x, tf.float32), y), num_parallel_calls=tf.data.experimental.AUTOTUNE
+    ).repeat(),
     epochs=100,
     steps_per_epoch=train_steps,
     validation_data=val_dataset.map(
-        lambda x, y: (preprocessing(x), y), num_parallel_calls=tf.data.experimental.AUTOTUNE
+        lambda x, y: (tf.image.convert_image_dtype(x, tf.float32), y), num_parallel_calls=tf.data.experimental.AUTOTUNE
     ).repeat(),
     validation_steps=val_steps,
     callbacks=[TensorBoard(str(output_dir / "sparse_categorical_crossentropy"))],
 )
-loss, accuracy = classifier.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), y)), steps=test_steps)
+loss, accuracy = classifier.evaluate(
+    test_dataset.map(lambda x, y: (tf.image.convert_image_dtype(x, tf.float32), y)), steps=test_steps
+)
 results += [{"name": "classifier", "loss": loss, "accuracy": accuracy}]
-embeddings = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), y)), steps=test_steps)
+embeddings = encoder.predict(test_dataset.map(lambda x, y: (tf.image.convert_image_dtype(x, tf.float32), y)), steps=test_steps)
 np.savetxt(str(output_dir / "classifier_embeddings.tsv"), embeddings, delimiter="\t")
 
 #%% Train
@@ -203,13 +199,15 @@ for experiment, projector in itertools.product(experiments, projectors):
         encoder.load_weights(str(output_dir / "initial_encoder.h5"))
         model = Sequential([encoder, *projector["projector"], GramMatrix(kernel=experiment["kernel"])])
         model.compile(
-            optimizer=tf.keras.optimizers.Adam(0.001), loss=experiment["loss"], metrics=experiment["metrics"],
+            optimizer="adam", loss=experiment["loss"], metrics=experiment["metrics"],
         )
         model.fit(
-            train_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])).repeat(),
+            train_dataset.map(lambda x, y: (tf.image.convert_image_dtype(x, tf.float32), get_dummies(y)[0])).repeat(),
             epochs=100,
             steps_per_epoch=train_steps,
-            validation_data=val_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])).repeat(),
+            validation_data=val_dataset.map(
+                lambda x, y: (tf.image.convert_image_dtype(x, tf.float32), get_dummies(y)[0])
+            ).repeat(),
             validation_steps=val_steps,
             callbacks=[TensorBoard(str(output_dir / f"{experiment['name']}{projector['name']}_{i}"))],
         )
@@ -221,12 +219,17 @@ for experiment, projector in itertools.product(experiments, projectors):
                 **dict(
                     zip(
                         model.metrics_names,
-                        model.evaluate(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), steps=test_steps),
+                        model.evaluate(
+                            test_dataset.map(lambda x, y: (tf.image.convert_image_dtype(x, tf.float32), get_dummies(y)[0])),
+                            steps=test_steps,
+                        ),
                     )
                 ),
             }
         ]
-        embeddings = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), steps=test_steps)
+        embeddings = encoder.predict(
+            test_dataset.map(lambda x, y: (tf.image.convert_image_dtype(x, tf.float32), get_dummies(y)[0])), steps=test_steps
+        )
         np.savetxt(str(output_dir / f"{experiment['name']}{projector['name']}_{i}.tsv"), embeddings, delimiter="\t")
 
 #%% Export final stats
