@@ -10,7 +10,18 @@ from tensorflow.keras.losses import Loss
 
 class UnsupervisedLoss(Loss):
     """
-    Base class for loss that can support unsupervised training, ie training where only positive pairs are used in the loss
+    A standard way of doing unsupervised metric learning is to use each image instance as a distinct class of its own. In this settings all
+    the losses are directly available by setting label = image_id, and y_true indeed stems for all the patches/glimpses/etc. extracted from
+    the same image.
+
+    It is usually supposed that the risk of collision is low. However it if is considered as a potential issue, this class will mask all
+    negatives pairs the loss.
+
+    For more information on unsupervised learning of visual representation, see for instance
+    [Momentum Contrast for Unsupervised Visual Representation Learning](https://arxiv.org/abs/1911.05722)
+    [Dimensionality Reduction by Learning an Invariant Mapping](http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf)
+    [Unsupervised feature learning via non-parametric instance discrimination](https://arxiv.org/abs/1805.01978v1)
+
     """
 
     def __init__(self, unsupervised=False, **kwargs):
