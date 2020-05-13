@@ -1,47 +1,31 @@
 """
 Base class for all losses to be applied on a Gram matrix like output, ie when the output y_pred of the network is the the pair-wise
-distance / similarity of all items of the batch (see GramMatrix layer for instance).
-y_true should be one-hot encoded
+distance / similarity of all items of the batch (see GramMatrix layer for instance). y_true should be one-hot encoded.
+
+A standard way of doing unsupervised metric learning is to use each image instance as a distinct class of its own. In this settings all
+the losses are directly available by setting label = image_id, and y_true indeed stems for all the patches/glimpses/etc. extracted from
+the same image.
+
+It is usually supposed that the risk of collision is low.
+
+For more information on unsupervised learning of visual representation, see for instance
+[Momentum Contrast for Unsupervised Visual Representation Learning](https://arxiv.org/abs/1911.05722)
+[Dimensionality Reduction by Learning an Invariant Mapping](http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf)
+[Unsupervised feature learning via non-parametric instance discrimination](https://arxiv.org/abs/1805.01978v1)
 """
 import tensorflow as tf
 import tensorflow.keras.backend as K
 from tensorflow.keras.losses import Loss
 
 
-class UnsupervisedLoss(Loss):
-    """
-    A standard way of doing unsupervised metric learning is to use each image instance as a distinct class of its own. In this settings all
-    the losses are directly available by setting label = image_id, and y_true indeed stems for all the patches/glimpses/etc. extracted from
-    the same image.
-
-    It is usually supposed that the risk of collision is low. However it if is considered as a potential issue, this class will mask all
-    negatives pairs the loss.
-
-    For more information on unsupervised learning of visual representation, see for instance
-    [Momentum Contrast for Unsupervised Visual Representation Learning](https://arxiv.org/abs/1911.05722)
-    [Dimensionality Reduction by Learning an Invariant Mapping](http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf)
-    [Unsupervised feature learning via non-parametric instance discrimination](https://arxiv.org/abs/1805.01978v1)
-
-    """
-
-    def __init__(self, unsupervised=False, **kwargs):
-        super().__init__(**kwargs)
-        self.unsupervised = unsupervised
-
-    def call(self, y_true, y_pred):
-        raise NotImplementedError
-
-
-class MeanScoreClassificationLoss(UnsupervisedLoss):
+class MeanScoreClassificationLoss(Loss):
     """
     Use the mean score of an image against all the samples from the same class to get a score per class for each image.
     When supervised, scores are normalized to sum up to one.
     """
 
     def call(self, y_true, y_pred):
-        y_pred = y_pred @ tf.math.divide_no_nan(y_true, tf.reduce_sum(y_true, axis=0))
-        if not self.unsupervised:
-            y_pred = tf.linalg.normalize(y_pred, ord=1, axis=1)[0]
+        y_pred = tf.linalg.normalize(y_pred @ tf.math.divide_no_nan(y_true, tf.reduce_sum(y_true, axis=0)), ord=1, axis=1)[0]
         return tf.reduce_sum(K.binary_crossentropy(y_true, y_pred) * y_true, axis=1)
 
 
@@ -59,15 +43,12 @@ def class_consistency_loss(y_true, y_pred):
     return K.binary_crossentropy(identity_matrix, confusion_matrix)
 
 
-class ClassConsistencyLoss(UnsupervisedLoss):
+class ClassConsistencyLoss(Loss):
     def call(self, y_true, y_pred):
-        loss = class_consistency_loss(y_true, y_pred)
-        if self.unsupervised:
-            loss = loss * tf.eye(tf.shape(loss)[0])
-        return loss
+        return class_consistency_loss(y_true, y_pred)
 
 
-class BinaryCrossentropy(UnsupervisedLoss):
+class BinaryCrossentropy(Loss):
     """
     Compute the binary crossentropy loss of each possible pair in the batch.
     The margins lets define a threshold against which the difference is not taken into account,
@@ -89,10 +70,7 @@ class BinaryCrossentropy(UnsupervisedLoss):
         clip_mask = tf.math.logical_and(
             tf.abs(adjacency_matrix - y_pred) < self.upper, tf.abs(adjacency_matrix - y_pred) > self.lower
         )
-        loss = tf.cast(clip_mask, dtype=y_pred.dtype) * K.binary_crossentropy(adjacency_matrix, y_pred)
-        if self.unsupervised:
-            loss = loss * adjacency_matrix
-        return loss
+        return tf.cast(clip_mask, dtype=y_pred.dtype) * K.binary_crossentropy(adjacency_matrix, y_pred)
 
 
 def max_crossentropy(y_true, y_pred):
