@@ -28,15 +28,18 @@ jobs:
           poetry config virtualenvs.in-project false
           poetry config virtualenvs.path ~/.virtualenvs
           poetry run pip install --upgrade pip
-          echo "::set-env name=POETRY_VERSION::$(poetry -V)"
+      - name: Poetry Version
+        id: poetry-version
+        run: |
+          echo "::set-output name=version::$(poetry --version | grep -oP '[\d\.]+')"
       - name: Cache Poetry virtualenv
         uses: actions/cache@v1
         id: cache
         with:
           path: ~/.virtualenvs
-          key: ${{ runner.os }}-${{ matrix.python-version }}-poetry-${{ hashFiles('**/poetry.lock') }}-${{ POETRY_VERSION }}
+          key: ${{ runner.os }}-${{ matrix.python-version }}-poetry-${{ steps.poetry-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.python-version }}-poetry-${{ hashFiles('**/poetry.lock') }}-${{ POETRY_VERSION }}
+            ${{ runner.os }}-${{ matrix.python-version }}-poetry-${{ steps.poetry-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies
         run: |
           poetry install
@@ -69,15 +72,18 @@ jobs:
           poetry config virtualenvs.in-project false
           poetry config virtualenvs.path ~/.virtualenvs
           poetry run pip install --upgrade pip
-          echo "::set-env name=POETRY_VERSION::$(poetry -V)"
+      - name: Poetry Version
+        id: poetry-version
+        run: |
+          echo "::set-output name=version::$(poetry --version | grep -oP '[\d\.]+')"
       - name: Cache Poetry virtualenv
         uses: actions/cache@v1
         id: cache
         with:
           path: ~/.virtualenvs
-          key: ${{ runner.os }}-${{ matrix.python-version }}-poetry-${{ hashFiles('**/poetry.lock') }}-${{ POETRY_VERSION }}
+          key: ${{ runner.os }}-${{ matrix.python-version }}-poetry-${{ steps.poetry-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.python-version }}-poetry-${{ hashFiles('**/poetry.lock') }}-${{ POETRY_VERSION }}
+            ${{ runner.os }}-${{ matrix.python-version }}-poetry-${{ steps.poetry-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies
         run: |
           poetry install
@@ -110,15 +116,18 @@ jobs:
           poetry config virtualenvs.in-project false
           poetry config virtualenvs.path ~/.virtualenvs
           poetry run pip install --upgrade pip
-          echo "::set-env name=POETRY_VERSION::$(poetry -V)"
+      - name: Poetry Version
+        id: poetry-version
+        run: |
+          echo "::set-output name=version::$(poetry --version | grep -oP '[\d\.]+')"
       - name: Cache Poetry virtualenv
         uses: actions/cache@v1
         id: cache
         with:
           path: ~/.virtualenvs
-          key: ${{ runner.os }}-${{ matrix.python-version }}-poetry-${{ hashFiles('**/poetry.lock') }}-${{ POETRY_VERSION }}
+          key: ${{ runner.os }}-${{ matrix.python-version }}-poetry-${{ steps.poetry-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.python-version }}-poetry-${{ hashFiles('**/poetry.lock') }}-${{ POETRY_VERSION }}
+            ${{ runner.os }}-${{ matrix.python-version }}-poetry-${{ steps.poetry-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies
         run: |
           poetry install
