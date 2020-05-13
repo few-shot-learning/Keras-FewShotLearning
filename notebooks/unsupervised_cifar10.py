@@ -1,10 +1,10 @@
 from pathlib import Path
 from pprint import pprint
 
-import numpy as np
 import pandas as pd
 import tensorflow as tf
 import tensorflow_datasets as tfds
+import tensorflow_addons as tfa
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard
 from tensorflow.keras.layers import Conv2D, Dense, Dropout, GlobalMaxPooling2D, Input, Flatten, MaxPooling2D, Lambda
 from tensorflow.keras.models import Sequential
@@ -21,12 +21,27 @@ results = []
 
 
 #%% Preprocessing
+@tf.function
 def data_augmentation(input_tensor):
     output_tensor = input_tensor
     output_tensor = tf.image.random_flip_left_right(output_tensor)
     output_tensor = tf.image.random_flip_up_down(output_tensor)
+    output_tensor = tfa.image.rotate(output_tensor, angles=tf.random.uniform((1,), minval=0, maxval=0.7))
     output_tensor = tf.image.random_saturation(output_tensor, 0.5, 2)
     output_tensor = tf.image.random_brightness(output_tensor, max_delta=0.4)
+    output_tensor = tf.squeeze(
+        tf.cast(
+            tf.image.crop_and_resize(
+                tf.expand_dims(output_tensor, 0),
+                tf.concat([tf.random.uniform(shape=(1, 2), maxval=0.2), tf.random.uniform(shape=(1, 2), minval=0.8)], axis=1),
+                tf.constant([0]),
+                tf.shape(output_tensor)[:2],
+            ),
+            tf.uint8,
+        )
+    )
+    output_tensor = tfa.image.shear_x(output_tensor, 0.15, 0)
+    output_tensor = tfa.image.shear_y(output_tensor, 0.15, 0)
     return output_tensor
 
 
@@ -35,8 +50,8 @@ def preprocessing(input_tensor):
 
 
 #%% Build datasets
-k_shot = 4
-n_way = 16
+k_shot = 8
+n_way = 8
 train_dataset = (
     tfds.load(name="cifar10", split="train[:90%]")
     .shuffle(50000 * 9 // 10)
@@ -105,7 +120,7 @@ classifier.fit(
     steps_per_epoch=train_steps * n_way // 128,
     validation_data=val_dataset,
     validation_steps=val_steps,
-    callbacks=[TensorBoard(str(output_dir / "sparse_categorical_crossentropy"))],
+    callbacks=[TensorBoard(str(output_dir / "categorical_crossentropy"))],
 )
 results += [
     {
@@ -132,10 +147,8 @@ results += [
 
 #%% Train
 experiments = [
-    {"name": "binary_supervised", "loss": BinaryCrossentropy(unsupervised=False)},
-    {"name": "binary_unsupervised", "loss": BinaryCrossentropy(unsupervised=True)},
-    {"name": "class_consistency_supervised", "loss": ClassConsistencyLoss(unsupervised=False)},
-    {"name": "class_consistency_unsupervised", "loss": ClassConsistencyLoss(unsupervised=True)},
+    {"name": "binary_supervised", "loss": BinaryCrossentropy(upper=0.75)},
+    {"name": "class_consistency_supervised", "loss": ClassConsistencyLoss()},
 ]
 for experiment in experiments:
     pprint(experiment)
@@ -146,7 +159,7 @@ for experiment in experiments:
     )
     model.fit(
         train_dataset.repeat(),
-        epochs=5,
+        epochs=10,
         steps_per_epoch=train_steps,
         validation_data=val_dataset.repeat(),
         validation_steps=val_steps,
@@ -158,7 +171,6 @@ for experiment in experiments:
             **dict(zip(model.metrics_names, model.evaluate(test_dataset.repeat(), steps=test_steps),)),
         }
     ]
-    embeddings = encoder.predict(test_dataset.map(lambda x, y: (preprocessing(x), get_dummies(y)[0])), steps=test_steps)
 
 #%% Export final stats
 pd.DataFrame(results).to_csv(output_dir / "results.csv", index=False)
