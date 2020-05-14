@@ -147,8 +147,8 @@ results += [
 
 #%% Train
 experiments = [
-    {"name": "binary_supervised", "loss": BinaryCrossentropy(upper=0.75)},
-    {"name": "class_consistency_supervised", "loss": ClassConsistencyLoss()},
+    {"name": "binary_crossentropy", "loss": BinaryCrossentropy(upper=0.75)},
+    {"name": "class_consistency", "loss": ClassConsistencyLoss()},
 ]
 for experiment in experiments:
     pprint(experiment)
