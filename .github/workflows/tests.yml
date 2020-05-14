@@ -92,6 +92,7 @@ jobs:
       - name: Enfore tensorflow version
         run: |
           poetry add tensorflow==${{ matrix.tensorflow-version }}
+          poetry add tensorflow-estimator==${{ matrix.tensorflow-version }}  # because of poetry resolving with rc
       - name: Test with pytest
         run: |
           poetry run pytest --cov-report xml:codecov.xml

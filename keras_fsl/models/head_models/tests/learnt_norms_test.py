@@ -1,9 +1,8 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.optimizers import RMSprop
-from tensorflow_core.python.keras.keras_parameterized import TestCase, run_all_keras_modes, run_with_all_model_types
-
 from absl.testing import parameterized
+from tensorflow.keras.optimizers import RMSprop
+from tensorflow.python.keras.keras_parameterized import TestCase, run_all_keras_modes, run_with_all_model_types
 
 from keras_fsl.models.head_models import LearntNorms
 
