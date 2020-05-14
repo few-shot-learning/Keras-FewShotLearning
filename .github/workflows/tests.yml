@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         python-version: [3.6, 3.7]
-
+        tensorflow-version: [2.1, 2.2]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -45,6 +45,10 @@ jobs:
           poetry install
           poetry run pip freeze
         if: steps.cache.outputs.cache-hit != 'true'
+      - name: Enforce tensorflow version
+        run: |
+          poetry add tensorflow==${{ matrix.tensorflow-version }}
+          poetry add tensorflow-estimator==${{ matrix.tensorflow-version }}  # see https://github.com/python-poetry/poetry/issues/2271
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
@@ -52,12 +56,13 @@ jobs:
           # exit-zero treats all errors as warnings.
           poetry run flake8 . --count --exit-zero --statistics
 
+
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: [3.6, 3.7]
-
+        tensorflow-version: [2.1, 2.2]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -89,6 +94,10 @@ jobs:
           poetry install
           poetry run pip freeze
         if: steps.cache.outputs.cache-hit != 'true'
+      - name: Enforce tensorflow version
+        run: |
+          poetry add tensorflow==${{ matrix.tensorflow-version }}
+          poetry add tensorflow-estimator==${{ matrix.tensorflow-version }}  # see https://github.com/python-poetry/poetry/issues/2271
       - name: Test with pytest
         run: |
           poetry run pytest --cov-report xml:codecov.xml
@@ -96,12 +105,12 @@ jobs:
         run: |
           bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }}
 
+
   black:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: [3.6, 3.7]
-
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
