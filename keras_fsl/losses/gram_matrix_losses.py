@@ -2,13 +2,10 @@
 Base class for all losses to be applied on a Gram matrix like output, ie when the output y_pred of the network is the the pair-wise
 distance / similarity of all items of the batch (see GramMatrix layer for instance). y_true should be one-hot encoded.
 
-A standard way of doing unsupervised metric learning is to use each image instance as a distinct class of its own. In this settings all
-the losses are directly available by setting label = image_id, and y_true indeed stems for all the patches/glimpses/etc. extracted from
-the same image.
-
-It is usually supposed that the risk of collision is low.
-
-For more information on unsupervised learning of visual representation, see for instance
+For unsupervised metric learning, it is standard to use each image instance as a distinct class of its own. In this settings all
+the losses are directly available by setting label = image_id and y_true stands indeed for all the patches/glimpses/etc. extracted from
+the same image. It is usually supposed that the risk of collision is low. For more information on unsupervised learning of visual
+representation, see for instance
 [Momentum Contrast for Unsupervised Visual Representation Learning](https://arxiv.org/abs/1911.05722)
 [Dimensionality Reduction by Learning an Invariant Mapping](http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf)
 [Unsupervised feature learning via non-parametric instance discrimination](https://arxiv.org/abs/1805.01978v1)
@@ -21,7 +18,6 @@ from tensorflow.keras.losses import Loss
 class MeanScoreClassificationLoss(Loss):
     """
     Use the mean score of an image against all the samples from the same class to get a score per class for each image.
-    When supervised, scores are normalized to sum up to one.
     """
 
     def call(self, y_true, y_pred):
@@ -55,9 +51,9 @@ class BinaryCrossentropy(Loss):
     ie. only values with lower < |y_true - y_pred| < upper will be non-zero
 
     Args:
-        lower (float): clip loss values below this threshold. Useful to make the network focus on more significant errors
-        upper (float): clip loss values above this threshold. Useful to prevent the network from focusing on errors due to
-            wrongs labels
+        lower (float): ignore loss values below this threshold. Useful to make the network focus on more significant errors
+        upper (float): ignore loss values above this threshold. Useful to prevent the network from focusing on errors due to
+            wrongs labels (or collision in unsupervised learning)
     """
 
     def __init__(self, lower=0.0, upper=1.0, **kwargs):
