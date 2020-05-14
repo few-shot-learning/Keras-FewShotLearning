@@ -6,7 +6,6 @@ from pathlib import Path
 from pprint import pprint
 
 import itertools
-import io
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -29,9 +28,9 @@ train_dataset = train_dataset.shuffle(1024).batch(64, drop_remainder=True)
 val_dataset = val_dataset.shuffle(1024).batch(64, drop_remainder=True)
 test_dataset = test_dataset.batch(64, drop_remainder=True)
 
-train_labels = [batch[1].numpy().tolist() for batch in train_dataset]
-val_labels = [batch[1].numpy().tolist() for batch in val_dataset]
-test_labels = [batch[1].numpy().tolist() for batch in test_dataset]
+train_labels = [labels.numpy().tolist() for _, labels in train_dataset]
+val_labels = [labels.numpy().tolist() for _, labels in val_dataset]
+test_labels = [labels.numpy().tolist() for _, labels in test_dataset]
 train_steps = len(train_labels)
 val_steps = len(val_labels)
 test_steps = len(test_labels)
@@ -53,10 +52,7 @@ output_dir.mkdir(exist_ok=True, parents=True)
 results = []
 
 #%% Save test labels for later visualization in projector https://projector.tensorflow.org/
-out_m = io.open(output_dir / "meta.tsv", "w", encoding="utf-8")
-for img, labels in tfds.as_numpy(test_dataset):
-    [out_m.write(str(x) + "\n") for x in labels]
-out_m.close()
+np.savetxt(output_dir / "meta.tsv", tf.nest.flatten(test_labels), fmt="%0d")
 
 #%% Build model
 encoder = Sequential(
