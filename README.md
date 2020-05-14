@@ -26,7 +26,7 @@ applications when you always need to tinker with your data.
 ## Few-Shot Learning
 
 Few-shot learning is a task consisting in classifying unseen samples into _n_ classes (so called n way task) where each
-classes is only described with few (from 1 to 5 in usual benchmarks) examples.
+classe is only described with few (from 1 to 5 in usual benchmarks) examples.
 
 Most of the state-of-the-art algorithms
 try to sort of learn a metric into a well suited (optimized) feature space. Thus deep networks usually first encode the
