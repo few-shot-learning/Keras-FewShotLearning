@@ -87,9 +87,11 @@ jobs:
       - name: Install dependencies
         run: |
           poetry install
-          poetry install tensorflow=={{ tensorflow-version }}
           poetry run pip freeze
         if: steps.cache.outputs.cache-hit != 'true'
+      - name: Enfore tensorflow version
+        run: |
+          poetry install tensorflow=={{ tensorflow-version }}
       - name: Test with pytest
         run: |
           poetry run pytest --cov-report xml:codecov.xml
