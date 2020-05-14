@@ -13,7 +13,6 @@ jobs:
     strategy:
       matrix:
         python-version: [3.6, 3.7]
-
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -52,12 +51,13 @@ jobs:
           # exit-zero treats all errors as warnings.
           poetry run flake8 . --count --exit-zero --statistics
 
+
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: [3.6, 3.7]
-
+        tensorflow-version: [2.1, 2.2]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -87,6 +87,7 @@ jobs:
       - name: Install dependencies
         run: |
           poetry install
+          poetry install tensorflow=={{ tensorflow-version }}
           poetry run pip freeze
         if: steps.cache.outputs.cache-hit != 'true'
       - name: Test with pytest
@@ -96,12 +97,12 @@ jobs:
         run: |
           bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }}
 
+
   black:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: [3.6, 3.7]
-
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
