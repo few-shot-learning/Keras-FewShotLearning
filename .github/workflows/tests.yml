@@ -91,7 +91,7 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
       - name: Enfore tensorflow version
         run: |
-          poetry add tensorflow=={{ tensorflow-version }}
+          poetry add tensorflow==${{ tensorflow-version }}
       - name: Test with pytest
         run: |
           poetry run pytest --cov-report xml:codecov.xml
