@@ -16,6 +16,7 @@ class TestGramMatrixLoss:
     class TestTripletLoss:
         @staticmethod
         def test_loss_should_equal_literal_calculation_for_semi_hard_mining():
+            np.random.seed(0)
             margin = 1
             batch_size = 64
             distance_matrix = np.random.rand(batch_size, batch_size)
@@ -53,6 +54,7 @@ class TestGramMatrixLoss:
 
     class TestMeanScoreClassificationLoss:
         def test_loss_should_equal_literal_calculation(self):
+            np.random.seed(0)
             batch_size = 16
             labels = np.random.choice(["a", "b", "c"], batch_size)
             y_true = pd.get_dummies(labels).values
@@ -82,6 +84,7 @@ class TestGramMatrixLoss:
 
     class TestClassConsistencyLoss:
         def test_loss_should_equal_literal_calculation(self):
+            np.random.seed(0)
             batch_size = 16
             labels = np.random.choice(["a", "b", "c"], batch_size)
             y_true = pd.get_dummies(labels).values
@@ -106,6 +109,7 @@ class TestGramMatrixLoss:
 
     class TestBinaryCrossentropy:
         def test_loss_should_equal_literal_calculation(self):
+            np.random.seed(0)
             batch_size = 16
             labels = np.random.choice(["a", "b", "c"], batch_size)
             y_true = pd.get_dummies(labels).values
