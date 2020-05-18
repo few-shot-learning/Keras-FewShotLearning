@@ -5,6 +5,7 @@ implementation against this one. It is also aimed at benchmarking the impact of 
 from pathlib import Path
 from pprint import pprint
 
+import seaborn as sns
 import itertools
 import numpy as np
 import pandas as pd
@@ -152,7 +153,7 @@ experiments = [
         "metrics": [classification_accuracy(ascending=True)],
     },
     {
-        "name": "mixed_crossentropy",
+        "name": "mixed_similarity_crossentropy_loss",
         "kernel": {
             "name": "MixedNorms",
             "init": {"activation": "sigmoid", "norms": [lambda x: tf.square(x[0] - x[1]), lambda x: tf.abs(x[0] - x[1])]},
@@ -161,13 +162,13 @@ experiments = [
         "metrics": [classification_accuracy(ascending=False), class_consistency_loss, binary_crossentropy()],
     },
     {
-        "name": "learnt_crossentropy",
+        "name": "learnt_similarity_crossentropy_loss",
         "kernel": {"name": "LearntNorms", "init": {"activation": "sigmoid"}},
         "loss": binary_crossentropy(),
         "metrics": [classification_accuracy(ascending=False), class_consistency_loss, binary_crossentropy()],
     },
     {
-        "name": "mixed_consistency",
+        "name": "mixed_similarity_consistency_loss",
         "kernel": {
             "name": "MixedNorms",
             "init": {"activation": "sigmoid", "norms": [lambda x: tf.square(x[0] - x[1]), lambda x: tf.abs(x[0] - x[1])]},
@@ -176,7 +177,7 @@ experiments = [
         "metrics": [classification_accuracy(ascending=False), class_consistency_loss, binary_crossentropy()],
     },
     {
-        "name": "learnt_consistency",
+        "name": "learnt_similarity_consistency_loss",
         "kernel": {"name": "LearntNorms", "init": {"activation": "sigmoid"}},
         "loss": class_consistency_loss,
         "metrics": [classification_accuracy(ascending=False), class_consistency_loss, binary_crossentropy()],
@@ -230,3 +231,39 @@ for experiment, projector in itertools.product(experiments, projectors):
 
 #%% Export final stats
 pd.DataFrame(results).to_csv(output_dir / "results.csv", index=False)
+
+#%%
+results = pd.read_clipboard(",")
+results = pd.concat(
+    [
+        results.fillna({"projector": "raw"}),
+        results.experiment.str.extract(
+            r"(?P<similarity>l1|l2|cosine_similarity|mixed_norms|mixed_similarity|learnt_norms|learnt_similarity)_"
+            r"(?P<loss_name>triplet_loss|consistency_loss|crossentropy_loss)"
+        ),
+    ],
+    axis=1,
+).assign(projector=lambda df: df.projector.str.strip("_"))
+chart = sns.catplot(
+    x="similarity",
+    y="top_score_classification_accuracy",
+    hue="projector",
+    col="loss_name",
+    data=results,
+    legend=True,
+    legend_out=True,
+)
+chart.set_xticklabels(rotation=90)
+[ax.axhline(y=results[results.name == "classifier"].accuracy[0]) for ax in chart.axes[0]]
+plt.tight_layout()
+plt.savefig("all_losses.png")
+plt.show()
+
+plt.clf()
+ax = sns.boxplot(
+    x="similarity", y="top_score_classification_accuracy", hue="projector", data=results[results.loss_name == "triplet_loss"],
+)
+ax.set_xticklabels(ax.get_xticklabels(), rotation=30)
+# plt.tight_layout()
+plt.savefig("triplet_boxplot.png")
+plt.show()
