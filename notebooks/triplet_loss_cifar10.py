@@ -97,7 +97,7 @@ classifier.fit(
 loss, accuracy = classifier.evaluate(
     test_dataset.map(lambda x, y: (tf.image.convert_image_dtype(x, tf.float32), y)), steps=test_steps
 )
-results += [{"name": "classifier", "loss": loss, "top_score_classification_accuracy": accuracy}]
+results += [{"experiment": "classifier", "loss": loss, "top_score_classification_accuracy": accuracy}]
 embeddings = encoder.predict(test_dataset.map(lambda x, y: (tf.image.convert_image_dtype(x, tf.float32), y)), steps=test_steps)
 np.savetxt(str(output_dir / "classifier_embeddings.tsv"), embeddings, delimiter="\t")
 
@@ -251,9 +251,9 @@ pd.DataFrame(results).to_csv(output_dir / "results.csv", index=False)
 
 #%% Plot results
 results = pd.read_csv(output_dir / "results.csv")
-baseline = results[results.name == "classifier"].dropna(axis=1)
+baseline = results[results.experiment == "classifier"].dropna(axis=1)
 results = (
-    results.loc[lambda df: df.name != "classifier"]
+    results.loc[lambda df: df.experiment != "classifier"]
     .pipe(
         lambda df: pd.concat(
             [
@@ -280,5 +280,5 @@ chart = sns.catplot(
 chart.set_xticklabels(rotation=90)
 [ax.axhline(y=baseline.top_score_classification_accuracy[0]) for ax in chart.axes.flatten()]
 plt.tight_layout()
-plt.savefig("all_losses.png")
+plt.savefig(output_dir / "all_losses.png")
 plt.show()
