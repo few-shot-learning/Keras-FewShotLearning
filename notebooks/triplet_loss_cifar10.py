@@ -5,6 +5,8 @@ implementation against this one. It is also aimed at benchmarking the impact of 
 from pathlib import Path
 from pprint import pprint
 
+import seaborn as sns
+import matplotlib.pyplot as plt
 import itertools
 import numpy as np
 import pandas as pd
@@ -15,7 +17,7 @@ from tensorflow.keras.layers import Conv2D, Dense, Dropout, GlobalMaxPooling2D, 
 from tensorflow.keras.models import Sequential
 
 from keras_fsl.layers import GramMatrix
-from keras_fsl.losses.gram_matrix_losses import binary_crossentropy, class_consistency_loss, triplet_loss
+from keras_fsl.losses.gram_matrix_losses import BinaryCrossentropy, class_consistency_loss, TripletLoss
 from keras_fsl.metrics.gram_matrix_metrics import classification_accuracy
 from keras_fsl.utils.tensors import get_dummies
 
@@ -95,7 +97,7 @@ classifier.fit(
 loss, accuracy = classifier.evaluate(
     test_dataset.map(lambda x, y: (tf.image.convert_image_dtype(x, tf.float32), y)), steps=test_steps
 )
-results += [{"name": "classifier", "loss": loss, "accuracy": accuracy}]
+results += [{"experiment": "classifier", "loss": loss, "top_score_classification_accuracy": accuracy}]
 embeddings = encoder.predict(test_dataset.map(lambda x, y: (tf.image.convert_image_dtype(x, tf.float32), y)), steps=test_steps)
 np.savetxt(str(output_dir / "classifier_embeddings.tsv"), embeddings, delimiter="\t")
 
@@ -104,13 +106,13 @@ experiments = [
     {
         "name": "l2_triplet_loss",
         "kernel": Lambda(lambda x: tf.reduce_sum(tf.square(x[0] - x[1]), axis=1)),
-        "loss": triplet_loss(1),
+        "loss": TripletLoss(1),
         "metrics": [classification_accuracy(ascending=True)],
     },
     {
         "name": "l1_triplet_loss",
         "kernel": Lambda(lambda x: tf.reduce_sum(tf.abs(x[0] - x[1]), axis=1)),
-        "loss": triplet_loss(1),
+        "loss": TripletLoss(1),
         "metrics": [classification_accuracy(ascending=True)],
     },
     {
@@ -118,8 +120,24 @@ experiments = [
         "kernel": Lambda(
             lambda x: 1 - tf.reduce_sum(tf.nn.l2_normalize(x[0], axis=1) * tf.nn.l2_normalize(x[1], axis=1), axis=1)
         ),
-        "loss": triplet_loss(0.1),
+        "loss": TripletLoss(0.1),
         "metrics": [classification_accuracy(ascending=True)],
+    },
+    {
+        "name": "cosine_similarity_crossentropy_loss",
+        "kernel": Lambda(
+            lambda x: (1 + tf.reduce_sum(tf.nn.l2_normalize(x[0], axis=1) * tf.nn.l2_normalize(x[1], axis=1), axis=1)) / 2
+        ),
+        "loss": BinaryCrossentropy(),
+        "metrics": [classification_accuracy(ascending=False), class_consistency_loss, BinaryCrossentropy()],
+    },
+    {
+        "name": "cosine_similarity_consistency_loss",
+        "kernel": Lambda(
+            lambda x: (1 + tf.reduce_sum(tf.nn.l2_normalize(x[0], axis=1) * tf.nn.l2_normalize(x[1], axis=1), axis=1)) / 2
+        ),
+        "loss": class_consistency_loss,
+        "metrics": [classification_accuracy(ascending=False), class_consistency_loss, BinaryCrossentropy()],
     },
     {
         "name": "mixed_norms_triplet_loss",
@@ -127,13 +145,13 @@ experiments = [
             "name": "MixedNorms",
             "init": {"activation": "relu", "norms": [lambda x: tf.square(x[0] - x[1]), lambda x: tf.abs(x[0] - x[1])]},
         },
-        "loss": triplet_loss(1),
+        "loss": TripletLoss(1),
         "metrics": [classification_accuracy(ascending=True)],
     },
     {
         "name": "learnt_norms_triplet_loss",
         "kernel": {"name": "LearntNorms", "init": {"activation": "relu"}},
-        "loss": triplet_loss(1),
+        "loss": TripletLoss(1),
         "metrics": [classification_accuracy(ascending=True)],
     },
     {
@@ -142,44 +160,44 @@ experiments = [
             "name": "MixedNorms",
             "init": {"activation": "sigmoid", "norms": [lambda x: tf.square(x[0] - x[1]), lambda x: tf.abs(x[0] - x[1])]},
         },
-        "loss": triplet_loss(0.1),
+        "loss": TripletLoss(0.1),
         "metrics": [classification_accuracy(ascending=True)],
     },
     {
         "name": "learnt_similarity_triplet_loss",
         "kernel": {"name": "LearntNorms", "init": {"activation": "sigmoid"}},
-        "loss": triplet_loss(0.1),
+        "loss": TripletLoss(0.1),
         "metrics": [classification_accuracy(ascending=True)],
     },
     {
-        "name": "mixed_crossentropy",
+        "name": "mixed_similarity_crossentropy_loss",
         "kernel": {
             "name": "MixedNorms",
             "init": {"activation": "sigmoid", "norms": [lambda x: tf.square(x[0] - x[1]), lambda x: tf.abs(x[0] - x[1])]},
         },
-        "loss": binary_crossentropy(),
-        "metrics": [classification_accuracy(ascending=False), class_consistency_loss, binary_crossentropy()],
+        "loss": BinaryCrossentropy(),
+        "metrics": [classification_accuracy(ascending=False), class_consistency_loss, BinaryCrossentropy()],
     },
     {
-        "name": "learnt_crossentropy",
+        "name": "learnt_similarity_crossentropy_loss",
         "kernel": {"name": "LearntNorms", "init": {"activation": "sigmoid"}},
-        "loss": binary_crossentropy(),
-        "metrics": [classification_accuracy(ascending=False), class_consistency_loss, binary_crossentropy()],
+        "loss": BinaryCrossentropy(),
+        "metrics": [classification_accuracy(ascending=False), class_consistency_loss, BinaryCrossentropy()],
     },
     {
-        "name": "mixed_consistency",
+        "name": "mixed_similarity_consistency_loss",
         "kernel": {
             "name": "MixedNorms",
             "init": {"activation": "sigmoid", "norms": [lambda x: tf.square(x[0] - x[1]), lambda x: tf.abs(x[0] - x[1])]},
         },
         "loss": class_consistency_loss,
-        "metrics": [classification_accuracy(ascending=False), class_consistency_loss, binary_crossentropy()],
+        "metrics": [classification_accuracy(ascending=False), class_consistency_loss, BinaryCrossentropy()],
     },
     {
-        "name": "learnt_consistency",
+        "name": "learnt_similarity_consistency_loss",
         "kernel": {"name": "LearntNorms", "init": {"activation": "sigmoid"}},
         "loss": class_consistency_loss,
-        "metrics": [classification_accuracy(ascending=False), class_consistency_loss, binary_crossentropy()],
+        "metrics": [classification_accuracy(ascending=False), class_consistency_loss, BinaryCrossentropy()],
     },
 ]
 projectors = [
@@ -230,3 +248,37 @@ for experiment, projector in itertools.product(experiments, projectors):
 
 #%% Export final stats
 pd.DataFrame(results).to_csv(output_dir / "results.csv", index=False)
+
+#%% Plot results
+results = pd.read_csv(output_dir / "results.csv")
+baseline = results[results.experiment == "classifier"].dropna(axis=1)
+results = (
+    results.loc[lambda df: df.experiment != "classifier"]
+    .pipe(
+        lambda df: pd.concat(
+            [
+                df.fillna({"projector": "raw"}).filter(items=["top_score_classification_accuracy", "projector"]),
+                df.experiment.str.extract(
+                    r"(?P<similarity>l1|l2|cosine_similarity|mixed_norms|mixed_similarity|learnt_norms|learnt_similarity)_"
+                    r"(?P<loss_name>triplet_loss|consistency_loss|crossentropy_loss)"
+                ),
+            ],
+            axis=1,
+        )
+    )
+    .assign(projector=lambda df: df.projector.str.strip("_"))
+)
+chart = sns.catplot(
+    x="similarity",
+    y="top_score_classification_accuracy",
+    col="projector",
+    row="loss_name",
+    data=results,
+    legend=True,
+    legend_out=True,
+)
+chart.set_xticklabels(rotation=90)
+[ax.axhline(y=baseline.top_score_classification_accuracy[0]) for ax in chart.axes.flatten()]
+plt.tight_layout()
+plt.savefig(output_dir / "all_losses.png")
+plt.show()
