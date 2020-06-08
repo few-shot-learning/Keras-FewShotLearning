@@ -99,18 +99,14 @@ from tensorflow.keras.models import Sequential
 
 from keras_fsl.models.encoders import BasicCNN
 from keras_fsl.layers import GramMatrix
-from keras_fsl.losses.gram_matrix_losses import binary_crossentropy
+from keras_fsl.losses.gram_matrix_losses import BinaryCrossentropy
 from keras_fsl.metrics.gram_matrix_metrics import classification_accuracy, min_eigenvalue
 from keras_fsl.utils.tensors import get_dummies
 
 
 #%% Get data
-def preprocessing(input_tensor):
-    return tf.cast(input_tensor, tf.float32) / 255
-
-
 train_dataset, val_dataset, test_dataset = [
-    dataset.shuffle(1024).batch(64).map(lambda x, y: (preprocessing(x), get_dummies(y)[0]))
+    dataset.shuffle(1024).batch(64).map(lambda x, y: (tf.image.convert_image_dtype(x, tf.float32), get_dummies(y)[0]))
     for dataset in tfds.load(name="omniglot", split=["train[:90%]", "train[90%:]", "test"], as_supervised=True)
 ]
 input_shape = next(tfds.as_numpy(train_dataset.take(1)))[0].shape[1:]  # first shape is batch_size
@@ -119,6 +115,6 @@ input_shape = next(tfds.as_numpy(train_dataset.take(1)))[0].shape[1:]  # first s
 encoder = BasicCNN(input_shape=input_shape)
 support_layer = GramMatrix(kernel="DenseSigmoid")
 model = Sequential([encoder, support_layer])
-model.compile(optimizer="Adam", loss=binary_crossentropy(), metrics=[classification_accuracy(), min_eigenvalue])
+model.compile(optimizer="Adam", loss=BinaryCrossentropy(), metrics=[classification_accuracy(), min_eigenvalue])
 model.fit(train_dataset, validation_data=val_dataset, epochs=5)
 ```
