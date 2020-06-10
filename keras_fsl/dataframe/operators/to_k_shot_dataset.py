@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 import tensorflow as tf
-from tqdm.contrib.concurrent import process_map
+from tqdm import tqdm
 
 from keras_fsl.dataframe.operators.abstract_operator import AbstractOperator
 from keras_fsl.utils import image_preprocessing as ip
@@ -68,7 +68,7 @@ class ToKShotDataset(AbstractOperator):
         """
         Transform a pd.DataFrame into a tf.data.Dataset and load images
         """
-        return tf.data.Dataset.from_tensor_slices(group[1].to_dict("list")).map(
+        return tf.data.Dataset.from_tensor_slices(group.to_dict("list")).map(
             ip.add_field(ip.load_crop_as_uint8_tensor, "image"), num_parallel_calls=tf.data.experimental.AUTOTUNE
         )
 
@@ -76,10 +76,10 @@ class ToKShotDataset(AbstractOperator):
         """
         Transform a pd.DataFrame into a tf.data.Dataset and load images
         """
-        filename = self.cache / group[0]
+        filename = self.cache / group.name
         if self._reset_cache:
             clear_cache(filename)
-        dataset = self.to_dataset_direct(group[1]).cache(str(filename))
+        dataset = self.to_dataset_direct(group).cache(str(filename))
         for _ in dataset:
             continue
         return dataset
@@ -88,9 +88,9 @@ class ToKShotDataset(AbstractOperator):
         """
         Transform a pd.DataFrame into a tf.data.Dataset and load images
         """
-        filename = self.cache / group[0]
+        filename = self.cache / group.name
         original_dataset = (
-            self.to_dataset_direct(group[1])
+            self.to_dataset_direct(group)
             .map(ip.transform_field(tf.image.encode_jpeg, "image"), num_parallel_calls=tf.data.experimental.AUTOTUNE)
             .prefetch(tf.data.experimental.AUTOTUNE)
         )
@@ -109,15 +109,15 @@ class ToKShotDataset(AbstractOperator):
         )
 
     def __call__(self, input_dataframe):
+        tqdm.pandas(desc=f"Building {self.__class__.__name__} at {self.cache}")
         return tf.data.experimental.choose_from_datasets(
-            datasets=process_map(
-                self.transform_group_to_shuffled_dataset,
-                list(
-                    input_dataframe.assign(
-                        label_one_hot=lambda df: pd.get_dummies(df.label).values.tolist(),
-                        crop_window=lambda df: df[["crop_y", "crop_x", "crop_height", "crop_width"]].values.tolist(),
-                    ).groupby("label")
-                ),
+            datasets=(
+                input_dataframe.assign(
+                    label_one_hot=lambda df: pd.get_dummies(df.label).values.tolist(),
+                    crop_window=lambda df: df[["crop_y", "crop_x", "crop_height", "crop_width"]].values.tolist(),
+                )
+                .groupby("label")
+                .progress_apply(self.transform_group_to_shuffled_dataset)
             ),
             choice_dataset=(
                 tf.data.Dataset.range(len(input_dataframe.label.unique()))
