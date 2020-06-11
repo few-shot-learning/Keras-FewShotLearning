@@ -70,13 +70,13 @@ class BinaryCrossentropy(Loss):
 
 
 def max_crossentropy(y_true, y_pred):
-    # TODO: use reduction kwarg of loss instead when possible
-    return tf.reduce_max(BinaryCrossentropy()(y_true, y_pred))
+    # TODO: use reduction kwarg of loss instead when it becomes possible to give custom reduction
+    return tf.reduce_max(BinaryCrossentropy(reduction=tf.keras.losses.Reduction.NONE)(y_true, y_pred))
 
 
 def std_crossentropy(y_true, y_pred):
-    # TODO: use reduction kwarg of loss instead when possible
-    return tf.math.reduce_std(BinaryCrossentropy()(y_true, y_pred))
+    # TODO: use reduction kwarg of loss instead when it becomes possible to give custom reduction
+    return tf.math.reduce_std(BinaryCrossentropy(reduction=tf.keras.losses.Reduction.NONE)(y_true, y_pred))
 
 
 class TripletLoss(Loss):
