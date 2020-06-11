@@ -14,10 +14,9 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
 
 from keras_fsl.dataframe.operators import ToKShotDataset
-from keras_fsl.losses import binary_crossentropy, class_consistency_loss, max_crossentropy, std_crossentropy
-from keras_fsl.metrics import accuracy, same_image_score, top_score_classification_accuracy
 from keras_fsl.layers import Classification, GramMatrix
-from keras_fsl.utils.training import compose
+from keras_fsl.losses import BinaryCrossentropy, class_consistency_loss, max_crossentropy, std_crossentropy
+from keras_fsl.metrics import accuracy, classification_accuracy, same_image_score
 
 
 #%% Toggle some config if required
@@ -57,19 +56,19 @@ def train(base_dir):
     ]
 
     #%% Init data
-    @tf.function(input_signature=(tf.TensorSpec(shape=[None, None, 3], dtype=tf.uint8)))
+    @tf.function(input_signature=(tf.TensorSpec(shape=[None, None, 3], dtype=tf.uint8),))
     def preprocessing(input_tensor):
         output_tensor = tf.cast(input_tensor, dtype=tf.float32)
         output_tensor = tf.image.resize_with_pad(output_tensor, target_height=224, target_width=224)
         output_tensor = keras_applications.mobilenet.preprocess_input(output_tensor, data_format="channels_last")
         return output_tensor
 
-    @tf.function(input_signature=(tf.TensorSpec(shape=[None, None, 3], dtype=tf.float32)))
+    @tf.function(input_signature=(tf.TensorSpec(shape=[None, None, 3], dtype=tf.float32),))
     def data_augmentation(input_tensor):
         output_tensor = tf.image.random_flip_left_right(input_tensor)
         output_tensor = tf.image.random_flip_up_down(output_tensor)
         output_tensor = tf.image.random_brightness(output_tensor, max_delta=0.25)
-        return output_tensor
+        return preprocessing(output_tensor)
 
     all_annotations = pd.read_csv(base_dir / "annotations" / "all_annotations.csv")
     class_count = all_annotations.groupby("split").apply(lambda group: group.label.value_counts())
@@ -78,20 +77,12 @@ def train(base_dir):
     margin = 0.05
     k_shot = 4
     cache = base_dir / "cache"
-    datasets = all_annotations.groupby("split").apply(
-        lambda group: (
-            group.pipe(
-                ToKShotDataset(
-                    k_shot=k_shot,
-                    preprocessing=compose(preprocessing, data_augmentation),
-                    cache=str(cache / group.name),
-                    reset_cache=False,
-                    dataset_mode="with_cache",
-                    # max_shuffle_buffer_size=max(class_count),  # can slow down a lot if classes are big
-                )
-            )
+    datasets = {
+        split: all_annotations.loc[lambda df: df.split == split].pipe(
+            ToKShotDataset(k_shot=k_shot, preprocessing=data_augmentation, cache=str(cache / split), reset_cache=False)
         )
-    )
+        for split in set(all_annotations.split)
+    }
 
     batch_size = 64
     encoder.trainable = False
@@ -101,11 +92,11 @@ def train(base_dir):
         loss=class_consistency_loss,
         metrics=[
             accuracy(margin),
-            binary_crossentropy(),
+            BinaryCrossentropy(),
             max_crossentropy,
             std_crossentropy,
             same_image_score,
-            top_score_classification_accuracy,
+            classification_accuracy(),
         ],
     )
     model.fit(
@@ -125,11 +116,11 @@ def train(base_dir):
         loss=class_consistency_loss,
         metrics=[
             accuracy(margin),
-            binary_crossentropy(),
+            BinaryCrossentropy(),
             max_crossentropy,
             std_crossentropy,
             same_image_score,
-            top_score_classification_accuracy,
+            classification_accuracy(),
         ],
     )
     model.fit(

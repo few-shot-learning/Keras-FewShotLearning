@@ -8,3 +8,4 @@ best_loss.h5
 siamese_nets_classifier
 .coverage
 *egg-info
+logs
