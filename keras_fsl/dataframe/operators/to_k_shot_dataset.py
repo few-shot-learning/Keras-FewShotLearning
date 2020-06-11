@@ -5,8 +5,8 @@ import tensorflow as tf
 from tqdm import tqdm
 
 from keras_fsl.dataframe.operators.abstract_operator import AbstractOperator
-from keras_fsl.utils import image_preprocessing as ip
-from keras_fsl.utils.tfrecord_utils import infer_tfrecord_encoder_decoder_from_sample, clear_cache
+from keras_fsl.utils.datasets import assign, read_decode_and_crop_jpeg, transform
+from keras_fsl.utils.tfrecord_utils import clear_cache, infer_tfrecord_encoder_decoder_from_sample
 
 
 class ToKShotDataset(AbstractOperator):
@@ -69,7 +69,7 @@ class ToKShotDataset(AbstractOperator):
         Transform a pd.DataFrame into a tf.data.Dataset and load images
         """
         return tf.data.Dataset.from_tensor_slices(group.to_dict("list")).map(
-            ip.add_field(ip.load_crop_as_uint8_tensor, "image"), num_parallel_calls=tf.data.experimental.AUTOTUNE
+            assign(image=read_decode_and_crop_jpeg), num_parallel_calls=tf.data.experimental.AUTOTUNE,
         )
 
     def to_dataset_with_cache(self, group):
@@ -91,7 +91,7 @@ class ToKShotDataset(AbstractOperator):
         filename = self.cache / group.name
         original_dataset = (
             self.to_dataset_direct(group)
-            .map(ip.transform_field(tf.image.encode_jpeg, "image"), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+            .map(transform(image=tf.image.encode_jpeg), num_parallel_calls=tf.data.experimental.AUTOTUNE)
             .prefetch(tf.data.experimental.AUTOTUNE)
         )
         first_sample = next(iter(original_dataset))
@@ -105,7 +105,7 @@ class ToKShotDataset(AbstractOperator):
         return (
             tf.data.TFRecordDataset(str(filename), num_parallel_reads=tf.data.experimental.AUTOTUNE)
             .map(decoder, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-            .map(ip.transform_field(tf.io.decode_jpeg, "image"), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+            .map(transform(image=tf.io.decode_jpeg), num_parallel_calls=tf.data.experimental.AUTOTUNE)
         )
 
     def __call__(self, input_dataframe):
