@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 import tensorflow as tf
 
-from keras_fsl.utils.tfrecord_utils import DTYPE_TO_PROTO_DTYPE, infer_tfrecord_encoder_decoder_from_sample, clear_cache
+from keras_fsl.utils.tfrecord_utils import DTYPE_TO_PROTO_DTYPE, build_tfrecord_encoder_decoder_from_spec, clear_cache
 
 
 class TestTFRecordUtils:
@@ -25,7 +25,7 @@ class TestTFRecordUtils:
             shape = []
             tensor = make_tensor_for_dtype_shape(shape, dtype)
             sample = {"feature": tensor}
-            encoder, decoder = infer_tfrecord_encoder_decoder_from_sample(sample)
+            encoder, decoder = build_tfrecord_encoder_decoder_from_spec(sample)
 
             np.testing.assert_array_equal(decoder(encoder(sample))["feature"].numpy(), tensor.numpy())
 
@@ -35,14 +35,14 @@ class TestTFRecordUtils:
             shape = [5]
             tensor = make_tensor_for_dtype_shape(shape, dtype)
             sample = {"feature": tensor}
-            encoder, decoder = infer_tfrecord_encoder_decoder_from_sample(sample)
+            encoder, decoder = build_tfrecord_encoder_decoder_from_spec(sample)
 
             np.testing.assert_array_equal(decoder(encoder(sample))["feature"].numpy(), tensor.numpy())
 
         @staticmethod
         def test_encode_decode_multiple_tensors_with_eager_execution(make_multi_features_sample):
             sample = make_multi_features_sample()
-            encoder, decoder = infer_tfrecord_encoder_decoder_from_sample(sample)
+            encoder, decoder = build_tfrecord_encoder_decoder_from_spec(sample)
 
             result = decoder(encoder(sample))
 
@@ -68,7 +68,7 @@ class TestTFRecordUtils:
             original_dataset = tf.data.Dataset.from_tensor_slices(dataframe.to_dict("list"))
 
             first_sample = next(iter(original_dataset))
-            encoder, decoder = infer_tfrecord_encoder_decoder_from_sample(first_sample)
+            encoder, decoder = build_tfrecord_encoder_decoder_from_spec(first_sample)
             with tf.io.TFRecordWriter(str(filename)) as writer:
                 for sample in original_dataset:
                     writer.write(encoder(sample))

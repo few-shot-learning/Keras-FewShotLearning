@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from keras_fsl.dataframe.operators.abstract_operator import AbstractOperator
 from keras_fsl.utils.datasets import assign, read_decode_and_crop_jpeg, transform
-from keras_fsl.utils.tfrecord_utils import clear_cache, infer_tfrecord_encoder_decoder_from_sample
+from keras_fsl.utils.tfrecord_utils import clear_cache, build_tfrecord_encoder_decoder_from_spec
 
 
 class ToKShotDataset(AbstractOperator):
@@ -94,8 +94,7 @@ class ToKShotDataset(AbstractOperator):
             .map(transform(image=tf.image.encode_jpeg), num_parallel_calls=tf.data.experimental.AUTOTUNE)
             .prefetch(tf.data.experimental.AUTOTUNE)
         )
-        first_sample = next(iter(original_dataset))
-        encoder, decoder = infer_tfrecord_encoder_decoder_from_sample(first_sample)
+        encoder, decoder = build_tfrecord_encoder_decoder_from_spec(original_dataset.element_spec)
         if self._reset_cache:
             clear_cache(filename)
             with tf.io.TFRecordWriter(str(filename)) as writer:
