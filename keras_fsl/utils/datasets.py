@@ -33,6 +33,8 @@ def read_decode_and_crop_jpeg(annotation: TENSOR_MAP) -> TF_TENSOR:
     Returns:
         TF_TENSOR: the crop described by annotations as a uint8 array
     """
-    return tf.io.decode_and_crop_jpeg(
-        tf.io.read_file(filename=annotation["filename"]), crop_window=annotation["crop_window"], channels=3
-    )
+    image_content = tf.io.read_file(filename=annotation["filename"])
+    if "crop_window" in annotation:
+        return tf.io.decode_and_crop_jpeg(image_content, crop_window=annotation["crop_window"], channels=3)
+
+    return tf.io.decode_jpeg(image_content, channels=3)
