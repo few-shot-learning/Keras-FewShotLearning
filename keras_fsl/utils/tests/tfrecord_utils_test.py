@@ -1,11 +1,9 @@
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import pytest
 import tensorflow as tf
 
-from keras_fsl.utils.tfrecord_utils import DTYPE_TO_PROTO_DTYPE, build_tfrecord_encoder_decoder_from_spec, clear_cache
+from keras_fsl.utils.tfrecord_utils import DTYPE_TO_PROTO_DTYPE, build_tfrecord_encoder_decoder_from_spec
 
 
 class TestTFRecordUtils:
@@ -81,31 +79,3 @@ class TestTFRecordUtils:
                 assert parsed_sample.keys() == original_sample.keys()
                 for key in original_sample:
                     np.testing.assert_array_equal(parsed_sample[key].numpy(), original_sample[key].numpy())
-
-    class TestClearCache:
-        @staticmethod
-        def test_should_delete_files_after_cache(tmpdir):
-            filename = tmpdir.join("filename")
-            dataset = tf.data.Dataset.range(4).cache(str(filename))
-            list(dataset.as_numpy_iterator())
-            cache_files = list(Path(tmpdir).glob("*"))
-            deleted_files = clear_cache(filename)
-            assert cache_files == deleted_files
-
-        @staticmethod
-        def test_should_not_delete_other_files(tmpdir):
-            filename = tmpdir.join("filename")
-            other_filename = tmpdir.join("other_filename")
-            other_filename.write("content")
-            clear_cache(filename)
-            assert Path(other_filename).is_file()
-
-        @staticmethod
-        def test_should_not_delete_other_files_with_same_prefix(tmpdir):
-            filename = tmpdir.join("filename")
-            filename.write("content")
-            filename_suffix = tmpdir.join("filename_suffix")
-            filename_suffix.write("content")
-            deleted_files = clear_cache(filename)
-            assert Path(filename_suffix).is_file()
-            assert deleted_files == []

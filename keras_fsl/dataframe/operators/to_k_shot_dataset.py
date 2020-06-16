@@ -5,8 +5,8 @@ import tensorflow as tf
 from tqdm import tqdm
 
 from keras_fsl.dataframe.operators.abstract_operator import AbstractOperator
-from keras_fsl.utils.datasets import assign, read_decode_and_crop_jpeg, transform
-from keras_fsl.utils.tfrecord_utils import clear_cache, build_tfrecord_encoder_decoder_from_spec
+from keras_fsl.utils.datasets import assign, clear_cache, read_decode_and_crop_jpeg, transform
+from keras_fsl.utils.tfrecord_utils import build_tfrecord_encoder_decoder_from_spec
 
 
 class ToKShotDataset(AbstractOperator):

@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Any, Callable, Mapping, Tuple, Union, List
 
 import tensorflow as tf
@@ -91,20 +90,3 @@ def build_tfrecord_encoder_decoder_from_spec(element_spec: TENSOR_SPEC_MAP) -> T
         dtype_map[key] = dtype
 
     return encoder_factory_from_dict(encode_function_map), decoder_factory_from_dict(decode_feature_map, dtype_map)
-
-
-def clear_cache(filename):
-    """
-    Clear cache created with tfrecord given the name used for cache creation:
-        e.g. dataset.cache(filename) will produce filename.index and filename.data-xxx files
-    Args:
-        filename (Union[str, pathlib.Path]): filename used during cache creation
-
-    Returns:
-        List[pathlib.Path]: list of deleted items
-    """
-    filename = Path(filename)
-    files = list(filename.parent.glob(f"{filename.name}.*"))
-    for file in files:
-        file.unlink()
-    return files
