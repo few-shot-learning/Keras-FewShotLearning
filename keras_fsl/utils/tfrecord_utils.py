@@ -1,14 +1,13 @@
-from pathlib import Path
-from typing import Any, Callable, Mapping, Tuple, Union
+from typing import Any, Callable, Mapping, Tuple, Union, List
 
 import tensorflow as tf
 
-from keras_fsl.utils.types import TENSOR_MAP, TF_TENSOR
+from keras_fsl.utils.types import TENSOR_MAP, TF_TENSOR, TENSOR_SPEC_MAP
 
 ENCODER_TYPE = Callable[[TENSOR_MAP], bytes]
 DECODER_TYPE = Callable[[TF_TENSOR], TENSOR_MAP]
 FEATURE_DESCRIPTOR = Union[tf.io.FixedLenFeature, tf.io.VarLenFeature]
-ENCODE_FEATURE = Callable[[TF_TENSOR], FEATURE_DESCRIPTOR]
+ENCODE_FEATURE = Callable[[List[TF_TENSOR]], FEATURE_DESCRIPTOR]
 
 
 def _int64_feature(value: TF_TENSOR):
@@ -65,22 +64,22 @@ def decoder_factory_from_dict(feature_map: Mapping[str, FEATURE_DESCRIPTOR], dty
     return _decoder
 
 
-def infer_tfrecord_encoder_decoder_from_sample(sample: TENSOR_MAP) -> Tuple[ENCODER_TYPE, DECODER_TYPE]:
+def build_tfrecord_encoder_decoder_from_spec(element_spec: TENSOR_SPEC_MAP) -> Tuple[ENCODER_TYPE, DECODER_TYPE]:
     # TODO : support variable length arrays
     encode_function_map = {}
     decode_feature_map = {}
     dtype_map = {}
 
-    for key, tensor in sample.items():
-        dtype = tensor.dtype
-        shape = tensor.shape.as_list()
+    for key, tensor_spec in element_spec.items():
+        dtype = tensor_spec.dtype
+        shape = tensor_spec.shape.as_list()
 
         if len(shape) > 1:
             # TODO : support dimensions non 1d or scalar tensors
-            raise TypeError(f"infer_tfrecord_encoder_decoder_from_sample does not support {len(shape)}d tensors")
+            raise TypeError(f"build_tfrecord_encoder_decoder_from_spec does not support {len(shape)}d tensors")
         if len(shape) == 1 and dtype is tf.string:
             # TODO : support 1d arrays of string (currently converted to bytes)
-            raise TypeError(f"infer_tfrecord_encoder_decoder_from_sample only support scalar strings")
+            raise TypeError(f"build_tfrecord_encoder_decoder_from_spec only support scalar strings")
 
         proto_dtype = DTYPE_TO_PROTO_DTYPE[dtype]
         encode = PROTO_DTYPE_TO_FEATURE[proto_dtype]
@@ -91,20 +90,3 @@ def infer_tfrecord_encoder_decoder_from_sample(sample: TENSOR_MAP) -> Tuple[ENCO
         dtype_map[key] = dtype
 
     return encoder_factory_from_dict(encode_function_map), decoder_factory_from_dict(decode_feature_map, dtype_map)
-
-
-def clear_cache(filename):
-    """
-    Clear cache created with tfrecord given the name used for cache creation:
-        e.g. dataset.cache(filename) will produce filename.index and filename.data-xxx files
-    Args:
-        filename (Union[str, pathlib.Path]): filename used during cache creation
-
-    Returns:
-        List[pathlib.Path]: list of deleted items
-    """
-    filename = Path(filename)
-    files = list(filename.parent.glob(f"{filename.name}.*"))
-    for file in files:
-        file.unlink()
-    return files
