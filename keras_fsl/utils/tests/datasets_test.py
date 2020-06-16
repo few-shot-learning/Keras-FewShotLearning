@@ -100,14 +100,20 @@ class TestDatasetsUtils:
         def test_should_cache_all_dataset_with_partial_iteration(tmp_path):
             dataset = tf.data.Dataset.from_tensor_slices(tf.random.normal((10, 5)))
             list(dataset.cache(str(tmp_path / "tf_cache")).take(1).as_numpy_iterator())
-            list(dataset.apply(cache(str(tmp_path / "keras_fsl_cache"))).take(1).as_numpy_iterator())
+            list(dataset.apply(cache(tmp_path / "keras_fsl_cache")).take(1).as_numpy_iterator())
 
             cached_dataset = tf.data.Dataset.from_tensor_slices(tf.random.normal((1, 5)))
             tf_cache_dataset = cached_dataset.cache(str(tmp_path / "tf_cache"))
             assert len(list(tf_cache_dataset.as_numpy_iterator())) == 1
 
-            keras_fsl_dataset = cached_dataset.apply(cache(str(tmp_path / "keras_fsl_cache")))
+            keras_fsl_dataset = cached_dataset.apply(cache(tmp_path / "keras_fsl_cache"))
             assert len(list(keras_fsl_dataset.as_numpy_iterator())) == 10
+
+        @staticmethod
+        @patch("keras_fsl.utils.datasets.clear_cache")
+        def test_should_clear_cache(mock_clear_cache, tmp_path):
+            tf.data.Dataset.from_tensor_slices(tf.random.normal((10, 5))).apply(cache(tmp_path / "cache", clear=True))
+            mock_clear_cache.assert_called_once_with(tmp_path / "cache")
 
     class TestClearCache:
         @staticmethod

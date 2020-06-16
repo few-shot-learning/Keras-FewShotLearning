@@ -32,7 +32,7 @@ def transform(**kwargs: Callable[[TF_TENSOR], TF_TENSOR]) -> Callable[[TENSOR_MA
 def read_decode_and_crop_jpeg(annotation: TENSOR_MAP) -> TF_TENSOR:
     """
     Args:
-        annotation (TENSOR_MAP): contains 'image_name' (path to the image) and 'crop_window' (box coordinates)
+        annotation (TENSOR_MAP): contains 'filename' (path to the image) and possibly 'crop_window' (box coordinates)
     Returns:
         TF_TENSOR: the crop described by annotations as a uint8 array
     """
@@ -83,21 +83,6 @@ def cache_with_tf_record(filename: Union[str, pathlib.Path]) -> Callable[[tf.dat
     return _cache
 
 
-def cache(filename: Union[str, pathlib.Path]) -> Callable[[tf.data.Dataset], tf.data.Dataset]:
-    """
-    Similar to tf.data.Dataset.cache but iterates over the whole dataset to insure everything is cached (see Note of
-    https://www.tensorflow.org/api_docs/python/tf/data/Dataset#cache)
-    """
-
-    def _cache(dataset):
-        dataset = dataset.cache(str(filename))
-        for _ in dataset:
-            continue
-        return dataset
-
-    return _cache
-
-
 def clear_cache(filename):
     """
     Clear cache created with tf.data.Dataset.cache given the name used for cache creation:
@@ -113,3 +98,24 @@ def clear_cache(filename):
     for file in files:
         file.unlink()
     return files
+
+
+def cache(filename: Union[str, pathlib.Path], clear: bool = False) -> Callable[[tf.data.Dataset], tf.data.Dataset]:
+    """
+    Similar to tf.data.Dataset.cache but iterates over the whole dataset to insure everything is cached (see Note of
+    https://www.tensorflow.org/api_docs/python/tf/data/Dataset#cache)
+
+    Args:
+        filename: path to cache file (see https://www.tensorflow.org/api_docs/python/tf/data/Dataset#cache)
+        clear: set to True to remove existing files
+    """
+
+    def _cache(dataset):
+        if clear:
+            clear_cache(filename)
+        dataset = dataset.cache(str(filename))
+        for _ in dataset:
+            continue
+        return dataset
+
+    return _cache
