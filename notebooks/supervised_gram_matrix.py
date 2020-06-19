@@ -43,9 +43,9 @@ checkpoint_file = output_dir + "/embeddings.ckpt"
 ckpt.save(checkpoint_file)
 
 reader = tf.train.load_checkpoint(output_dir)
-varianle_shape_map = reader.get_variable_to_shape_map()
+variable_shape_map = reader.get_variable_to_shape_map()
 key_to_use = ""
-for key in varianle_shape_map:
+for key in variable_shape_map:
     if "embeddings" in key:
         key_to_use = key
 
