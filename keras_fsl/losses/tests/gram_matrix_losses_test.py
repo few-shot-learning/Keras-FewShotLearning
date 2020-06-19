@@ -8,8 +8,10 @@ from keras_fsl.losses.gram_matrix_losses import (
     MeanScoreClassificationLoss,
     TripletLoss,
     BinaryCrossentropy,
-    max_crossentropy,
-    std_crossentropy,
+    ClippedBinaryCrossentropy,
+    MaxBinaryCrossentropy,
+    StdBinaryCrossentropy,
+    PercentileBinaryCrossentropy,
 )
 from keras_fsl.utils.tensors import get_dummies
 
@@ -130,12 +132,35 @@ class TestGramMatrixLoss:
             tf_loss = BinaryCrossentropy()(tf.convert_to_tensor(y_true, tf.float32), tf.convert_to_tensor(y_pred, tf.float32))
             np.testing.assert_almost_equal(tf_loss, np_loss, decimal=5)
 
+        def test_clipped_loss_should_equal_literal_calculation(self, y_true, adjacency_matrix, y_pred):
+            clip_mask = ((0.05 < np.abs(adjacency_matrix - y_pred)) * (np.abs(adjacency_matrix - y_pred) < 0.95)).astype(int)
+            np_loss = np.mean(-clip_mask * (adjacency_matrix * np.log(y_pred) + (1 - adjacency_matrix) * np.log(1 - y_pred)))
+            tf_loss = ClippedBinaryCrossentropy(lower=0.05, upper=0.95)(
+                tf.convert_to_tensor(y_true, tf.float32), tf.convert_to_tensor(y_pred, tf.float32)
+            )
+            np.testing.assert_almost_equal(tf_loss, np_loss, decimal=5)
+
         def test_max_loss_should_equal_literal_calculation(self, y_true, adjacency_matrix, y_pred):
             np_loss = np.max(-(adjacency_matrix * np.log(y_pred) + (1 - adjacency_matrix) * np.log(1 - y_pred)))
-            tf_loss = max_crossentropy(tf.convert_to_tensor(y_true, tf.float32), tf.convert_to_tensor(y_pred, tf.float32))
+            tf_loss = MaxBinaryCrossentropy()(
+                tf.convert_to_tensor(y_true, tf.float32), tf.convert_to_tensor(y_pred, tf.float32)
+            )
             np.testing.assert_almost_equal(tf_loss, np_loss, decimal=4)
 
         def test_std_loss_should_equal_literal_calculation(self, y_true, adjacency_matrix, y_pred):
             np_loss = np.std(-(adjacency_matrix * np.log(y_pred) + (1 - adjacency_matrix) * np.log(1 - y_pred)))
-            tf_loss = std_crossentropy(tf.convert_to_tensor(y_true, tf.float32), tf.convert_to_tensor(y_pred, tf.float32))
+            tf_loss = StdBinaryCrossentropy()(
+                tf.convert_to_tensor(y_true, tf.float32), tf.convert_to_tensor(y_pred, tf.float32)
+            )
+            np.testing.assert_almost_equal(tf_loss, np_loss, decimal=4)
+
+        def test_median_loss_should_equal_literal_calculation(self, y_true, adjacency_matrix, y_pred):
+            np_loss = np.percentile(
+                -(adjacency_matrix * np.log(y_pred) + (1 - adjacency_matrix) * np.log(1 - y_pred)),
+                50,
+                interpolation="midpoint",
+            )
+            tf_loss = PercentileBinaryCrossentropy()(
+                tf.convert_to_tensor(y_true, tf.float32), tf.convert_to_tensor(y_pred, tf.float32)
+            )
             np.testing.assert_almost_equal(tf_loss, np_loss, decimal=4)

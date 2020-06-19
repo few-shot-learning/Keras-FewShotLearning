@@ -99,7 +99,7 @@ from tensorflow.keras.models import Sequential
 
 from keras_fsl.models.encoders import BasicCNN
 from keras_fsl.layers import GramMatrix
-from keras_fsl.losses.gram_matrix_losses import BinaryCrossentropy
+from keras_fsl.losses.gram_matrix_losses import ClippedBinaryCrossentropy
 from keras_fsl.metrics.gram_matrix_metrics import classification_accuracy, min_eigenvalue
 from keras_fsl.utils.tensors import get_dummies
 
