@@ -13,7 +13,7 @@ from tensorflow.keras.layers import Lambda
 from tensorflow.keras.utils import to_categorical
 
 from keras_fsl.models.encoders import BasicCNN
-from keras_fsl.losses import binary_crossentropy, mean_score_classification_loss
+from keras_fsl.losses import BinaryCrossentropy, class_consistency_loss
 from keras_fsl.metrics import min_eigenvalue
 from keras_fsl.layers import GramMatrix, Classification
 
@@ -43,9 +43,9 @@ checkpoint_file = output_dir + "/embeddings.ckpt"
 ckpt.save(checkpoint_file)
 
 reader = tf.train.load_checkpoint(output_dir)
-map = reader.get_variable_to_shape_map()
+variable_shape_map = reader.get_variable_to_shape_map()
 key_to_use = ""
-for key in map:
+for key in variable_shape_map:
     if "embeddings" in key:
         key_to_use = key
 
@@ -66,7 +66,7 @@ for i in range(1, 21):
     model = Sequential([BasicCNN((32, 32, 3), i), GramMatrix(kernel)])
     model.summary()
     model.compile(
-        optimizer="adam", loss=binary_crossentropy(), metrics=[mean_score_classification_loss, min_eigenvalue],
+        optimizer="adam", loss=BinaryCrossentropy(), metrics=[class_consistency_loss, min_eigenvalue],
     )
     model.fit(X_train, y_train, validation_split=0.2, epochs=20, batch_size=32)
 

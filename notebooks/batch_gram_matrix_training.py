@@ -15,7 +15,7 @@ from tensorflow.keras.optimizers import Adam
 
 from keras_fsl.dataframe.operators import ToKShotDataset
 from keras_fsl.layers import Classification, GramMatrix
-from keras_fsl.losses import BinaryCrossentropy, class_consistency_loss, max_crossentropy, std_crossentropy
+from keras_fsl.losses import ClippedBinaryCrossentropy, class_consistency_loss, MaxBinaryCrossentropy, StdBinaryCrossentropy
 from keras_fsl.metrics import accuracy, classification_accuracy, same_image_score
 
 
@@ -92,9 +92,9 @@ def train(base_dir):
         loss=class_consistency_loss,
         metrics=[
             accuracy(margin),
-            BinaryCrossentropy(),
-            max_crossentropy,
-            std_crossentropy,
+            ClippedBinaryCrossentropy(),
+            MaxBinaryCrossentropy(),
+            StdBinaryCrossentropy(),
             same_image_score,
             classification_accuracy(),
         ],
@@ -116,9 +116,9 @@ def train(base_dir):
         loss=class_consistency_loss,
         metrics=[
             accuracy(margin),
-            BinaryCrossentropy(),
-            max_crossentropy,
-            std_crossentropy,
+            ClippedBinaryCrossentropy(),
+            MaxBinaryCrossentropy(),
+            StdBinaryCrossentropy(),
             same_image_score,
             classification_accuracy(),
         ],

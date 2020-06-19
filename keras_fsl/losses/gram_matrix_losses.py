@@ -13,6 +13,7 @@ representation, see for instance
 import tensorflow as tf
 import tensorflow.keras.backend as K
 from tensorflow.keras.losses import Loss
+import tensorflow_probability as tfp
 
 
 class MeanScoreClassificationLoss(Loss):
@@ -45,6 +46,12 @@ class ClassConsistencyLoss(Loss):
 
 
 class BinaryCrossentropy(Loss):
+    def call(self, y_true, y_pred):
+        adjacency_matrix = tf.matmul(y_true, y_true, transpose_b=True)
+        return K.binary_crossentropy(adjacency_matrix, y_pred)
+
+
+class ClippedBinaryCrossentropy(BinaryCrossentropy):
     """
     Compute the binary crossentropy loss of each possible pair in the batch.
     The margins lets define a threshold against which the difference is not taken into account,
@@ -62,21 +69,34 @@ class BinaryCrossentropy(Loss):
         self.upper = upper
 
     def call(self, y_true, y_pred):
-        adjacency_matrix = tf.matmul(y_true, y_true, transpose_b=True)
-        clip_mask = tf.math.logical_and(
-            tf.abs(adjacency_matrix - y_pred) < self.upper, tf.abs(adjacency_matrix - y_pred) > self.lower
-        )
-        return tf.cast(clip_mask, dtype=y_pred.dtype) * K.binary_crossentropy(adjacency_matrix, y_pred)
+        loss = super().call(y_true, y_pred)
+        clip_mask = tf.math.logical_and(-tf.math.log(1 - self.lower) < loss, loss < -tf.math.log(1 - self.upper))
+        return tf.cast(clip_mask, dtype=y_pred.dtype) * loss
 
 
-def max_crossentropy(y_true, y_pred):
-    # TODO: use reduction kwarg of loss instead when it becomes possible to give custom reduction
-    return tf.reduce_max(BinaryCrossentropy(reduction=tf.keras.losses.Reduction.NONE)(y_true, y_pred))
+# TODO: use reduction kwarg of loss when it becomes possible to give custom reduction to includes all other reductions below in
+# TODO: base BinaryCrossentropy
+class MaxBinaryCrossentropy(BinaryCrossentropy):
+    def call(self, y_true, y_pred):
+        return tf.reduce_max(super().call(y_true, y_pred))
 
 
-def std_crossentropy(y_true, y_pred):
-    # TODO: use reduction kwarg of loss instead when it becomes possible to give custom reduction
-    return tf.math.reduce_std(BinaryCrossentropy(reduction=tf.keras.losses.Reduction.NONE)(y_true, y_pred))
+class StdBinaryCrossentropy(BinaryCrossentropy):
+    def call(self, y_true, y_pred):
+        return tf.math.reduce_std(super().call(y_true, y_pred))
+
+
+class PercentileBinaryCrossentropy(BinaryCrossentropy):
+    """
+    Wrap tf probability percentile method to be used on the loss tensor
+    """
+
+    def __init__(self, percentile=50, **kwargs):
+        super().__init__(**kwargs)
+        self.percentile = percentile
+
+    def call(self, y_true, y_pred):
+        return tfp.stats.percentile(super().call(y_true, y_pred), self.percentile, interpolation="midpoint")
 
 
 class TripletLoss(Loss):
