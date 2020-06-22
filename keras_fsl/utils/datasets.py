@@ -1,7 +1,7 @@
 import pathlib
 from functools import partial
 from pathlib import Path
-from typing import Callable, Union
+from typing import Callable, List, Union
 
 import tensorflow as tf
 
@@ -29,6 +29,15 @@ def transform(**kwargs: Callable[[TF_TENSOR], TF_TENSOR]) -> Callable[[TENSOR_MA
     return annotations_mapper
 
 
+def filter_items(items: List[str]) -> Callable[[TENSOR_MAP], TENSOR_MAP]:
+    """Filter keys like pandas.DataFrame.filter"""
+
+    def annotations_mapper(annotations: TENSOR_MAP) -> TENSOR_MAP:
+        return {key: value for key, value in annotations.items() if key in items}
+
+    return annotations_mapper
+
+
 def read_decode_and_crop_jpeg(annotation: TENSOR_MAP) -> TF_TENSOR:
     """
     Args:
@@ -52,6 +61,7 @@ def cache_with_tf_record(filename: Union[str, pathlib.Path]) -> Callable[[tf.dat
     def _cache(dataset):
         if not isinstance(dataset.element_spec, dict):
             raise ValueError(f"dataset.element_spec should be a dict but is {type(dataset.element_spec)} instead")
+        Path(filename).parent.mkdir(parents=True, exist_ok=True)
         with tf.io.TFRecordWriter(str(filename)) as writer:
             for sample in dataset.map(transform(**{name: tf.io.serialize_tensor for name in dataset.element_spec.keys()})):
                 writer.write(
@@ -77,6 +87,9 @@ def cache_with_tf_record(filename: Union[str, pathlib.Path]) -> Callable[[tf.dat
                 transform(
                     **{name: partial(tf.io.parse_tensor, out_type=spec.dtype) for name, spec in dataset.element_spec.items()}
                 )
+            )
+            .map(
+                transform(**{name: partial(tf.ensure_shape, shape=spec.shape) for name, spec in dataset.element_spec.items()})
             )
         )
 

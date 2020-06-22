@@ -5,7 +5,15 @@ import numpy as np
 import pytest
 import tensorflow as tf
 
-from keras_fsl.utils.datasets import assign, cache, cache_with_tf_record, clear_cache, read_decode_and_crop_jpeg, transform
+from keras_fsl.utils.datasets import (
+    assign,
+    cache,
+    cache_with_tf_record,
+    clear_cache,
+    filter_items,
+    read_decode_and_crop_jpeg,
+    transform,
+)
 
 
 class TestDatasetsUtils:
@@ -32,6 +40,15 @@ class TestDatasetsUtils:
                 )[0]["key"]
                 == 4
             )
+
+    class TestFilterItems:
+        @staticmethod
+        def test_should_return_filtered_dataframe():
+            assert list(
+                tf.data.Dataset.from_tensor_slices({"key_0": [0], "key_1": [1]})
+                .map(filter_items(["key_1"]))
+                .element_spec.keys()
+            ) == ["key_1"]
 
     class TestReadDecodeAndCropJpeg:
         @staticmethod
@@ -72,11 +89,12 @@ class TestDatasetsUtils:
             )
 
         @staticmethod
-        def test_should_create_tf_record_file(tmp_path, input_tensor):
+        @pytest.mark.parametrize("cache_dir", ["", "cache_dir"])
+        def test_should_create_tf_record_file(cache_dir, tmp_path, input_tensor):
             tf.data.Dataset.from_tensor_slices({"input_tensor": input_tensor}).apply(
-                cache_with_tf_record(tmp_path / "dataset")
+                cache_with_tf_record(tmp_path / cache_dir / "dataset")
             )
-            assert (tmp_path / "dataset").is_file()
+            assert (tmp_path / cache_dir / "dataset").is_file()
 
         @staticmethod
         def test_should_return_dataset_with_same_values(tmp_path, input_tensor):
@@ -86,6 +104,12 @@ class TestDatasetsUtils:
                 np.array([example["input_tensor"] for example in dataset]),
                 np.array([example["input_tensor"] for example in cached_dataset]),
             )
+
+        @staticmethod
+        def test_should_return_dataset_with_same_spec(tmp_path, input_tensor):
+            dataset = tf.data.Dataset.from_tensor_slices({"input_tensor": input_tensor})
+            cached_dataset = dataset.apply(cache_with_tf_record(tmp_path / "dataset"))
+            assert cached_dataset.element_spec == dataset.element_spec
 
         @staticmethod
         @patch("keras_fsl.utils.datasets.tf.data.TFRecordDataset", wraps=tf.data.TFRecordDataset)
