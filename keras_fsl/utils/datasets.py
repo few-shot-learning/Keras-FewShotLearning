@@ -1,7 +1,7 @@
 import pathlib
 from functools import partial
 from pathlib import Path
-from typing import Callable, Union
+from typing import Callable, List, Union
 
 import tensorflow as tf
 
@@ -25,6 +25,15 @@ def transform(**kwargs: Callable[[TF_TENSOR], TF_TENSOR]) -> Callable[[TENSOR_MA
 
     def annotations_mapper(annotations: TENSOR_MAP) -> TENSOR_MAP:
         return {**annotations, **{key: _transform(annotations[key]) for key, _transform in kwargs.items()}}
+
+    return annotations_mapper
+
+
+def filter_items(items: List[str]) -> Callable[[TENSOR_MAP], TENSOR_MAP]:
+    """Filter keys like pandas.DataFrame.filter"""
+
+    def annotations_mapper(annotations: TENSOR_MAP) -> TENSOR_MAP:
+        return {key: value for key, value in annotations.items() if key in items}
 
     return annotations_mapper
 

@@ -5,7 +5,15 @@ import numpy as np
 import pytest
 import tensorflow as tf
 
-from keras_fsl.utils.datasets import assign, cache, cache_with_tf_record, clear_cache, read_decode_and_crop_jpeg, transform
+from keras_fsl.utils.datasets import (
+    assign,
+    cache,
+    cache_with_tf_record,
+    clear_cache,
+    filter_items,
+    read_decode_and_crop_jpeg,
+    transform,
+)
 
 
 class TestDatasetsUtils:
@@ -32,6 +40,15 @@ class TestDatasetsUtils:
                 )[0]["key"]
                 == 4
             )
+
+    class TestFilterItems:
+        @staticmethod
+        def test_should_return_filtered_dataframe():
+            assert list(
+                tf.data.Dataset.from_tensor_slices({"key_0": [0], "key_1": [1]})
+                .map(filter_items(["key_1"]))
+                .element_spec.keys()
+            ) == ["key_1"]
 
     class TestReadDecodeAndCropJpeg:
         @staticmethod
