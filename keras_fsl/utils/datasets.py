@@ -61,9 +61,8 @@ def cache_with_tf_record(
 
     Args:
         filename: path to the tf record file. The function calls mkdir on parent directory.
-        clear: whether to enforce writing the tf record file or directly reading from an existing one. Default parameter behaves like
-            base tf.data.Dataset.cache method: if a file is found and clear=False, it reads from the file. clear=True enforces the writing
-            of a new file.
+        clear: whether to enforce writing a new tf record file. Default parameter behaves like base tf.data.Dataset.cache method:
+            if a file is found, it reads from it.
     """
 
     def _cache(dataset):
