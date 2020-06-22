@@ -99,10 +99,9 @@ class TestDatasetsUtils:
         @staticmethod
         @pytest.mark.parametrize("clear", [True, False])
         def test_should_read_dataset_from_file(clear, tmp_path, input_tensor):
-            if not clear:
-                tf.data.Dataset.from_tensor_slices({"input_tensor": input_tensor}).apply(
-                    cache_with_tf_record(tmp_path / "dataset")
-                )
+            tf.data.Dataset.from_tensor_slices({"input_tensor": input_tensor}).apply(
+                cache_with_tf_record(tmp_path / "dataset")
+            )
             cached_dataset = tf.data.Dataset.from_tensor_slices({"input_tensor": 2 * input_tensor}).apply(
                 cache_with_tf_record(tmp_path / "dataset", clear=clear)
             )
