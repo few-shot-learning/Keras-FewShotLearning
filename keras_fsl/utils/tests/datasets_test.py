@@ -79,6 +79,13 @@ class TestDatasetsUtils:
             assert (tmp_path / "dataset").is_file()
 
         @staticmethod
+        def test_should_create_directory(tmp_path, input_tensor):
+            tf.data.Dataset.from_tensor_slices({"input_tensor": input_tensor}).apply(
+                cache_with_tf_record(tmp_path / "sub_dir" / "dataset")
+            )
+            assert (tmp_path / "sub_dir" / "dataset").is_file()
+
+        @staticmethod
         def test_should_return_dataset_with_same_values(tmp_path, input_tensor):
             dataset = tf.data.Dataset.from_tensor_slices({"input_tensor": input_tensor})
             cached_dataset = dataset.apply(cache_with_tf_record(tmp_path / "dataset"))

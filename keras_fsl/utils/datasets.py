@@ -52,6 +52,7 @@ def cache_with_tf_record(filename: Union[str, pathlib.Path]) -> Callable[[tf.dat
     def _cache(dataset):
         if not isinstance(dataset.element_spec, dict):
             raise ValueError(f"dataset.element_spec should be a dict but is {type(dataset.element_spec)} instead")
+        Path(filename).parent.mkdir(parents=True, exist_ok=True)
         with tf.io.TFRecordWriter(str(filename)) as writer:
             for sample in dataset.map(transform(**{name: tf.io.serialize_tensor for name in dataset.element_spec.keys()})):
                 writer.write(
