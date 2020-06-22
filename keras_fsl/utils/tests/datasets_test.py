@@ -89,18 +89,12 @@ class TestDatasetsUtils:
             )
 
         @staticmethod
-        def test_should_create_tf_record_file(tmp_path, input_tensor):
+        @pytest.mark.parametrize("cache_dir", ["", "cache_dir"])
+        def test_should_create_tf_record_file(cache_dir, tmp_path, input_tensor):
             tf.data.Dataset.from_tensor_slices({"input_tensor": input_tensor}).apply(
-                cache_with_tf_record(tmp_path / "dataset")
+                cache_with_tf_record(tmp_path / cache_dir / "dataset")
             )
-            assert (tmp_path / "dataset").is_file()
-
-        @staticmethod
-        def test_should_create_directory(tmp_path, input_tensor):
-            tf.data.Dataset.from_tensor_slices({"input_tensor": input_tensor}).apply(
-                cache_with_tf_record(tmp_path / "sub_dir" / "dataset")
-            )
-            assert (tmp_path / "sub_dir" / "dataset").is_file()
+            assert (tmp_path / cache_dir / "dataset").is_file()
 
         @staticmethod
         def test_should_return_dataset_with_same_values(tmp_path, input_tensor):
