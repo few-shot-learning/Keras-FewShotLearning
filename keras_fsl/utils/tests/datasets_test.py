@@ -97,6 +97,20 @@ class TestDatasetsUtils:
             assert (tmp_path / cache_dir / "dataset").is_file()
 
         @staticmethod
+        @pytest.mark.parametrize("clear", [True, False])
+        def test_should_read_dataset_from_file(clear, tmp_path, input_tensor):
+            if not clear:
+                tf.data.Dataset.from_tensor_slices({"input_tensor": input_tensor}).apply(
+                    cache_with_tf_record(tmp_path / "dataset")
+                )
+            cached_dataset = tf.data.Dataset.from_tensor_slices({"input_tensor": 2 * input_tensor}).apply(
+                cache_with_tf_record(tmp_path / "dataset", clear=clear)
+            )
+            np.testing.assert_array_equal(
+                (1 + clear) * input_tensor.numpy(), np.stack([example["input_tensor"] for example in cached_dataset]),
+            )
+
+        @staticmethod
         def test_should_return_dataset_with_same_values(tmp_path, input_tensor):
             dataset = tf.data.Dataset.from_tensor_slices({"input_tensor": input_tensor})
             cached_dataset = dataset.apply(cache_with_tf_record(tmp_path / "dataset"))

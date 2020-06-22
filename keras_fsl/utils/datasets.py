@@ -52,28 +52,37 @@ def read_decode_and_crop_jpeg(annotation: TENSOR_MAP) -> TF_TENSOR:
     return tf.io.decode_jpeg(image_content, channels=3)
 
 
-def cache_with_tf_record(filename: Union[str, pathlib.Path]) -> Callable[[tf.data.Dataset], tf.data.TFRecordDataset]:
+def cache_with_tf_record(
+    filename: Union[str, pathlib.Path], clear: bool = False
+) -> Callable[[tf.data.Dataset], tf.data.TFRecordDataset]:
     """
     Similar to tf.data.Dataset.cache but writes a tf record file instead. Compared to base .cache method, it also insures that the whole
     dataset is cached
+
+    Args:
+        filename: path to the tf record file. The function calls mkdir on parent directory.
+        clear: whether to enforce writing the tf record file or directly reading from an existing one. Default parameter behaves like
+            base tf.data.Dataset.cache method: if a file is found and clear=False, it reads from the file. clear=True enforces the writing
+            of a new file.
     """
 
     def _cache(dataset):
         if not isinstance(dataset.element_spec, dict):
             raise ValueError(f"dataset.element_spec should be a dict but is {type(dataset.element_spec)} instead")
-        Path(filename).parent.mkdir(parents=True, exist_ok=True)
-        with tf.io.TFRecordWriter(str(filename)) as writer:
-            for sample in dataset.map(transform(**{name: tf.io.serialize_tensor for name in dataset.element_spec.keys()})):
-                writer.write(
-                    tf.train.Example(
-                        features=tf.train.Features(
-                            feature={
-                                key: tf.train.Feature(bytes_list=tf.train.BytesList(value=[value.numpy()]))
-                                for key, value in sample.items()
-                            }
-                        )
-                    ).SerializeToString()
-                )
+        if clear or not Path(filename).is_file():
+            Path(filename).parent.mkdir(parents=True, exist_ok=True)
+            with tf.io.TFRecordWriter(str(filename)) as writer:
+                for sample in dataset.map(transform(**{name: tf.io.serialize_tensor for name in dataset.element_spec.keys()})):
+                    writer.write(
+                        tf.train.Example(
+                            features=tf.train.Features(
+                                feature={
+                                    key: tf.train.Feature(bytes_list=tf.train.BytesList(value=[value.numpy()]))
+                                    for key, value in sample.items()
+                                }
+                            )
+                        ).SerializeToString()
+                    )
         return (
             tf.data.TFRecordDataset(str(filename), num_parallel_reads=tf.data.experimental.AUTOTUNE)
             .map(
