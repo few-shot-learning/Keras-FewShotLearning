@@ -88,6 +88,9 @@ def cache_with_tf_record(filename: Union[str, pathlib.Path]) -> Callable[[tf.dat
                     **{name: partial(tf.io.parse_tensor, out_type=spec.dtype) for name, spec in dataset.element_spec.items()}
                 )
             )
+            .map(
+                transform(**{name: partial(tf.ensure_shape, shape=spec.shape) for name, spec in dataset.element_spec.items()})
+            )
         )
 
     return _cache

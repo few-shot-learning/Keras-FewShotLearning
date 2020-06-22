@@ -106,6 +106,12 @@ class TestDatasetsUtils:
             )
 
         @staticmethod
+        def test_should_return_dataset_with_same_spec(tmp_path, input_tensor):
+            dataset = tf.data.Dataset.from_tensor_slices({"input_tensor": input_tensor})
+            cached_dataset = dataset.apply(cache_with_tf_record(tmp_path / "dataset"))
+            assert cached_dataset.element_spec == dataset.element_spec
+
+        @staticmethod
         @patch("keras_fsl.utils.datasets.tf.data.TFRecordDataset", wraps=tf.data.TFRecordDataset)
         def test_should_return_a_tf_record_dataset(tf_record_dataset, tmp_path, input_tensor):
             tf.data.Dataset.from_tensor_slices({"input_tensor": input_tensor}).apply(
