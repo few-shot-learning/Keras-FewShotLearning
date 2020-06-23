@@ -54,7 +54,7 @@ def read_decode_and_crop_jpeg(annotation: TENSOR_MAP) -> TF_TENSOR:
 
 def cache_with_tf_record(
     filename: Union[str, pathlib.Path], clear: bool = False
-) -> Callable[[tf.data.Dataset], tf.data.TFRecordDataset]:
+) -> Callable[[tf.data.Dataset], tf.data.Dataset]:
     """
     Similar to tf.data.Dataset.cache but writes a tf record file instead. Compared to base .cache method, it also insures that the whole
     dataset is cached
