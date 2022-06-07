@@ -5,7 +5,7 @@ import tensorflow as tf
 from tensorflow.keras import Model, Sequential
 from tensorflow.keras.layers import Conv2D, BatchNormalization, UpSampling2D, ReLU, Concatenate, Reshape, Lambda
 
-from keras_fsl.models import branch_models, activations
+from keras_fsl.models import encoders, activations
 
 ANCHORS = pd.DataFrame(
     [
@@ -25,21 +25,21 @@ ANCHORS = pd.DataFrame(
 
 @wraps(Conv2D)
 def conv_block(*args, **kwargs):
-    return Sequential([Conv2D(*args, **kwargs, use_bias=False), BatchNormalization(), ReLU(),])
+    return Sequential([Conv2D(*args, **kwargs, use_bias=False), BatchNormalization(), ReLU()])
 
 
 def bottleneck(filters, *args, **kwargs):
     return Sequential(
-        [conv_block(filters // 4, (1, 1), padding="same"), conv_block(filters, (3, 3), padding="same"),], *args, **kwargs
+        [conv_block(filters // 4, (1, 1), padding="same"), conv_block(filters, (3, 3), padding="same")], *args, **kwargs
     )
 
 
 def up_sampling_block(filters, *args, **kwargs):
-    return Sequential([conv_block(filters, (1, 1), padding="same"), UpSampling2D(2),], *args, **kwargs)
+    return Sequential([conv_block(filters, (1, 1), padding="same"), UpSampling2D(2)], *args, **kwargs)
 
 
 def regression_block(activation, *args, **kwargs):
-    return Sequential([Conv2D(2, (1, 1)), getattr(activations, activation)(*args),], **kwargs)
+    return Sequential([Conv2D(2, (1, 1)), getattr(activations, activation)(*args)], **kwargs)
 
 
 def FeaturePyramidNet(
@@ -83,7 +83,7 @@ def FeaturePyramidNet(
         if isinstance(backbone, str):
             backbone = {"name": backbone, "init": {"include_top": False, "input_shape": (416, 416, 3)}}
         backbone_name = backbone["name"]
-        backbone = getattr(branch_models, backbone_name)(**backbone.get("init", {}))
+        backbone = getattr(encoders, backbone_name)(**backbone.get("init", {}))
 
     output_shapes = (
         pd.DataFrame(
