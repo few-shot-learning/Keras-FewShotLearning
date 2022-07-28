@@ -9,3 +9,4 @@ siamese_nets_classifier
 .coverage
 *egg-info
 logs
+.python-version
