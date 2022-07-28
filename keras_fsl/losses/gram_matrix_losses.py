@@ -12,8 +12,8 @@ representation, see for instance
 """
 import tensorflow as tf
 import tensorflow.keras.backend as K
-from tensorflow.keras.losses import Loss
 import tensorflow_probability as tfp
+from tensorflow.keras.losses import Loss
 
 
 class MeanScoreClassificationLoss(Loss):
@@ -70,8 +70,11 @@ class ClippedBinaryCrossentropy(BinaryCrossentropy):
 
     def call(self, y_true, y_pred):
         loss = super().call(y_true, y_pred)
-        clip_mask = tf.math.logical_and(-tf.math.log(1 - self.lower) < loss, loss < -tf.math.log(1 - self.upper))
-        return tf.cast(clip_mask, dtype=y_pred.dtype) * loss
+        clip_mask = tf.math.logical_and(
+            -tf.math.log(1 - tf.cast(self.lower, dtype=loss.dtype)) < loss,
+            loss < -tf.math.log(1 - tf.cast(self.upper, dtype=loss.dtype)),
+        )
+        return tf.cast(clip_mask, dtype=loss.dtype) * loss
 
 
 # TODO: use reduction kwarg of loss when it becomes possible to give custom reduction to includes all other reductions below in
