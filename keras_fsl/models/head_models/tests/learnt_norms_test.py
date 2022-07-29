@@ -27,6 +27,24 @@ class TestLearntNorms(TestCase):
 
         learnt_norms.fit(dataset, epochs=1, steps_per_epoch=2, verbose=1)
 
+    @parameterized.named_parameters(
+        ("mixed_float16", "mixed_float16", "float32"),
+        ("mixed_bfloat16", "mixed_bfloat16", "float32"),
+        ("float32", "float32", "float32"),
+        ("float64", "float64", "float64"),
+    )
+    def test_last_activation_fp32_in_mixed_precision(self, mixed_precision_policy, expected_last_layer_dtype_policy):
+        policy = tf.keras.mixed_precision.experimental.Policy(mixed_precision_policy)
+        tf.keras.mixed_precision.experimental.set_policy(policy)
+        learnt_norms = LearntNorms(input_shape=(10,))
+
+        # Check dtype policy of internal non-input layers
+        for layer in learnt_norms.layers[2:-1]:
+            assert layer._dtype_policy.name == mixed_precision_policy
+
+        # Check dtype policy of last layer always at least FP32
+        assert learnt_norms.layers[-1]._dtype_policy.name == expected_last_layer_dtype_policy
+
 
 if __name__ == "__main__":
     tf.test.main()
