@@ -140,6 +140,15 @@ class TestGramMatrixLoss:
             )
             np.testing.assert_almost_equal(tf_loss, np_loss, decimal=5)
 
+        @staticmethod
+        @pytest.mark.parametrize("dtype_policy", (tf.float16, tf.bfloat16, tf.float32, tf.float64))
+        def test_clipped_loss_computes_in_all_float_dtypes(dtype_policy, y_true, y_pred):
+            y_true_tensor = tf.convert_to_tensor(y_true)
+            y_pred_tensor = tf.convert_to_tensor(y_pred)
+            ClippedBinaryCrossentropy(lower=0.05, upper=0.95)(
+                tf.cast(y_true_tensor, dtype=dtype_policy), tf.cast(y_pred_tensor, dtype=dtype_policy)
+            )
+
         def test_max_loss_should_equal_literal_calculation(self, y_true, adjacency_matrix, y_pred):
             np_loss = np.max(-(adjacency_matrix * np.log(y_pred) + (1 - adjacency_matrix) * np.log(1 - y_pred)))
             tf_loss = MaxBinaryCrossentropy()(
