@@ -34,7 +34,7 @@ def LearntNorms(input_shape, use_bias=True, activation="sigmoid"):
     )
     output = Conv2D(filters=1, kernel_size=(1, 1), activation="linear", name="norms_average", use_bias=use_bias)(output)
     output = Flatten()(output)
-    output = Dense(1, activation=activations.get(activation), name="raw_output", use_bias=use_bias)(output)
+    output = Dense(1, name="raw_output", use_bias=use_bias)(output)
 
     global_dtype_policy = global_policy().name
     if global_dtype_policy in ["mixed_float16", "mixed_bfloat16"]:
