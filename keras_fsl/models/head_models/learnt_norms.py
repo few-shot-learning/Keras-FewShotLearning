@@ -1,5 +1,5 @@
-import numpy as np
 import tensorflow as tf
+import numpy as np
 from keras import activations
 from keras.layers import (
     Concatenate,
@@ -11,7 +11,7 @@ from keras.layers import (
 )
 from keras.mixed_precision import global_policy
 from keras.models import Model
-from tensorflow.python.keras.layers import Activation
+from keras.layers import Activation
 
 
 def LearntNorms(input_shape, use_bias=True, activation="sigmoid"):
