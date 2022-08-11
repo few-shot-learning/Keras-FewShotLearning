@@ -1,6 +1,6 @@
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, Input, Lambda
-from tensorflow.keras.models import Model
+from keras.layers import Dense, Input, Lambda
+from keras.models import Model
 
 
 def DenseSigmoid(input_shape, use_bias=True):

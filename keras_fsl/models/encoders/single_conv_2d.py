@@ -1,5 +1,5 @@
-from tensorflow.keras import Sequential
-from tensorflow.keras.layers import Conv2D, GlobalAveragePooling2D
+from keras import Sequential
+from keras.layers import Conv2D, GlobalAveragePooling2D
 
 
 def SingleConv2D(input_shape):

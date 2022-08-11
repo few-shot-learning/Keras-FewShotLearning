@@ -95,7 +95,7 @@ The [notebooks](notebooks) section provides some examples. For instance, just ru
 ```python
 import tensorflow as tf
 import tensorflow_datasets as tfds
-from tensorflow.keras.models import Sequential
+from keras.models import Sequential
 
 from keras_fsl.models.encoders import BasicCNN
 from keras_fsl.layers import GramMatrix

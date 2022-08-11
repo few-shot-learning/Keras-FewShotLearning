@@ -3,8 +3,8 @@ import math
 import imgaug.augmenters as iaa
 import numpy as np
 from abc import ABCMeta
-from tensorflow.keras.preprocessing.image import img_to_array, load_img
-from tensorflow.keras.utils import Sequence
+from keras.preprocessing.image import img_to_array, load_img
+from keras.utils import Sequence
 
 
 class AbstractSequence(Sequence, metaclass=ABCMeta):

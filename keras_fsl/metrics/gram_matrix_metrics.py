@@ -3,7 +3,7 @@ All these metrics functions assume y_pred is a gram matrix computed on the batch
 instance). y_true should be one-hot encoded
 """
 import tensorflow as tf
-from tensorflow.keras import backend as K
+from keras import backend as K
 
 
 def classification_accuracy(ascending=False):

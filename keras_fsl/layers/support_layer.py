@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow.keras.layers import Layer
+from keras.layers import Layer
 
 from keras_fsl.models import head_models
 

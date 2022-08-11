@@ -5,9 +5,9 @@ import pandas as pd
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import tensorflow_addons as tfa
-from tensorflow.keras.callbacks import EarlyStopping, TensorBoard
-from tensorflow.keras.layers import Conv2D, Dense, Dropout, GlobalMaxPooling2D, Input, Flatten, MaxPooling2D, Lambda
-from tensorflow.keras.models import Sequential
+from keras.callbacks import EarlyStopping, TensorBoard
+from keras.layers import Conv2D, Dense, Dropout, GlobalMaxPooling2D, Input, Flatten, MaxPooling2D, Lambda
+from keras.models import Sequential
 
 from keras_fsl.layers import GramMatrix
 from keras_fsl.losses.gram_matrix_losses import ClippedBinaryCrossentropy, ClassConsistencyLoss

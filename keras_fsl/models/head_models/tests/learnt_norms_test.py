@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from absl.testing import parameterized
-from tensorflow.keras.optimizers import RMSprop
+from keras.optimizers import RMSprop
 from tensorflow.python.keras.keras_parameterized import TestCase, run_all_keras_modes, run_with_all_model_types
 
 from keras_fsl.models.head_models import LearntNorms
@@ -34,8 +34,8 @@ class TestLearntNorms(TestCase):
         ("float64", "float64", "float64"),
     )
     def test_last_activation_fp32_in_mixed_precision(self, mixed_precision_policy, expected_last_layer_dtype_policy):
-        policy = tf.keras.mixed_precision.experimental.Policy(mixed_precision_policy)
-        tf.keras.mixed_precision.experimental.set_policy(policy)
+        policy = tf.keras.mixed_precision.Policy(mixed_precision_policy)
+        tf.keras.mixed_precision.set_policy(policy)
         learnt_norms = LearntNorms(input_shape=(10,))
 
         # Check dtype policy of internal non-input layers

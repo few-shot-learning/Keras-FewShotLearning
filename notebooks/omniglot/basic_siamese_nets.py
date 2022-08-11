@@ -4,9 +4,9 @@ from pathlib import Path
 
 import imgaug.augmenters as iaa
 import pandas as pd
-from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard, ReduceLROnPlateau, EarlyStopping
-from tensorflow.keras.optimizer_v2.adam import Adam
-from tensorflow.keras.saving import load_model
+from keras.callbacks import ModelCheckpoint, TensorBoard, ReduceLROnPlateau, EarlyStopping
+from keras.optimizer_v2.adam import Adam
+from keras.saving import load_model
 
 from keras_fsl.datasets import omniglot
 from keras_fsl.models import SiameseNets

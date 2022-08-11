@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow.keras import activations
+from keras import activations
 
 from keras_fsl.layers.support_layer import SupportLayer
 

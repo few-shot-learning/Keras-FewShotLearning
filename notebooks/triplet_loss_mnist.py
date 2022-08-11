@@ -8,9 +8,9 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_addons as tfa
 import tensorflow_datasets as tfds
-from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, Lambda, MaxPooling2D
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.callbacks import TensorBoard
+from keras.layers import Conv2D, Dense, Dropout, Flatten, Lambda, MaxPooling2D
+from keras.models import Sequential
+from keras.callbacks import TensorBoard
 
 from keras_fsl.losses.gram_matrix_losses import triplet_loss
 from keras_fsl.layers import GramMatrix

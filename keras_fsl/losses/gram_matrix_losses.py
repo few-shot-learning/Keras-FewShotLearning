@@ -13,7 +13,7 @@ representation, see for instance
 import tensorflow as tf
 import tensorflow.keras.backend as K
 import tensorflow_probability as tfp
-from tensorflow.keras.losses import Loss
+from keras.losses import Loss
 
 
 class MeanScoreClassificationLoss(Loss):

@@ -1,5 +1,5 @@
-from tensorflow.keras import Model
-from tensorflow.keras.layers import Input
+from keras import Model
+from keras.layers import Input
 
 from keras_fsl.models import encoders, head_models
 
