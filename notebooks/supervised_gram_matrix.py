@@ -7,10 +7,10 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorboard.plugins import projector
-from tensorflow.keras.datasets import cifar10
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Lambda
-from tensorflow.keras.utils import to_categorical
+from keras.datasets import cifar10
+from keras.models import Sequential
+from keras.layers import Lambda
+from keras.utils import to_categorical
 
 from keras_fsl.models.encoders import BasicCNN
 from keras_fsl.losses import BinaryCrossentropy, class_consistency_loss

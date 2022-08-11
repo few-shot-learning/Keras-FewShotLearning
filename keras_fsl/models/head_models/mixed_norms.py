@@ -1,6 +1,6 @@
 import tensorflow as tf
-from tensorflow.keras import activations
-from tensorflow.keras.layers import (
+from keras import activations
+from keras.layers import (
     Concatenate,
     Conv2D,
     Dense,
@@ -10,7 +10,7 @@ from tensorflow.keras.layers import (
     Lambda,
     Reshape,
 )
-from tensorflow.keras.models import Model
+from keras.models import Model
 
 
 def MixedNorms(input_shape, norms=None, use_bias=True, activation="sigmoid"):

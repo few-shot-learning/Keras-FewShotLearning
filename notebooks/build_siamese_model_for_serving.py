@@ -1,6 +1,6 @@
 # flake8: noqa: E265
 import tensorflow as tf
-from tensorflow.keras.models import load_model
+from keras.models import load_model
 
 #%% Load siamese nets
 classifier = load_model("siamese_nets_classifier/1")

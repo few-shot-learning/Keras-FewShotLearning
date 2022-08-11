@@ -3,15 +3,15 @@ from pathlib import Path
 import click
 import pandas as pd
 import tensorflow as tf
-from tensorflow.keras import applications as keras_applications
-from tensorflow.keras.callbacks import (
+from keras import applications as keras_applications
+from keras.callbacks import (
     ModelCheckpoint,
     ReduceLROnPlateau,
     TensorBoard,
 )
-from tensorflow.keras.layers import Input
-from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Adam
+from keras.layers import Input
+from keras.models import Model
+from keras.optimizers import Adam
 
 from keras_fsl.dataframe.operators import ToKShotDataset
 from keras_fsl.layers import CentroidsMatrix
@@ -22,8 +22,8 @@ from keras_fsl.utils.training import compose
 #%% Toggle some config if required
 # tf.config.experimental_run_functions_eagerly(True)
 # tf.config.optimizer.set_jit(True)
-# policy = tf.keras.mixed_precision.experimental.Policy("mixed_float16")
-# tf.keras.mixed_precision.experimental.set_policy(policy)
+# policy = tf.keras.mixed_precision.Policy("mixed_float16")
+# tf.keras.mixed_precision.set_policy(policy)
 
 
 #%% CLI args

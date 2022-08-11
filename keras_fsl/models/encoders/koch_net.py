@@ -1,7 +1,7 @@
-from tensorflow.keras import Sequential, Input
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Dense, Flatten
-from tensorflow.keras.initializers import RandomNormal
-from tensorflow.keras.regularizers import l2
+from keras import Sequential, Input
+from keras.layers import Conv2D, MaxPooling2D, Dense, Flatten
+from keras.initializers import RandomNormal
+from keras.regularizers import l2
 
 
 def conv_2d(*args, **kwargs):

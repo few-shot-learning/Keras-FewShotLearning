@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 from matplotlib.backends.backend_agg import FigureCanvasAgg
-from tensorflow.keras.callbacks import Callback
+from keras.callbacks import Callback
 
 
 class BinaryStatistics(Callback):

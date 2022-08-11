@@ -1,7 +1,7 @@
-import numpy as np
 import tensorflow as tf
-from tensorflow.keras import activations
-from tensorflow.keras.layers import (
+import numpy as np
+from keras import activations
+from keras.layers import (
     Concatenate,
     Conv2D,
     Dense,
@@ -9,9 +9,9 @@ from tensorflow.keras.layers import (
     Input,
     Reshape,
 )
-from tensorflow.keras.mixed_precision.experimental import global_policy
-from tensorflow.keras.models import Model
-from tensorflow.python.keras.layers import Activation
+from keras.mixed_precision import global_policy
+from keras.models import Model
+from keras.layers import Activation
 
 
 def LearntNorms(input_shape, use_bias=True, activation="sigmoid"):

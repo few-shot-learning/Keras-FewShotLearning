@@ -1,8 +1,8 @@
 from functools import wraps
 
-from tensorflow.keras import Sequential, Input, Model
-from tensorflow.keras.layers import Conv2D, LeakyReLU, ZeroPadding2D, Add, MaxPooling2D, BatchNormalization
-from tensorflow.keras.regularizers import l2
+from keras import Sequential, Input, Model
+from keras.layers import Conv2D, LeakyReLU, ZeroPadding2D, Add, MaxPooling2D, BatchNormalization
+from keras.regularizers import l2
 
 
 @wraps(Conv2D)
