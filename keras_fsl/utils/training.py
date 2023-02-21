@@ -2,6 +2,8 @@ import os
 from functools import reduce, wraps
 from unittest.mock import patch
 
+import tensorflow as tf
+
 
 def patch_len(fit_generator):
     """

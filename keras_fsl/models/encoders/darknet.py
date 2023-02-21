@@ -10,12 +10,9 @@ def conv_2d(*args, **kwargs):
     return Conv2D(*args, **kwargs, kernel_regularizer=l2(5e-4), padding="valid" if kwargs.get("strides") == (2, 2) else "same")
 
 
+@wraps(Conv2D)
 def conv_block(*args, **kwargs):
-    layer = Sequential()
-    layer.add(conv_2d(*args, **kwargs, use_bias=False))
-    layer.add(BatchNormalization())
-    layer.add(LeakyReLU(alpha=0.1))
-    return layer
+    return Sequential([conv_2d(*args, **kwargs, use_bias=False), BatchNormalization(), LeakyReLU(alpha=0.1),])
 
 
 def residual_block(input_shape, num_filters, num_blocks):
